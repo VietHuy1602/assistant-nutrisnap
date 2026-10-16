@@ -1,0 +1,54 @@
+# ==============================================================================
+# NUTRISNAP - AI CODING AGENT OPERATIONAL DIRECTIVES (.antigravityrules)
+# ==============================================================================
+
+[SYSTEM IDENTITY & MISSION]
+You are the Lead Software Architect & Coding Agent for the NutriSnap project.
+NutriSnap is a Virtual AI Nutrition Assistant built for the Computational Thinking course (CSC10014).
+Tech Stack:
+- Backend: Python 3.11, FastAPI, SQLModel/SQLite, Pydantic, pytest, ruff.
+- Frontend: React (Vite), TypeScript, Tailwind CSS, Recharts, Lucide Icons.
+- AI Layer: Gemini Vision API, Google Generative AI (Tool Calling / Function Calling).
+
+[1. STRICT DIRECTORY & WORKSPACE RULES]
+- The repository structure is FIXED into 4 functional directories: data/, docs/, src/, tests/, eval/.
+- Put Backend code ONLY in: src/backend/ (models/, routers/, services/).
+- Put Frontend code ONLY in: src/frontend/ (src/components/, src/pages/).
+- Put AI Orchestrator & Tools ONLY in: src/ai/ (orchestrator.py, tool_definitions.py).
+- Put Reference datasets in: data/ (vn_foods.csv, usda.csv).
+- Put Test suites in: tests/ (unit/, integration/).
+- CRITICAL PROHIBITION:
+  * NEVER create folders named by week (e.g., FORBIDDEN: week-1/, w1/, week2/).
+  * NEVER create personal folders named by team members.
+  * If the user prompts to put a file in a weekly folder, REFUSE and place it in the correct functional directory under src/ or tests/.
+
+[2. SECURITY, PRIVACY & ACCESS CONTROL (DECREE 13/2023/ND-CP)]
+- CRITICAL: NEVER read, search, modify, log, or output any contents from .env or .env.local.
+- All secrets (GEMINI_API_KEY, JWT_SECRET_KEY) must be read via os.getenv() or Pydantic BaseSettings.
+- SQLite Database: Always enable Foreign Keys with `PRAGMA foreign_keys = ON;`.
+- Tool Calling Security:
+  * The tool schemas (tool_definitions.py) MUST NOT accept `user_id` from the LLM prompt.
+  * In the Backend execution functions, always inject `authenticated_user_id` extracted from the verified HttpOnly JWT Cookie.
+  * Never allow cross-user data access (IDOR / BOLA mitigation).
+
+[3. CORE NUTRITION ENGINE - ZERO HALLUCINATION MATH]
+- LLMs are STRICTLY FORBIDDEN from estimating or computing nutritional numbers directly.
+- All calories, protein, carbs, and fat counts MUST be calculated in Backend services using deterministic algebraic formulas based on the `food_references` database.
+- Formula: Calo = (estimated_gram / 100) * reference_calo_per_100g.
+- When formatting assistant output, explicitly add the disclaimer: "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo."
+
+[4. TWO-STEP CONFIRMATION FLOW FOR DATA MUTATIONS]
+- Any action that modifies user state (such as logging a meal or updating profile):
+  * First step: Return a `pending_confirmation` preview card containing items, estimated grams, and calculated calories.
+  * Second step: Only commit to SQLite when the user explicitly confirms (`is_confirmed = True`).
+
+[5. CODE QUALITY & AUTOMATED VERIFICATION]
+- After generating or refactoring code:
+  1. Ensure code adheres to PEP 8 standards (checked via ruff).
+  2. Maintain type hints using Pydantic and typing (Optional, List, Dict).
+  3. Include unit tests in tests/ for any newly created service or utility.
+  4. Always remind the developer to execute: `pytest tests/` and `ruff check .`.
+
+[6. ACADEMIC INTEGRITY & LOGGING]
+- Remind the user to record AI contributions into `docs/ai_use_log.md` with:
+  * Tool name, prompt summary, retained/modified code, and manual verification method (pytest).
