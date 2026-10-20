@@ -81,13 +81,20 @@ def test_log_meal_supports_two_step_confirmation_flag():
     assert props["is_confirmed"]["type"] == "boolean"
 
 
-def test_recommend_meals_requires_meal_type():
+def test_recommend_meals_requires_remaining_calories():
     tool = get_tool_by_name("recommend_meals")
     required = tool["function"]["parameters"]["required"]
-    assert required == ["meal_type"]
+    assert required == ["remaining_calories"]
+    props = tool["function"]["parameters"]["properties"]
+    assert "budget_vnd" in props
+    # Đảm bảo không còn alias trùng lặp
+    assert "max_calories" not in props
+    assert "max_budget_vnd" not in props
 
 
-def test_progress_summary_requires_period_in_current_schema():
+def test_progress_summary_requires_days_range():
     tool = get_tool_by_name("get_progress_summary")
     required = tool["function"]["parameters"]["required"]
-    assert required == ["period"]
+    assert required == ["days_range"]
+    props = tool["function"]["parameters"]["properties"]
+    assert props["days_range"]["type"] == "integer"

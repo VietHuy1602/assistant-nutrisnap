@@ -43,19 +43,26 @@ Hệ thống cơ sở dữ liệu SQLite (`nutrisnap.db`) được chuẩn hóa 
 └────────────────────────┘
 ```
 
-### Ràng buộc Khóa chính (PK) và Khóa ngoại (FK):
+### Ràng buộc Khóa chính (PK) và Khóa ngoại (FK) với ON DELETE CASCADE:
 1. **users**: Khóa chính `id`. Bảng gốc lưu thông tin tài khoản và mật khẩu đã băm (`bcrypt`).
-2. **goals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (ON DELETE CASCADE).
+2. **goals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
 3. **food_references**: Khóa chính `id`. Bảng từ điển thực phẩm tham chiếu dinh dưỡng độc lập.
-4. **weight_logs**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (ON DELETE CASCADE).
-5. **meals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (ON DELETE CASCADE).
-6. **meal_items**: Khóa chính `id`, khóa ngoại kép: `meal_id -> meals.id` và `food_id -> food_references.id`.
-7. **chat_sessions**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (ON DELETE CASCADE).
-8. **chat_messages**: Khóa chính `id`, khóa ngoại `session_id -> chat_sessions.id` (ON DELETE CASCADE).
+4. **weight_logs**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
+5. **meals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
+6. **meal_items**: Khóa chính `id`, khóa ngoại kép: `meal_id -> meals.id` (`ondelete="CASCADE"`) và `food_id -> food_references.id` (`ondelete="RESTRICT"`).
+7. **chat_sessions**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
+8. **chat_messages**: Khóa chính `id`, khóa ngoại `session_id -> chat_sessions.id` (`ondelete="CASCADE"`).
+
+> [!NOTE]
+> Toàn bộ hành vi ràng buộc khóa ngoại và xóa lan truyền `ON DELETE CASCADE` đã được khai báo chính thức trong [src/backend/models/schema.py](file:///d:/Projects/assistant-nutrisnap/src/backend/models/schema.py) và kiểm thử tự động đạt 100% tại [tests/unit/test_db_cascade.py](file:///d:/Projects/assistant-nutrisnap/tests/unit/test_db_cascade.py).
 
 ---
 
 ## 2. Kiến trúc Bảo mật Phiên làm việc: HttpOnly Cookie vs. LocalStorage
+
+> [!IMPORTANT]
+> **Phân định rõ ranh giới API Contract (Tuần 1) và Service Implementation (Tuần 2):**  
+> Trong khuôn khổ Tuần 1, hệ thống tập trung hoàn thiện và đóng băng bản hợp đồng giao tiếp (REST API Contract) tại `api_contract.py` và khung ứng dụng (FastAPI Skeleton tại `main.py`). Các endpoint hiện trả về dữ liệu mẫu (Mock Responses) để phục vụ ghép nối giao diện Frontend. Tầng logic dịch vụ nghiệp vụ thực tế (`services/auth_service.py` băm bcrypt, sinh mã JWT thực thụ và dependency `get_current_user` trích xuất danh tính từ HttpOnly Cookie) sẽ được triển khai chính thức theo đúng lộ trình ở **Tuần 2**.
 
 ### 2.1. Phân tích Rủi ro XSS khi lưu JWT trong `localStorage`
 - **Cơ chế tấn công XSS (Cross-Site Scripting):** Nếu ứng dụng lưu JWT token trong `localStorage` hoặc `sessionStorage`, bất kỳ lỗ hổng bảo mật nào cho phép mã JavaScript độc hại chạy trên trình duyệt (thông qua thư viện bên thứ ba bị nhiễm độc, nội dung inject từ người dùng không được sanitize, v.v.) đều có thể gọi `localStorage.getItem("token")`.

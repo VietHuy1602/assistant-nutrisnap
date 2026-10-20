@@ -1,10 +1,11 @@
 """
 src/ai/tool_definitions.py
-Định nghĩa JSON Schema cho 4 công cụ cốt lõi (Tool Calling) của trợ lý ảo NutriSnap.
-Lưu ý bảo mật (Zero-Trust Tool Calling theo đặc tả dự án):
-- Schema các công cụ cung cấp cho LLM TUYỆT ĐỐI KHÔNG chứa tham số `user_id`.
-- Backend tự động trích xuất `user_id` từ phiên đăng nhập an toàn (HttpOnly Cookie JWT).
-- log_meal hỗ trợ quy trình Two-step Confirmation Flow qua cờ `is_confirmed`.
+Định nghĩa JSON Schema chuẩn hóa cho 4 công cụ cốt lõi (Tool Calling) của trợ lý ảo NutriSnap.
+
+Tuân thủ nguyên tắc thiết kế:
+1. Zero-Trust Security: Tuyệt đối KHÔNG chứa tham số `user_id` (Backend tự trích xuất từ JWT).
+2. Tên tham số chuẩn hóa đơn nhất: Không dùng alias trùng lặp (ví dụ: dùng duy nhất `remaining_calories`, `budget_vnd`, `days_range`).
+3. Two-Step Confirmation: log_meal tích hợp cờ `is_confirmed: bool` phân định rõ bản xem trước và ghi dữ liệu.
 """
 
 from typing import Any
@@ -121,26 +122,18 @@ RECOMMEND_MEALS_SCHEMA: dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "meal_type": {
-                    "type": "string",
-                    "enum": ["breakfast", "lunch", "dinner", "snack"],
-                    "description": "Loại bữa ăn cần gợi ý (sáng, trưa, tối, phụ).",
-                },
                 "remaining_calories": {
                     "type": "number",
                     "description": "Hạn mức năng lượng (Calories/kcal) tối đa còn lại cho bữa ăn.",
                 },
-                "max_calories": {
-                    "type": "number",
-                    "description": "Bí danh tương đương của remaining_calories.",
-                },
                 "budget_vnd": {
-                    "type": "number",
-                    "description": "Ngân sách tối đa cho bữa ăn tính bằng VNĐ (ví dụ: 40000 cho 40.000 VNĐ).",
+                    "type": "integer",
+                    "description": "Ngân sách chi tiêu tối đa cho bữa ăn tính bằng VNĐ (ví dụ: 40000 cho 40.000 VNĐ).",
                 },
-                "max_budget_vnd": {
-                    "type": "number",
-                    "description": "Bí danh tương đương của budget_vnd.",
+                "meal_type": {
+                    "type": "string",
+                    "enum": ["breakfast", "lunch", "dinner", "snack"],
+                    "description": "Loại bữa ăn cần gợi ý (sáng, trưa, tối, phụ).",
                 },
                 "min_protein_g": {
                     "type": "number",
@@ -152,7 +145,7 @@ RECOMMEND_MEALS_SCHEMA: dict[str, Any] = {
                     "description": "Sở thích ăn uống (ví dụ: ['ít dầu mỡ', 'thanh đạm', 'giàu đạm']).",
                 },
             },
-            "required": ["meal_type"],
+            "required": ["remaining_calories"],
             "additionalProperties": False,
         },
     },
@@ -170,14 +163,9 @@ GET_PROGRESS_SUMMARY_SCHEMA: dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "period": {
-                    "type": "string",
-                    "enum": ["7_days", "14_days", "30_days", "custom"],
-                    "description": "Khoảng thời gian thống kê (mặc định là '7_days').",
-                },
                 "days_range": {
                     "type": "integer",
-                    "description": "Số ngày gần nhất cần tổng hợp tiến độ (tương đương period).",
+                    "description": "Số ngày gần nhất cần tổng hợp tiến độ (ví dụ: 7, 14, 30 ngày). Mặc định là 7.",
                 },
                 "start_date": {
                     "type": "string",
@@ -188,7 +176,7 @@ GET_PROGRESS_SUMMARY_SCHEMA: dict[str, Any] = {
                     "description": "Ngày kết thúc (YYYY-MM-DD) nếu chọn khoảng tùy chỉnh.",
                 },
             },
-            "required": ["period"],
+            "required": ["days_range"],
             "additionalProperties": False,
         },
     },
