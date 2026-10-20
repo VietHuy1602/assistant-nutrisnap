@@ -5,8 +5,8 @@ Run from repository root:
 """
 from src.ai.tool_definitions import (
     NUTRISNAP_TOOLS,
-    get_tool_definitions,
     get_tool_by_name,
+    get_tool_definitions,
 )
 
 EXPECTED_TOOL_NAMES = {
@@ -74,11 +74,17 @@ def test_log_meal_requires_meal_type_and_items():
     assert set(required) == {"meal_type", "items"}
 
 
+def test_log_meal_supports_two_step_confirmation_flag():
+    tool = get_tool_by_name("log_meal")
+    props = tool["function"]["parameters"]["properties"]
+    assert "is_confirmed" in props
+    assert props["is_confirmed"]["type"] == "boolean"
+
+
 def test_recommend_meals_requires_meal_type():
     tool = get_tool_by_name("recommend_meals")
     required = tool["function"]["parameters"]["required"]
     assert required == ["meal_type"]
-
 
 
 def test_progress_summary_requires_period_in_current_schema():

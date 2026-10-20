@@ -1,21 +1,22 @@
 """
 src/ai/tool_definitions.py
-Định nghĩa JSON Schema cho 4 công cụ (Tool Calling) của trợ lý ảo NutriSnap.
-Lưu ý bảo mật (theo data_privacy_policy.md): 
-- KHÔNG đưa `user_id` vào parameters của LLM Tool Calling. 
-- Backend sẽ tự động trích xuất `user_id` từ JWT Token của phiên đăng nhập.
+Định nghĩa JSON Schema cho 4 công cụ cốt lõi (Tool Calling) của trợ lý ảo NutriSnap.
+Lưu ý bảo mật (Zero-Trust Tool Calling theo đặc tả dự án):
+- Schema các công cụ cung cấp cho LLM TUYỆT ĐỐI KHÔNG chứa tham số `user_id`.
+- Backend tự động trích xuất `user_id` từ phiên đăng nhập an toàn (HttpOnly Cookie JWT).
+- log_meal hỗ trợ quy trình Two-step Confirmation Flow qua cờ `is_confirmed`.
 """
 
-from typing import List, Dict, Any
+from typing import Any
 
 # 1. Schema cho công cụ: get_daily_nutrition
-GET_DAILY_NUTRITION_SCHEMA: Dict[str, Any] = {
+GET_DAILY_NUTRITION_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {
         "name": "get_daily_nutrition",
         "description": (
             "Lấy tổng hợp dinh dưỡng (Calories, Protein, Carbs, Fat) đã tiêu thụ trong một ngày cụ thể "
-            "và so sánh với mục tiêu hàng ngày (daily target) của người dùng. "
+            "và so sánh với hạn mức calo / mục tiêu hàng ngày (daily target) của người dùng. "
             "Sử dụng khi người dùng hỏi hôm nay đã ăn bao nhiêu calo, còn lại bao nhiêu, hoặc kiểm tra nhật ký ăn uống trong ngày."
         ),
         "parameters": {
@@ -25,7 +26,7 @@ GET_DAILY_NUTRITION_SCHEMA: Dict[str, Any] = {
                     "type": "string",
                     "description": (
                         "Ngày cần tra cứu dinh dưỡng theo định dạng 'YYYY-MM-DD' (ví dụ: '2026-10-16'). "
-                        "Nếu người dùng nói 'hôm nay' và không rõ ngày, có thể để trống để Backend tự lấy ngày hiện tại."
+                        "Nếu người dùng nói 'hôm nay' hoặc không chỉ định ngày, để trống để Backend tự lấy ngày hiện tại."
                     ),
                 }
             },
@@ -36,13 +37,15 @@ GET_DAILY_NUTRITION_SCHEMA: Dict[str, Any] = {
 }
 
 # 2. Schema cho công cụ: log_meal
-LOG_MEAL_SCHEMA: Dict[str, Any] = {
+LOG_MEAL_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {
         "name": "log_meal",
         "description": (
-            "Ghi nhận (lưu) một bữa ăn mới vào nhật ký dinh dưỡng của người dùng. "
-            "Sử dụng khi người dùng thông báo họ vừa ăn món gì đó, hoặc sau khi hệ thống nhận diện xong món ăn từ ảnh chụp."
+            "Ghi nhận (lưu) một bữa ăn vào nhật ký dinh dưỡng của người dùng. "
+            "Tuân thủ cơ chế Two-Step Confirmation: Khi AI nhận diện hoặc người dùng nêu món ăn lần đầu, "
+            "gọi với is_confirmed=False để tính nháp calo và trả về bản xem trước (pending_confirmation). "
+            "Chỉ khi người dùng đã bấm nút xác nhận lưu thì mới gọi với is_confirmed=True để ghi vào CSDL."
         ),
         "parameters": {
             "type": "object",
@@ -54,42 +57,50 @@ LOG_MEAL_SCHEMA: Dict[str, Any] = {
                 },
                 "items": {
                     "type": "array",
-                    "description": "Danh sách các món ăn/thực phẩm có trong bữa ăn kèm khối lượng hoặc khẩu phần.",
+                    "description": "Danh sách các món ăn/thực phẩm trong bữa ăn kèm khối lượng ước tính hoặc khẩu phần.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "food_name": {
                                 "type": "string",
-                                "description": "Tên món ăn hoặc thực phẩm đã chuẩn hóa (ví dụ: 'Phở bò', 'Cơm trắng', 'Ức gà luộc').",
+                                "description": "Tên món ăn hoặc thực phẩm (ví dụ: 'Phở bò tái', 'Cơm tấm sườn nướng', 'Ức gà luộc').",
                             },
                             "portion_size": {
                                 "type": "number",
-                                "description": "Số lượng/khẩu phần người dùng đã ăn (ví dụ: 1, 0.5 nếu ăn nửa bát, 1.5). Mặc định là 1.0.",
+                                "description": "Số lượng/khẩu phần (ví dụ: 1.0 bát, 0.5 tô, 2 quả). Mặc định là 1.0.",
                             },
                             "unit": {
                                 "type": "string",
-                                "description": "Đơn vị tính khẩu phần (ví dụ: 'bát', 'tô', 'đĩa', 'gram', 'ml', 'phần').",
+                                "description": "Đơn vị tính khẩu phần (ví dụ: 'bát', 'tô', 'đĩa', 'gram', 'ml', 'hộp').",
                             },
                             "estimated_grams": {
                                 "type": "number",
-                                "description": "Khối lượng ước tính quy đổi ra gram (nếu có thể suy luận được, ví dụ: 1 bát cơm ~ 150g).",
+                                "description": "Khối lượng ước tính quy đổi ra gram (ví dụ: 1 bát cơm ~ 150g, 1 bát phở ~ 400g).",
                             },
                             "notes": {
                                 "type": "string",
-                                "description": "Ghi chú thêm của người dùng cho món ăn này (ví dụ: 'không lấy nước béo', 'ít đường').",
+                                "description": "Ghi chú gia vị ẩn hoặc yêu cầu thêm (ví dụ: 'không mỡ hành', 'ít ngọt').",
                             },
                         },
                         "required": ["food_name", "portion_size", "unit"],
                         "additionalProperties": False,
                     },
                 },
+                "is_confirmed": {
+                    "type": "boolean",
+                    "description": (
+                        "Cờ xác nhận ghi nhận bữa ăn (Two-Step Confirmation Flow). "
+                        "False: Trả về bản xem trước tính nháp calo/macro (pending_confirmation). "
+                        "True: Người dùng đã bấm nút xác nhận lưu trên giao diện, Backend mới chính thức ghi vào CSDL."
+                    ),
+                },
                 "logged_at": {
                     "type": "string",
-                    "description": "Thời gian ăn theo chuẩn ISO 8601 (YYYY-MM-DDTHH:MM:SS) hoặc 'YYYY-MM-DD'. Không bắt buộc, mặc định là thời điểm hiện tại.",
+                    "description": "Thời gian ăn theo chuẩn ISO 8601 (YYYY-MM-DDTHH:MM:SS) hoặc 'YYYY-MM-DD'. Mặc định thời điểm hiện tại.",
                 },
                 "note": {
                     "type": "string",
-                    "description": "Ghi chú chung cho cả bữa ăn (nếu có).",
+                    "description": "Ghi chú chung cho toàn bộ bữa ăn.",
                 },
             },
             "required": ["meal_type", "items"],
@@ -99,13 +110,13 @@ LOG_MEAL_SCHEMA: Dict[str, Any] = {
 }
 
 # 3. Schema cho công cụ: recommend_meals
-RECOMMEND_MEALS_SCHEMA: Dict[str, Any] = {
+RECOMMEND_MEALS_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {
         "name": "recommend_meals",
         "description": (
-            "Đề xuất các món ăn phù hợp từ cơ sở dữ liệu món ăn Việt Nam (food_references) "
-            "dựa trên lượng calo còn lại trong ngày, mục tiêu macro (Protein, Carbs, Fat) hoặc ngân sách chi tiêu."
+            "Đề xuất các món ăn Việt Nam từ cơ sở dữ liệu food_references phù hợp với hạn mức calo còn lại trong ngày "
+            "và ngân sách chi tiêu của người dùng."
         ),
         "parameters": {
             "type": "object",
@@ -113,24 +124,32 @@ RECOMMEND_MEALS_SCHEMA: Dict[str, Any] = {
                 "meal_type": {
                     "type": "string",
                     "enum": ["breakfast", "lunch", "dinner", "snack"],
-                    "description": "Bữa ăn mà người dùng đang cần gợi ý.",
+                    "description": "Loại bữa ăn cần gợi ý (sáng, trưa, tối, phụ).",
+                },
+                "remaining_calories": {
+                    "type": "number",
+                    "description": "Hạn mức năng lượng (Calories/kcal) tối đa còn lại cho bữa ăn.",
                 },
                 "max_calories": {
                     "type": "number",
-                    "description": "Mức năng lượng (Calories/kcal) tối đa cho bữa ăn này (dựa trên hạn mức calo còn lại trong ngày).",
+                    "description": "Bí danh tương đương của remaining_calories.",
                 },
-                "min_protein_g": {
+                "budget_vnd": {
                     "type": "number",
-                    "description": "Lượng chất đạm (Protein) tối thiểu cần đạt (tính bằng gram), hữu ích cho người cần tăng cơ.",
+                    "description": "Ngân sách tối đa cho bữa ăn tính bằng VNĐ (ví dụ: 40000 cho 40.000 VNĐ).",
                 },
                 "max_budget_vnd": {
                     "type": "number",
-                    "description": "Ngân sách tối đa cho bữa ăn tính bằng VNĐ (ví dụ: 50000 cho 50.000đ).",
+                    "description": "Bí danh tương đương của budget_vnd.",
+                },
+                "min_protein_g": {
+                    "type": "number",
+                    "description": "Lượng chất đạm (Protein) tối thiểu mong muốn tính bằng gram.",
                 },
                 "dietary_preferences": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Các yêu cầu hoặc sở thích ăn uống (ví dụ: ['ít béo', 'không cay', 'chay', 'low-carb']).",
+                    "description": "Sở thích ăn uống (ví dụ: ['ít dầu mỡ', 'thanh đạm', 'giàu đạm']).",
                 },
             },
             "required": ["meal_type"],
@@ -140,13 +159,13 @@ RECOMMEND_MEALS_SCHEMA: Dict[str, Any] = {
 }
 
 # 4. Schema cho công cụ: get_progress_summary
-GET_PROGRESS_SUMMARY_SCHEMA: Dict[str, Any] = {
+GET_PROGRESS_SUMMARY_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": {
         "name": "get_progress_summary",
         "description": (
-            "Lấy báo cáo thống kê tiến độ dinh dưỡng, lượng calo trung bình mỗi ngày và mức độ bám sát mục tiêu (Goal) "
-            "của người dùng trong một khoảng thời gian (7 ngày qua, 30 ngày qua, hoặc tùy chọn)."
+            "Truy xuất lịch sử cân nặng (đã làm mịn EMA/lọc nhiễu), tổng hợp calo trung bình và số ngày duy trì ghi chép nhật ký "
+            "trong khoảng thời gian chỉ định."
         ),
         "parameters": {
             "type": "object",
@@ -154,15 +173,19 @@ GET_PROGRESS_SUMMARY_SCHEMA: Dict[str, Any] = {
                 "period": {
                     "type": "string",
                     "enum": ["7_days", "14_days", "30_days", "custom"],
-                    "description": "Khoảng thời gian cần thống kê tiến độ. Mặc định là '7_days' (1 tuần).",
+                    "description": "Khoảng thời gian thống kê (mặc định là '7_days').",
+                },
+                "days_range": {
+                    "type": "integer",
+                    "description": "Số ngày gần nhất cần tổng hợp tiến độ (tương đương period).",
                 },
                 "start_date": {
                     "type": "string",
-                    "description": "Ngày bắt đầu (YYYY-MM-DD), chỉ bắt buộc khi period là 'custom'.",
+                    "description": "Ngày bắt đầu (YYYY-MM-DD) nếu chọn khoảng tùy chỉnh.",
                 },
                 "end_date": {
                     "type": "string",
-                    "description": "Ngày kết thúc (YYYY-MM-DD), chỉ bắt buộc khi period là 'custom'.",
+                    "description": "Ngày kết thúc (YYYY-MM-DD) nếu chọn khoảng tùy chỉnh.",
                 },
             },
             "required": ["period"],
@@ -172,7 +195,7 @@ GET_PROGRESS_SUMMARY_SCHEMA: Dict[str, Any] = {
 }
 
 # Danh sách tổng hợp tất cả 4 tools để truyền trực tiếp vào LLM API
-NUTRISNAP_TOOLS: List[Dict[str, Any]] = [
+NUTRISNAP_TOOLS: list[dict[str, Any]] = [
     GET_DAILY_NUTRITION_SCHEMA,
     LOG_MEAL_SCHEMA,
     RECOMMEND_MEALS_SCHEMA,
@@ -180,13 +203,13 @@ NUTRISNAP_TOOLS: List[Dict[str, Any]] = [
 ]
 
 
-def get_tool_definitions() -> List[Dict[str, Any]]:
+def get_tool_definitions() -> list[dict[str, Any]]:
     """Hàm helper trả về danh sách toàn bộ cấu hình Tool Calling cho AI Agent."""
     return NUTRISNAP_TOOLS
 
 
-def get_tool_by_name(tool_name: str) -> Dict[str, Any] | None:
-    """Hàm helper tìm kiếm nhanh schema của một tool theo tên (phục vụ kiểm thử Pytest của Quốc Tuấn)."""
+def get_tool_by_name(tool_name: str) -> dict[str, Any] | None:
+    """Hàm helper tìm kiếm nhanh schema của một tool theo tên."""
     for tool in NUTRISNAP_TOOLS:
         if tool.get("function", {}).get("name") == tool_name:
             return tool

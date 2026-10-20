@@ -1,6 +1,13 @@
 import sqlite3
-import pandas as pd
+import sys
 from pathlib import Path
+
+import pandas as pd
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # Đường dẫn đến thư mục gốc của dự án
 root_dir = Path(__file__).resolve().parent.parent

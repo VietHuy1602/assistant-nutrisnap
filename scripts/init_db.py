@@ -2,6 +2,11 @@ import sqlite3
 import sys
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # Thêm thư mục gốc vào path để import được models
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
@@ -11,16 +16,6 @@ from sqlalchemy.engine import Engine
 from sqlmodel import SQLModel, create_engine
 
 # Import 8 bảng CSDL
-from src.backend.models.schema import (
-    User,
-    Goal,
-    FoodReference,
-    WeightLog,
-    Meal,
-    MealItem,
-    ChatSession,
-    ChatMessage,
-)
 
 DATABASE_URL = "sqlite:///./nutrisnap.db"
 
