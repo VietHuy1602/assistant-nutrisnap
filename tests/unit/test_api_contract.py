@@ -128,3 +128,54 @@ def test_assistant_chat_returns_action_card():
     assert data["action_card"] is not None
     assert data["action_card"]["type"] == "confirm_log_meal"
     assert data["action_card"]["status"] == "pending_user_action"
+
+
+def test_goal_planner_rejects_unsafe_weekly_pace():
+    """Kiểm tra API từ chối tốc độ giảm cân vượt quá ngưỡng y khoa (ví dụ 0.1kg hoặc 1.0kg/tuần)."""
+    payload_too_slow = {
+        "gender": "male",
+        "age": 25,
+        "height_cm": 175.0,
+        "current_weight_kg": 75.0,
+        "target_weight_kg": 70.0,
+        "activity_level": "moderate",
+        "goal_type": "lose_weight",
+        "weekly_pace_kg": 0.1,  # Dưới mức tối thiểu 0.25kg/tuần
+        "daily_budget_vnd": 60000,
+    }
+    res1 = client.post("/api/v1/goals", json=payload_too_slow)
+    assert res1.status_code == 422
+
+    payload_too_fast = {
+        "gender": "male",
+        "age": 25,
+        "height_cm": 175.0,
+        "current_weight_kg": 75.0,
+        "target_weight_kg": 70.0,
+        "activity_level": "moderate",
+        "goal_type": "lose_weight",
+        "weekly_pace_kg": 0.9,  # Vượt quá mức tối đa 0.75kg/tuần
+        "daily_budget_vnd": 60000,
+    }
+    res2 = client.post("/api/v1/goals", json=payload_too_fast)
+    assert res2.status_code == 422
+
+
+def test_goal_planner_supports_other_gender():
+    """Kiểm tra Goal Planner tính toán BMR theo công thức trung tính y khoa khi gender='other'."""
+    payload = {
+        "gender": "other",
+        "age": 24,
+        "height_cm": 170.0,
+        "current_weight_kg": 65.0,
+        "target_weight_kg": 60.0,
+        "activity_level": "light",
+        "goal_type": "lose_weight",
+        "weekly_pace_kg": 0.5,
+        "daily_budget_vnd": 50000,
+    }
+    response = client.post("/api/v1/goals", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["bmr_calories"] > 0
+    assert data["target_calories"] >= 1200.0

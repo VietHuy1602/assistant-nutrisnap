@@ -26,21 +26,21 @@ Hệ thống cơ sở dữ liệu SQLite (`nutrisnap.db`) được chuẩn hóa 
 │────────────────────│ │────────────────────│ │────────────────────│ │────────────────────│
 │ id (PK)            │ │ id (PK)            │ │ id (PK)            │ │ id (PK)            │
 │ user_id (FK)       │ │ user_id (FK)       │ │ user_id (FK)       │ │ user_id (FK)       │
-│ target_weight      │ │ weight_kg          │ │ meal_type          │ │ started_at         │
-│ tdee_calories      │ │ logged_date        │ │ image_path         │ └─────────┬──────────┘
-│ daily_budget_vnd   │ └────────────────────┘ │ logged_at          │           │ 1-N
-└────────────────────┘                        └─────────┬──────────┘           ▼
-                                                        │ 1-N        ┌────────────────────┐
-┌────────────────────────┐                    ┌─────────▼──────────┐ │   chat_messages    │
-│    food_references     │                    │     meal_items     │ │────────────────────│
-│────────────────────────│                    │────────────────────│ │ id (PK)            │
-│ id (PK), food_name     │◄────────1-N────────┤ id (PK)            │ │ session_id (FK)    │
-│ calories_per_100g      │                    │ meal_id (FK)       │ │ sender_role        │
-│ protein_per_100g       │                    │ food_id (FK)       │ │ content, tool_name │
-│ carbs_per_100g         │                    │ estimated_gram     │ │ created_at         │
-│ fat_per_100g           │                    │ estimated_calories │ └────────────────────┘
-│ avg_price_vnd          │                    └────────────────────┘
-└────────────────────────┘
+│ gender, age        │ │ weight_kg          │ │ meal_type (enum)   │ │ started_at         │
+│ height_cm          │ │ logged_date (VN+7) │ │ image_path         │ └─────────┬──────────┘
+│ current/target_wt  │ └────────────────────┘ │ logged_at          │           │ 1-N
+│ bmr, tdee, target_c│                        └─────────┬──────────┘           ▼
+│ p, c, f, budget_vnd│                                  │ 1-N        ┌────────────────────┐
+└────────────────────┘                                  │            │   chat_messages    │
+                                              ┌─────────▼──────────┐ │────────────────────│
+┌────────────────────────┐                    │     meal_items     │ │ id (PK)            │
+│    food_references     │                    │────────────────────│ │ session_id (FK)    │
+│────────────────────────│                    │ id (PK)            │ │ sender_role        │
+│ id (PK)                │◄────────1-N────────┤ meal_id (FK)       │ │ content, tool_name │
+│ food_name (UNIQUE)     │                    │ food_id (FK)       │ │ created_at         │
+│ calories_per_100g      │                    │ estimated_gram     │ └────────────────────┘
+│ protein/carbs/fat/price│                    │ estimated_calories │
+└────────────────────────┘                    └────────────────────┘
 ```
 
 ### Ràng buộc Khóa chính (PK) và Khóa ngoại (FK) với ON DELETE CASCADE:

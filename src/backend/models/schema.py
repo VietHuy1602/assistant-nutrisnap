@@ -1,11 +1,24 @@
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta, timezone
 
 from sqlmodel import Field, SQLModel
 
+# Múi giờ chuẩn Việt Nam (UTC+7)
+VN_TIMEZONE = timezone(timedelta(hours=7))
+
 
 def utc_now() -> datetime:
-    """Trả về thời gian UTC có thông tin múi giờ (timezone-aware) chuẩn chuẩn hóa."""
+    """Trả về thời gian UTC có thông tin múi giờ (timezone-aware) chuẩn hóa."""
     return datetime.now(UTC)
+
+
+def get_vn_today() -> date:
+    """Trả về ngày hiện tại theo giờ Việt Nam (UTC+7) để tránh lệch ngày vào sáng sớm."""
+    return datetime.now(VN_TIMEZONE).date()
+
+
+def get_vn_now() -> datetime:
+    """Trả về thời gian hiện tại theo múi giờ Việt Nam (UTC+7)."""
+    return datetime.now(VN_TIMEZONE)
 
 
 # 1. Bảng Người dùng (Gốc)
@@ -20,6 +33,7 @@ class User(SQLModel, table=True):
 
 
 # 2. Bảng Mục tiêu cá nhân (Khóa ngoại -> users.id, ON DELETE CASCADE)
+# Bổ sung đầy đủ các trường lưu trữ hồ sơ thể trạng và chỉ số Goal Planner
 class Goal(SQLModel, table=True):
     __tablename__ = "goals"
 
@@ -30,17 +44,30 @@ class Goal(SQLModel, table=True):
         index=True,
         nullable=False,
     )
+    gender: str = Field(default="male", nullable=False)  # male / female / other
+    age: int = Field(default=25, nullable=False)
+    height_cm: float = Field(default=170.0, nullable=False)
+    current_weight_kg: float = Field(default=65.0, nullable=False)
     target_weight: float = Field(nullable=False)
+    activity_level: str = Field(default="moderate", nullable=False)  # sedentary, light, moderate, active, very_active
+    goal_type: str = Field(default="maintain", nullable=False)  # lose_weight, maintain, gain_muscle
+    weekly_pace_kg: float = Field(default=0.0, nullable=False)
+    bmr_calories: float = Field(default=1600.0, nullable=False)
     tdee_calories: float = Field(nullable=False)
+    target_calories: float = Field(default=2000.0, nullable=False)
+    target_protein_g: float = Field(default=120.0, nullable=False)
+    target_carbs_g: float = Field(default=200.0, nullable=False)
+    target_fat_g: float = Field(default=50.0, nullable=False)
     daily_budget_vnd: int = Field(default=60000, nullable=False)
+    updated_at: datetime = Field(default_factory=utc_now, nullable=False)
 
 
-# 3. Bảng Tham chiếu Dinh dưỡng Thực phẩm (Độc lập)
+# 3. Bảng Tham chiếu Dinh dưỡng Thực phẩm (Độc lập, food_name UNIQUE để hỗ trợ Upsert)
 class FoodReference(SQLModel, table=True):
     __tablename__ = "food_references"
 
     id: int | None = Field(default=None, primary_key=True)
-    food_name: str = Field(index=True, nullable=False)
+    food_name: str = Field(index=True, unique=True, nullable=False)
     calories_per_100g: float = Field(nullable=False)
     protein_per_100g: float = Field(nullable=False)
     carbs_per_100g: float = Field(nullable=False)
@@ -49,6 +76,7 @@ class FoodReference(SQLModel, table=True):
 
 
 # 4. Bảng Nhật ký Cân nặng (Khóa ngoại -> users.id, ON DELETE CASCADE)
+# Sử dụng ngày theo giờ Việt Nam (UTC+7)
 class WeightLog(SQLModel, table=True):
     __tablename__ = "weight_logs"
 
@@ -60,7 +88,7 @@ class WeightLog(SQLModel, table=True):
         nullable=False,
     )
     weight_kg: float = Field(nullable=False)
-    logged_date: date = Field(default_factory=date.today, nullable=False)
+    logged_date: date = Field(default_factory=get_vn_today, nullable=False)
 
 
 # 5. Bảng Bữa ăn (Khóa ngoại -> users.id, ON DELETE CASCADE)
@@ -74,7 +102,7 @@ class Meal(SQLModel, table=True):
         index=True,
         nullable=False,
     )
-    meal_type: str = Field(nullable=False)  # Sáng, Trưa, Tối, Phụ
+    meal_type: str = Field(nullable=False)  # breakfast / lunch / dinner / snack
     image_path: str | None = Field(default=None)
     logged_at: datetime = Field(default_factory=utc_now, nullable=False)
 

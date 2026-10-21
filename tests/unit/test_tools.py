@@ -3,8 +3,11 @@
 Run from repository root:
     python -m pytest tests/unit/test_tools.py -v
 """
+import google.generativeai as genai
+
 from src.ai.tool_definitions import (
     NUTRISNAP_TOOLS,
+    get_gemini_tool_declarations,
     get_tool_by_name,
     get_tool_definitions,
 )
@@ -50,11 +53,11 @@ def test_each_tool_has_function_parameters_schema():
         parameters = function["parameters"]
         assert parameters["type"] == "object"
         assert isinstance(parameters["properties"], dict)
-        assert parameters["additionalProperties"] is False
 
 
 def test_no_tool_schema_exposes_user_id():
     assert not _contains_user_id(get_tool_definitions())
+    assert not _contains_user_id(get_gemini_tool_declarations())
 
 
 def test_get_tool_by_name_finds_each_tool():
@@ -98,3 +101,17 @@ def test_progress_summary_requires_days_range():
     assert required == ["days_range"]
     props = tool["function"]["parameters"]["properties"]
     assert props["days_range"]["type"] == "integer"
+
+
+def test_gemini_tool_declarations_loadable_by_sdk():
+    """Kiểm tra Gemini SDK chấp nhận 4 function declarations mà không văng lỗi additionalProperties."""
+    gemini_tools = get_gemini_tool_declarations()
+    assert len(gemini_tools) == 4
+    for decl in gemini_tools:
+        assert "name" in decl
+        assert "parameters" in decl
+        assert "additionalProperties" not in decl["parameters"]
+        assert decl["parameters"]["type"] == "OBJECT"
+
+    model = genai.GenerativeModel("gemini-1.5-flash", tools=gemini_tools)
+    assert model._tools is not None

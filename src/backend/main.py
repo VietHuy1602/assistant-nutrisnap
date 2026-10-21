@@ -200,6 +200,35 @@ def get_user_goal():
     )
 
 
+# ==============================================================================
+# HÀM TÍNH TOÁN BMR & TDEE (MIFFLIN-ST JEOR & RESPONSIBLE NUTRITION LOGIC)
+# ==============================================================================
+
+def calculate_bmr(weight_kg: float, height_cm: float, age: int, gender: str) -> float:
+    """Tính toán BMR theo công thức Mifflin-St Jeor.
+    Xử lý chuẩn xác cho cả male, female và other (áp dụng trung vị trung tính y khoa).
+    """
+    base = 10.0 * weight_kg + 6.25 * height_cm - 5.0 * age
+    if gender == "male":
+        return round(base + 5.0, 1)
+    if gender == "female":
+        return round(base - 161.0, 1)
+    # gender == "other" -> trung vị y học giữa nam (+5) và nữ (-161): (5 + (-161)) / 2 = -78
+    return round(base - 78.0, 1)
+
+
+def calculate_tdee(bmr: float, activity_level: str) -> float:
+    """Tính toán TDEE dựa trên hệ số hoạt động thể chất PAL chuẩn WHO/NHS."""
+    activity_multipliers = {
+        "sedentary": 1.2,
+        "light": 1.375,
+        "moderate": 1.55,
+        "active": 1.725,
+        "very_active": 1.9,
+    }
+    return round(bmr * activity_multipliers.get(activity_level, 1.55), 1)
+
+
 @app.post(
     "/api/v1/goals",
     response_model=GoalResponse,
@@ -208,18 +237,42 @@ def get_user_goal():
 def create_or_update_goal(req: GoalCreateRequest):
     """
     Thiết lập hoặc cập nhật mục tiêu dinh dưỡng cá nhân.
-    Tính toán BMR, TDEE và kiểm tra an toàn y khoa (không ép giảm cân cực đoan).
+    Tính toán BMR (Mifflin-St Jeor), TDEE và kiểm tra an toàn y khoa.
     """
+    bmr = calculate_bmr(req.current_weight_kg, req.height_cm, req.age, req.gender)
+    tdee = calculate_tdee(bmr, req.activity_level)
+
+    # Tính toán Calo mục tiêu an toàn
+    if req.goal_type == "lose_weight":
+        calorie_deficit = (req.weekly_pace_kg * 7700.0) / 7.0
+        # Không bao giờ hạ calo dưới ngưỡng an toàn y khoa 1200 kcal/ngày
+        target_calories = max(1200.0, round(tdee - calorie_deficit, 1))
+        protein_g = round(req.current_weight_kg * 1.6, 1)
+    elif req.goal_type == "gain_muscle":
+        calorie_surplus = (req.weekly_pace_kg * 7700.0) / 7.0
+        target_calories = round(tdee + calorie_surplus, 1)
+        protein_g = round(req.current_weight_kg * 2.0, 1)
+    else:  # maintain
+        target_calories = tdee
+        protein_g = round(req.current_weight_kg * 1.2, 1)
+
+    # Phân bổ Macro chuẩn y tế: 25% Fat, còn lại Carbs
+    fat_calories = target_calories * 0.25
+    fat_g = round(fat_calories / 9.0, 1)
+    protein_calories = protein_g * 4.0
+    carbs_calories = max(0.0, target_calories - protein_calories - fat_calories)
+    carbs_g = round(carbs_calories / 4.0, 1)
+
     return GoalResponse(
         id=1,
         user_id=1,
         target_weight=req.target_weight_kg,
-        bmr_calories=1680.0,
-        tdee_calories=2100.0,
-        target_calories=1600.0,
-        target_protein_g=120.0,
-        target_carbs_g=180.0,
-        target_fat_g=44.0,
+        bmr_calories=bmr,
+        tdee_calories=tdee,
+        target_calories=target_calories,
+        target_protein_g=protein_g,
+        target_carbs_g=carbs_g,
+        target_fat_g=fat_g,
         daily_budget_vnd=req.daily_budget_vnd,
         disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
     )

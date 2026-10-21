@@ -11,7 +11,9 @@ Tuân thủ tiêu chuẩn:
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+
+from src.backend.services.validators import validate_goal_pace
 
 # ==============================================================================
 # 0. HẰNG SỐ & PHẢN HỒI CHUNG (COMMON & BASE SCHEMAS)
@@ -73,7 +75,10 @@ class AuthResponse(BaseModel):
 
 class GoalCreateRequest(BaseModel):
     """Dữ liệu thiết lập mục tiêu dinh dưỡng thông minh (Goal Planner Wizard)."""
-    gender: Literal["male", "female", "other"] = Field(..., description="Giới tính sinh học")
+    gender: Literal["male", "female", "other"] = Field(
+        ...,
+        description="Giới tính: 'male', 'female', hoặc 'other' (áp dụng trung vị trung tính y khoa)",
+    )
     age: int = Field(..., ge=10, le=120, description="Tuổi")
     height_cm: float = Field(..., ge=80.0, le=250.0, description="Chiều cao (cm)")
     current_weight_kg: float = Field(..., ge=25.0, le=300.0, description="Cân nặng hiện tại (kg)")
@@ -84,19 +89,26 @@ class GoalCreateRequest(BaseModel):
     )
     goal_type: Literal["lose_weight", "maintain", "gain_muscle"] = Field(
         ...,
-        description="Mục tiêu: Giảm cân, Giữ cân, hay Tăng cơ"
+        description="Mục tiêu: Giảm cân (lose_weight), Giữ cân (maintain), hay Tăng cơ (gain_muscle)"
     )
     weekly_pace_kg: float = Field(
         default=0.5,
         ge=0.0,
-        le=1.0,
-        description="Tốc độ thay đổi cân nặng an toàn (0.25 - 1.0 kg/tuần)"
+        le=0.75,
+        description="Tốc độ thay đổi cân nặng an toàn (0.25 - 0.75 kg/tuần cho giảm cân, 0.1 - 0.5 kg/tuần cho tăng cơ, 0 cho giữ cân)"
     )
     daily_budget_vnd: int = Field(
         default=60000,
         ge=10000,
         description="Ngân sách chi tiêu ăn uống dự kiến mỗi ngày (VNĐ)"
     )
+
+    @model_validator(mode="after")
+    def verify_goal_pace_integrity(self):
+        ok, msg = validate_goal_pace(self.weekly_pace_kg, self.goal_type)
+        if not ok:
+            raise ValueError(msg)
+        return self
 
 
 class GoalResponse(BaseModel):

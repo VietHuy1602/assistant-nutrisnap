@@ -1,19 +1,16 @@
 """
 tests/unit/test_db_cascade.py
 Kiểm thử tự động hành vi ràng buộc khóa ngoại (Foreign Keys) và ON DELETE CASCADE.
-Đảm bảo khi xóa người dùng (User) thì toàn bộ dữ liệu phụ thuộc (Goals, WeightLogs, Meals, MealItems, ChatSessions, ChatMessages)
-sẽ được tự động dọn dẹp theo đúng đặc tả kiến trúc bảo mật trong docs/01_security_architecture.md.
+Sử dụng engine kết nối tập trung từ src/backend/database.py.
 """
 
-import sqlite3
 from datetime import UTC, date, datetime
 
 import pytest
-from sqlalchemy import event
-from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, select
 
+from src.backend.database import create_db_engine
 from src.backend.models.schema import (
     ChatMessage,
     ChatSession,
@@ -28,19 +25,8 @@ from src.backend.models.schema import (
 
 @pytest.fixture(name="db_session")
 def db_session_fixture():
-    """Tạo cơ sở dữ liệu SQLite in-memory có kích hoạt PRAGMA foreign_keys = ON."""
-    test_engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-    )
-
-    @event.listens_for(Engine, "connect")
-    def set_sqlite_pragma(dbapi_connection, connection_record):
-        if isinstance(dbapi_connection, sqlite3.Connection):
-            cursor = dbapi_connection.cursor()
-            cursor.execute("PRAGMA foreign_keys=ON;")
-            cursor.close()
-
+    """Tạo cơ sở dữ liệu SQLite in-memory sử dụng create_db_engine tập trung."""
+    test_engine = create_db_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(test_engine)
 
     with Session(test_engine) as session:
@@ -95,11 +81,23 @@ def test_cascade_delete_user_cleans_all_child_records(db_session: Session):
     db_session.commit()
     db_session.refresh(food)
 
-    # 3. Tạo dữ liệu con gắn với user_id
+    # 3. Tạo dữ liệu con gắn với user_id (Bao gồm bảng Goal đầy đủ chỉ số mới)
     goal = Goal(
         user_id=user_id,
+        gender="male",
+        age=22,
+        height_cm=175.0,
+        current_weight_kg=72.0,
         target_weight=68.0,
+        activity_level="moderate",
+        goal_type="lose_weight",
+        weekly_pace_kg=0.5,
+        bmr_calories=1710.0,
         tdee_calories=2200.0,
+        target_calories=1650.0,
+        target_protein_g=120.0,
+        target_carbs_g=180.0,
+        target_fat_g=45.0,
         daily_budget_vnd=60000,
     )
     weight_log = WeightLog(

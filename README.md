@@ -27,7 +27,7 @@ Hệ thống phân tách ranh giới kỹ thuật rõ ràng để đảm bảo a
 ## 📁 3. Cấu trúc Thư mục Chuẩn (Repository Hierarchy)
 ```text
 assistant-nutrisnap/
-├── data/                   # Dữ liệu dinh dưỡng chuẩn (usda.csv, vn_foods.csv)
+├── data/                   # Dữ liệu 500 món Việt tham chiếu dinh dưỡng ước tính (vn_foods.csv - tổng hợp từ NIN & USDA)
 ├── docs/                   # Tài liệu thiết kế, Team Charter, ADR, ai_use_log.md
 ├── src/
 │   ├── ai/                 # AI Orchestrator, Vision recognition, Tool definitions

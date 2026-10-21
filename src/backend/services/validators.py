@@ -1,4 +1,16 @@
+"""
+src/backend/services/validators.py
+Các hàm kiểm định dữ liệu và ràng buộc an toàn y tế (Responsible Nutrition & Health Logic).
+Tuân thủ đặc tả Tuần 1:
+- Tốc độ giảm cân an toàn: 0.25kg - 0.75kg/tuần.
+- Tốc độ tăng cơ/tăng cân an toàn: 0.10kg - 0.50kg/tuần.
+- Duy trì cân nặng: tốc độ bằng 0.
+- Loại bỏ các mục tiêu lạ không xác định.
+"""
+
 import re
+
+VALID_GOAL_TYPES = {"lose_weight", "maintain", "gain_muscle"}
 
 
 def validate_email(email: str) -> bool:
@@ -23,15 +35,39 @@ def validate_password(password: str) -> tuple[bool, str]:
 
 
 def validate_goal_pace(weekly_pace_kg: float, goal_type: str) -> tuple[bool, str]:
-    """Ràng buộc an toàn y khoa (Responsible Health Logic):
+    """Ràng buộc an toàn y khoa (Responsible Health Logic theo mục 3.2 trang 5):
 
-    - Tốc độ giảm cân an toàn: tối đa 1.0 kg/tuần (chuẩn NHS khuyến nghị 0.5 - 1kg).
-    - Tốc độ tăng cân an toàn: tối đa 0.5 kg/tuần.
+    - Kiểm tra loại mục tiêu hợp lệ: 'lose_weight', 'maintain', 'gain_muscle'.
+    - Tốc độ giảm cân an toàn: 0.25 kg đến 0.75 kg/tuần (không chấp nhận < 0.25 hoặc > 0.75).
+    - Tốc độ tăng cơ/tăng cân an toàn: 0.10 kg đến 0.50 kg/tuần.
+    - Duy trì cân nặng: weekly_pace_kg phải bằng 0.0.
     """
-    if goal_type == "lose_weight" and (weekly_pace_kg <= 0 or weekly_pace_kg > 1.0):
-        return False, "Tốc độ giảm cân an toàn phải từ 0.25kg đến tối đa 1.0kg/tuần."
-    if goal_type == "gain_muscle" and (weekly_pace_kg <= 0 or weekly_pace_kg > 0.5):
-        return False, "Tốc độ tăng cân/tăng cơ an toàn tối đa 0.5kg/tuần."
+    if goal_type not in VALID_GOAL_TYPES:
+        return (
+            False,
+            f"Loại mục tiêu không hợp lệ: '{goal_type}'. Chỉ chấp nhận 'lose_weight', 'maintain', hoặc 'gain_muscle'.",
+        )
+
+    if goal_type == "lose_weight":
+        if weekly_pace_kg < 0.25 or weekly_pace_kg > 0.75:
+            return (
+                False,
+                "Tốc độ giảm cân an toàn phải từ 0.25kg đến tối đa 0.75kg/tuần theo chuẩn y khoa.",
+            )
+
+    elif goal_type == "gain_muscle":
+        if weekly_pace_kg < 0.10 or weekly_pace_kg > 0.50:
+            return (
+                False,
+                "Tốc độ tăng cân/tăng cơ an toàn phải từ 0.10kg đến tối đa 0.50kg/tuần.",
+            )
+
+    elif goal_type == "maintain" and abs(weekly_pace_kg) > 1e-4:
+        return (
+            False,
+            "Mục tiêu duy trì cân nặng thì tốc độ thay đổi mỗi tuần phải là 0 kg.",
+        )
+
     return True, "Mục tiêu tốc độ hợp lệ."
 
 
