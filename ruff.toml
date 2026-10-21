@@ -1,0 +1,15 @@
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = [
+    "B008",  # Allow FastAPI Depends() and Query() in function signature defaults
+    "E501",  # Line length handled softly, descriptions can be long
+]
+
+[lint.per-file-ignores]
+"scripts/*" = ["E402"]
+
+[lint.isort]
+combine-as-imports = true

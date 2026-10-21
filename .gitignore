@@ -224,3 +224,27 @@ __marimo__/
 node_modules/
 dist/
 .env.local
+# Python virtual environments
+.venv/
+venv/
+
+# Environment variables and secrets
+.env.*
+!.env.example
+
+# Frontend build and cache
+.vite/
+.next/
+coverage/
+
+# IDE
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Packaging & Archives
+*.zip
+*.tar.gz
+*.rar

@@ -73,7 +73,7 @@
     - *"Xem tiến độ cân nặng tuần này"*
   - **Thẻ Xác nhận Thao tác trong Chat (Action Confirmation Cards):**
     - Khi người dùng chat: *"Trưa nay tôi ăn 1 bát phở bò 400g"*, AI nhận diện intent và gọi `log_meal` với `is_confirmed: false`.
-    - Chatbot hiển thị câu chào và đính kèm 1 **Thẻ Xác nhận Thao tác**: [Món: Phở bò, Khẩu phần: 400g, Ước tính: ~540 kcal] kèm nút `[Xác nhận lưu]` và `[Chỉnh sửa]`.
+    - Chatbot hiển thị câu chào và đính kèm 1 **Thẻ Xác nhận Thao tác**: [Món: Phở bò tái, Khẩu phần: 400g, Ước tính: ~460 kcal] kèm nút `[Xác nhận lưu]` và `[Chỉnh sửa]`.
     - Khi bấm `[Xác nhận lưu]`, Frontend gửi request xác nhận, tin nhắn cập nhật trạng thái đã lưu, và **Vòng tròn Calo trên Dashboard tự động nhảy số đồng bộ tức thì**.
 
 ---

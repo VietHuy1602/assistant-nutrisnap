@@ -9,9 +9,11 @@ Tuân thủ tiêu chuẩn:
 """
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from src.backend.services.validators import validate_goal_pace, validate_password
 
 # ==============================================================================
 # 0. HẰNG SỐ & PHẢN HỒI CHUNG (COMMON & BASE SCHEMAS)
@@ -41,6 +43,14 @@ class UserRegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=50, description="Tên đăng nhập")
     email: EmailStr = Field(..., description="Địa chỉ email hợp lệ")
     password: str = Field(..., min_length=8, description="Mật khẩu tối thiểu 8 ký tự, có chữ và số")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        ok, msg = validate_password(v)
+        if not ok:
+            raise ValueError(msg)
+        return v
 
 
 class UserLoginRequest(BaseModel):
@@ -73,7 +83,10 @@ class AuthResponse(BaseModel):
 
 class GoalCreateRequest(BaseModel):
     """Dữ liệu thiết lập mục tiêu dinh dưỡng thông minh (Goal Planner Wizard)."""
-    gender: Literal["male", "female", "other"] = Field(..., description="Giới tính sinh học")
+    gender: Literal["male", "female", "other"] = Field(
+        ...,
+        description="Giới tính: 'male', 'female', hoặc 'other' (áp dụng trung vị trung tính y khoa)",
+    )
     age: int = Field(..., ge=10, le=120, description="Tuổi")
     height_cm: float = Field(..., ge=80.0, le=250.0, description="Chiều cao (cm)")
     current_weight_kg: float = Field(..., ge=25.0, le=300.0, description="Cân nặng hiện tại (kg)")
@@ -84,19 +97,40 @@ class GoalCreateRequest(BaseModel):
     )
     goal_type: Literal["lose_weight", "maintain", "gain_muscle"] = Field(
         ...,
-        description="Mục tiêu: Giảm cân, Giữ cân, hay Tăng cơ"
+        description="Mục tiêu: Giảm cân (lose_weight), Giữ cân (maintain), hay Tăng cơ (gain_muscle)"
     )
     weekly_pace_kg: float = Field(
         default=0.5,
         ge=0.0,
-        le=1.0,
-        description="Tốc độ thay đổi cân nặng an toàn (0.25 - 1.0 kg/tuần)"
+        le=0.75,
+        description="Tốc độ thay đổi cân nặng an toàn (0.25 - 0.75 kg/tuần cho giảm cân, 0.1 - 0.5 kg/tuần cho tăng cơ, 0 cho giữ cân)"
     )
     daily_budget_vnd: int = Field(
         default=60000,
         ge=10000,
         description="Ngân sách chi tiêu ăn uống dự kiến mỗi ngày (VNĐ)"
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def auto_adjust_maintain_pace(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("goal_type") == "maintain":
+                data["weekly_pace_kg"] = 0.0
+                if "target_weight_kg" not in data and "current_weight_kg" in data:
+                    data["target_weight_kg"] = data["current_weight_kg"]
+        elif hasattr(data, "goal_type") and data.goal_type == "maintain":
+            data.weekly_pace_kg = 0.0
+        return data
+
+    @model_validator(mode="after")
+    def verify_goal_pace_integrity(self):
+        if self.goal_type == "maintain":
+            self.weekly_pace_kg = 0.0
+        ok, msg = validate_goal_pace(self.weekly_pace_kg, self.goal_type)
+        if not ok:
+            raise ValueError(msg)
+        return self
 
 
 class GoalResponse(BaseModel):
@@ -188,8 +222,8 @@ class MealItemConfirmInput(BaseModel):
 class MealLogRequest(BaseModel):
     """Request xác nhận lưu bữa ăn vào CSDL (Two-Step Confirmation - Step 2)."""
     meal_type: Literal["breakfast", "lunch", "dinner", "snack"]
-    items: list[MealItemConfirmInput]
-    is_confirmed: bool = Field(True, description="Cờ xác nhận của người dùng. Chỉ commit khi True.")
+    items: list[MealItemConfirmInput] = Field(..., min_length=1, description="Danh sách món ăn xác nhận (tối thiểu 1 món)")
+    is_confirmed: bool = Field(default=False, description="Cờ xác nhận của người dùng. Mặc định là False; chỉ commit khi True.")
     image_path: str | None = Field(default=None, description="Đường dẫn ảnh lưu trữ nếu có")
     notes: str | None = Field(default=None, description="Ghi chú thêm của bữa ăn")
 
@@ -269,11 +303,22 @@ class ActionCardItemData(BaseModel):
     fat_g: float
 
 
+class GoalUpdateCardData(BaseModel):
+    """Dữ liệu cập nhật mục tiêu trong thẻ hành động."""
+    goal_type: str | None = None
+    target_weight_kg: float | None = None
+    target_calories: float | None = None
+    weekly_pace_kg: float | None = None
+
+
 class ActionCardData(BaseModel):
-    """Dữ liệu nghiệp vụ đính kèm trong Action Card."""
-    meal_type: Literal["breakfast", "lunch", "dinner", "snack"]
-    items: list[ActionCardItemData]
-    total_calories: float
+    """Dữ liệu nghiệp vụ đính kèm trong Action Card (hỗ trợ đa hình: meal, goal, recommendation)."""
+    meal_type: Literal["breakfast", "lunch", "dinner", "snack"] | None = None
+    items: list[ActionCardItemData] | None = None
+    total_calories: float | None = None
+    goal_update: GoalUpdateCardData | None = None
+    recommendation_text: str | None = None
+    extra_payload: dict[str, Any] | None = None
 
 
 class ActionCard(BaseModel):
@@ -322,3 +367,52 @@ class ChatHistoryResponse(BaseModel):
     """Danh sách tin nhắn trong phiên chat."""
     session_id: int
     messages: list[ChatHistoryItem]
+
+
+# ==============================================================================
+# 7. PHÂN HỆ THEO DÕI CÂN NẶNG (WEIGHT TRACKING SCHEMAS)
+# ==============================================================================
+
+class WeightLogRequest(BaseModel):
+    """Request ghi nhận cân nặng hàng ngày."""
+    weight_kg: float = Field(..., ge=25.0, le=300.0, description="Cân nặng ghi nhận (kg)")
+    logged_date: str | None = Field(default=None, description="Ngày ghi nhận định dạng YYYY-MM-DD (mặc định hôm nay)")
+    notes: str | None = Field(default=None, description="Ghi chú thêm (ví dụ: sau khi tập sáng)")
+
+
+class WeightLogResponse(BaseModel):
+    """Thông tin bản ghi cân nặng."""
+    id: int
+    user_id: int
+    weight_kg: float
+    logged_date: str
+    notes: str | None = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class WeightHistoryResponse(BaseModel):
+    """Lịch sử cân nặng của người dùng."""
+    items: list[WeightLogResponse]
+    current_weight: float | None = None
+    target_weight: float | None = None
+
+
+# ==============================================================================
+# 8. PHÂN HỆ XÁC NHẬN THẺ HÀNH ĐỘNG (ACTION CARD CONFIRMATION SCHEMAS)
+# ==============================================================================
+
+class ActionCardConfirmRequest(BaseModel):
+    """Request xác nhận thực thi thẻ hành động từ Chatbot."""
+    action_type: Literal["confirm_log_meal", "confirm_update_goal", "recommendation_preview"]
+    session_id: int | None = None
+    action_data: dict[str, Any] = Field(default_factory=dict, description="Dữ liệu payload của action card")
+
+
+class ActionCardConfirmResponse(BaseModel):
+    """Phản hồi sau khi thực thi hành động từ thẻ Action Card."""
+    success: bool = True
+    message: str = "Đã thực thi hành động thành công."
+    result: dict[str, Any] = Field(default_factory=dict)
+

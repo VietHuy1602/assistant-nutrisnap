@@ -139,7 +139,18 @@ export const GoalPlannerPage: React.FC = () => {
               </label>
               <select
                 value={formData.goal_type}
-                onChange={(e) => setFormData({ ...formData, goal_type: e.target.value })}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  let newPace = formData.weekly_pace_kg;
+                  if (newType === 'maintain') {
+                    newPace = 0.0;
+                  } else if (newType === 'gain_muscle' && (newPace < 0.1 || newPace > 0.5)) {
+                    newPace = 0.25;
+                  } else if (newType === 'lose_weight' && (newPace < 0.25 || newPace > 0.75)) {
+                    newPace = 0.5;
+                  }
+                  setFormData({ ...formData, goal_type: newType, weekly_pace_kg: newPace });
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#107C41]"
               >
                 <option value="lose_weight">Giảm cân / Giảm mỡ an toàn</option>
@@ -152,18 +163,28 @@ export const GoalPlannerPage: React.FC = () => {
               <label className="block text-xs font-semibold uppercase text-slate-600 mb-1.5">
                 Tốc độ điều chỉnh: {formData.weekly_pace_kg} kg/tuần
               </label>
-              <input
-                type="range"
-                min="0.25"
-                max="1.0"
-                step="0.05"
-                value={formData.weekly_pace_kg}
-                onChange={(e) => setFormData({ ...formData, weekly_pace_kg: Number(e.target.value) })}
-                className="w-full accent-[#107C41] mt-2"
-              />
-              <span className="text-xs text-slate-400">
-                (Khuyến nghị NHS: 0.5kg/tuần là mức bền vững nhất)
-              </span>
+              {formData.goal_type === 'maintain' ? (
+                <div className="py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 mt-2">
+                  Mục tiêu giữ cân: Tốc độ thay đổi là 0.0 kg/tuần.
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="range"
+                    min={formData.goal_type === 'gain_muscle' ? '0.1' : '0.25'}
+                    max={formData.goal_type === 'gain_muscle' ? '0.5' : '0.75'}
+                    step="0.05"
+                    value={formData.weekly_pace_kg}
+                    onChange={(e) => setFormData({ ...formData, weekly_pace_kg: Number(e.target.value) })}
+                    className="w-full accent-[#107C41] mt-2"
+                  />
+                  <span className="text-xs text-slate-400">
+                    {formData.goal_type === 'gain_muscle'
+                      ? '(Khuyến nghị tăng cơ an toàn: 0.1 - 0.5 kg/tuần)'
+                      : '(Khuyến nghị giảm mỡ an toàn: 0.25 - 0.75 kg/tuần)'}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
