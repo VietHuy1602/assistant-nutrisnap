@@ -46,7 +46,7 @@ Hệ thống cơ sở dữ liệu SQLite (`nutrisnap.db`) được chuẩn hóa 
 ### Ràng buộc Khóa chính (PK) và Khóa ngoại (FK) với ON DELETE CASCADE:
 1. **users**: Khóa chính `id`. Bảng gốc lưu thông tin tài khoản và mật khẩu đã băm (`bcrypt`).
 2. **goals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
-3. **food_references**: Khóa chính `id`. Bảng từ điển thực phẩm tham chiếu dinh dưỡng độc lập.
+3. **food_references**: Khóa chính `id`. Bảng từ điển thực phẩm tham chiếu dinh dưỡng độc lập (`food_name` đánh chỉ mục UNIQUE).
 4. **weight_logs**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
 5. **meals**: Khóa chính `id`, khóa ngoại `user_id -> users.id` (`ondelete="CASCADE"`).
 6. **meal_items**: Khóa chính `id`, khóa ngoại kép: `meal_id -> meals.id` (`ondelete="CASCADE"`) và `food_id -> food_references.id` (`ondelete="RESTRICT"`).
@@ -54,15 +54,15 @@ Hệ thống cơ sở dữ liệu SQLite (`nutrisnap.db`) được chuẩn hóa 
 8. **chat_messages**: Khóa chính `id`, khóa ngoại `session_id -> chat_sessions.id` (`ondelete="CASCADE"`).
 
 > [!NOTE]
-> Toàn bộ hành vi ràng buộc khóa ngoại và xóa lan truyền `ON DELETE CASCADE` đã được khai báo chính thức trong [src/backend/models/schema.py](file:///d:/Projects/assistant-nutrisnap/src/backend/models/schema.py) và kiểm thử tự động đạt 100% tại [tests/unit/test_db_cascade.py](file:///d:/Projects/assistant-nutrisnap/tests/unit/test_db_cascade.py).
+> Toàn bộ hành vi ràng buộc khóa ngoại và xóa lan truyền `ON DELETE CASCADE` đã được khai báo chính thức trong [src/backend/models/schema.py](../src/backend/models/schema.py) và kiểm thử tự động đạt 100% tại [tests/unit/test_db_cascade.py](../tests/unit/test_db_cascade.py).
 
 ---
 
 ## 2. Kiến trúc Bảo mật Phiên làm việc: HttpOnly Cookie vs. LocalStorage
 
 > [!IMPORTANT]
-> **Phân định rõ ranh giới API Contract (Tuần 1) và Service Implementation (Tuần 2):**  
-> Trong khuôn khổ Tuần 1, hệ thống tập trung hoàn thiện và đóng băng bản hợp đồng giao tiếp (REST API Contract) tại `api_contract.py` và khung ứng dụng (FastAPI Skeleton tại `main.py`). Các endpoint hiện trả về dữ liệu mẫu (Mock Responses) để phục vụ ghép nối giao diện Frontend. Tầng logic dịch vụ nghiệp vụ thực tế (`services/auth_service.py` băm bcrypt, sinh mã JWT thực thụ và dependency `get_current_user` trích xuất danh tính từ HttpOnly Cookie) sẽ được triển khai chính thức theo đúng lộ trình ở **Tuần 2**.
+> **Hiện thực hóa Zero-Trust Guard & CSRF Protection:**  
+> Hệ thống áp dụng cơ chế xác thực Zero-Trust qua module [src/backend/services/auth_guard.py](../src/backend/services/auth_guard.py) cung cấp dependency `get_current_user` tích hợp sẵn trong toàn bộ các endpoint cá nhân (`/me`, `/goals`, `/meals/log`, `/meals/today`, `/dashboard`, `/weight`, v.v.). Mọi request không gửi kèm `access_token` hợp lệ đều bị từ chối với HTTP 401 Unauthorized.
 
 ### 2.1. Phân tích Rủi ro XSS khi lưu JWT trong `localStorage`
 - **Cơ chế tấn công XSS (Cross-Site Scripting):** Nếu ứng dụng lưu JWT token trong `localStorage` hoặc `sessionStorage`, bất kỳ lỗ hổng bảo mật nào cho phép mã JavaScript độc hại chạy trên trình duyệt (thông qua thư viện bên thứ ba bị nhiễm độc, nội dung inject từ người dùng không được sanitize, v.v.) đều có thể gọi `localStorage.getItem("token")`.
@@ -78,9 +78,11 @@ Hệ thống NutriSnap quyết định sử dụng mô hình xác thực chuẩn
 2. **SameSite=Lax Flag (`samesite="lax"`):**
    - Cookie chỉ được tự động gửi kèm trong các request nội bộ cùng domain hoặc điều hướng top-level thông thường.
    - Ngăn chặn hoàn toàn các cuộc tấn công CSRF (Cross-Site Request Forgery) xuyên miền thông qua các thẻ `<img>`, `<form>` giả mạo từ trang web độc hại.
-3. **Secure Flag (`secure=True` ở production):**
+3. **Bộ kiểm tra nguồn gốc CSRF (`verify_csrf_protection`):**
+   - Trên các phương thức thay đổi trạng thái (`POST`, `PUT`, `DELETE`), hệ thống đối chiếu header `Origin` / `Referer` với whitelist tên miền cho phép (`http://localhost:5173`, `http://127.0.0.1:5173`, `http://localhost:3000`). Từ chối HTTP 403 Forbidden nếu request đến từ nguồn không tin cậy.
+4. **Secure Flag (`secure=True` ở production):**
    - Cookie chỉ được truyền tải qua kênh mã hóa HTTPS, ngăn chặn tấn công nghe lén đường truyền (Man-in-the-Middle). Ở môi trường dev cục bộ (`localhost`), cờ này có thể tạm đặt `False` để tiện debug.
-4. **Cấu hình CORS phía Backend FastAPI:**
+5. **Cấu hình CORS phía Backend FastAPI:**
    - Bắt buộc khai báo `allow_credentials=True`.
    - Danh sách `allow_origins` chỉ định danh sách rõ ràng (ví dụ: `http://localhost:5173`), tuyệt đối không dùng wildcard `*`.
 
@@ -89,18 +91,14 @@ Hệ thống NutriSnap quyết định sử dụng mô hình xác thực chuẩn
 ## 3. Quy tắc Kiểm soát Truy cập Dữ liệu trên 8 Bảng (Data Access Control)
 
 ### 3.1. Nguyên tắc Zero-Trust Tool Calling với LLM
-- **Schema không chứa `user_id`:** Các công cụ đăng ký với AI Orchestrator (`get_daily_nutrition`, `log_meal`, `recommend_meals`, `get_progress_summary`) hoàn toàn không cho phép nhận tham số `user_id`.
+- **Schema không chứa `user_id`:** Các công cụ đăng ký với AI Orchestrator (`get_daily_summary`, `log_meal`, `recommend_meals`, `get_progress_summary`) hoàn toàn không cho phép nhận tham số `user_id`.
 - **Gắn cứng định danh từ JWT:** Tầng Backend Controller tự động lấy `current_user.id` từ HttpOnly Cookie JWT đã được giải mã và truyền trực tiếp vào các service thực thi:
   ```python
-  @router.post("/api/v1/assistant/chat")
-  def chat_with_assistant(req: ChatRequest, current_user: User = Depends(get_current_user)):
+  @app.post("/api/v1/assistant/chat")
+  def chat_with_assistant(req: ChatMessageRequest, current_user: AuthenticatedUser = Depends(get_current_user)):
       # TUYỆT ĐỐI KHÔNG lấy user_id từ req hay từ LLM sinh ra!
       verified_user_id = current_user.id
-      return orchestrator.handle_message(
-          user_id=verified_user_id,
-          session_id=req.session_id,
-          message=req.message
-      )
+      ...
   ```
 
 ### 3.2. Quy tắc Truy vấn Bắt buộc (Mandatory WHERE Clause)
@@ -121,18 +119,18 @@ Mọi truy vấn Đọc (SELECT), Ghi (INSERT), Sửa (UPDATE), Xóa (DELETE) đ
 ### 3.3. Quy trình Xác nhận 2 bước cho Thao tác Thay đổi Dữ liệu (Two-Step Confirmation)
 - Mọi công cụ thay đổi trạng thái dữ liệu (đặc biệt là `log_meal`) qua hội thoại LLM phải đi qua 2 bước:
   - **Bước 1 (Nháp / Xem trước):** LLM gọi tool với `is_confirmed = False`. Backend tính toán calo/macro ước tính từ bảng `food_references` và trả về bản xem trước (status: `pending_confirmation`). Giao diện hiển thị Thẻ Xác nhận Thao tác (Action Confirmation Card).
-  - **Bước 2 (Xác nhận ghi):** Người dùng chủ động kiểm tra số gam, tên món và bấm nút `[Xác nhận lưu]`. Lúc này Frontend mới gửi request hoặc LLM gọi tool với `is_confirmed = True` để chính thức ghi vào bảng `meals` và `meal_items`.
+  - **Bước 2 (Xác nhận ghi):** Người dùng chủ động kiểm tra số gam, tên món và bấm nút `[Xác nhận lưu]`. Lúc này Frontend mới gửi request với `is_confirmed = True` để chính thức ghi vào bảng `meals` và `meal_items`. Nếu `is_confirmed = False`, Backend từ chối với HTTP 400 Bad Request.
 
 ---
 
 ## 4. Bảng Quy chuẩn Cột Dữ liệu Dinh dưỡng (`food_references`)
 
-Nhằm bảo đảm tính nhất quán giữa file dữ liệu CSV [data/vn_foods.csv](file:///d:/Projects/assistant-nutrisnap/data/vn_foods.csv), mô hình [src/backend/models/schema.py](file:///d:/Projects/assistant-nutrisnap/src/backend/models/schema.py) và script nạp dữ liệu [scripts/seed_food_references.py](file:///d:/Projects/assistant-nutrisnap/scripts/seed_food_references.py), tên các cột dinh dưỡng được chuẩn hóa theo đơn vị tính trên 100g thực phẩm:
+Nhằm bảo đảm tính nhất quán giữa file dữ liệu CSV [data/vn_foods.csv](../data/vn_foods.csv), mô hình [src/backend/models/schema.py](../src/backend/models/schema.py) và script nạp dữ liệu [scripts/seed_food_references.py](../scripts/seed_food_references.py), tên các cột dinh dưỡng được chuẩn hóa theo đơn vị tính trên 100g thực phẩm:
 
 | Tên cột trong CSDL / CSV | Kiểu dữ liệu | Ý nghĩa | Ví dụ |
 | :--- | :--- | :--- | :--- |
 | `id` | INTEGER (PK) | Định danh duy nhất món ăn | `1` |
-| `food_name` | TEXT (Index) | Tên món ăn tiếng Việt | `"Phở bò tái"` |
+| `food_name` | TEXT (UNIQUE Index) | Tên món ăn tiếng Việt | `"Phở bò tái"` |
 | `calories_per_100g` | REAL | Năng lượng (kcal) trên 100g | `115.0` |
 | `protein_per_100g` | REAL | Lượng chất đạm (g) trên 100g | `8.5` |
 | `carbs_per_100g` | REAL | Lượng tinh bột (g) trên 100g | `14.2` |
