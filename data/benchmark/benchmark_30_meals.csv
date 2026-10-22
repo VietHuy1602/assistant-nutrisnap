@@ -1,0 +1,31 @@
+sample_id,image_filename,dish_name,food_item,measured_weight_g,ai_estimated_weight_g,absolute_error_g,ape_percent,confidence_score,image_quality,capture_angle,notes,collection_status
+IMG001,IMG001.jpg,Cơm trắng,Cơm trắng,,,,,,,pending_capture,45_degree,Khẩu phần cơm trắng tiêu chuẩn,pending
+IMG002,IMG002.jpg,Cơm tấm sườn nướng,Cơm tấm sườn nướng,,,,,,,pending_capture,45_degree,Đĩa cơm tấm sườn nướng 1 miếng sườn,pending
+IMG003,IMG003.jpg,Cơm tấm sườn bì chả,Cơm tấm sườn bì chả,,,,,,,pending_capture,45_degree,Đĩa cơm tấm đầy đủ sườn bì chả,pending
+IMG004,IMG004.jpg,Phở bò tái,Phở bò tái,,,,,,,pending_capture,top_down,Tô phở bò tái nước lèo hành hoa,pending
+IMG005,IMG005.jpg,Phở gà xé,Phở gà xé,,,,,,,pending_capture,top_down,Tô phở gà xé phay truyền thống,pending
+IMG006,IMG006.jpg,Bún bò Huế,Bún bò Huế,,,,,,,pending_capture,top_down,Tô bún bò Huế thịt bò bắp chả cua,pending
+IMG007,IMG007.jpg,Bún chả Hà Nội,Bún chả Hà Nội,,,,,,,pending_capture,45_degree,Phần bún chả nướng than hoa kèm nước chấm,pending
+IMG008,IMG008.jpg,Bún thịt nướng,Bún thịt nướng,,,,,,,pending_capture,top_down,Tô bún thịt nướng kèm rau sống đậu phộng,pending
+IMG009,IMG009.jpg,Bún riêu cua,Bún riêu cua,,,,,,,pending_capture,top_down,Tô bún riêu cua đồng cà chua đậu hũ,pending
+IMG010,IMG010.jpg,Bánh mì kẹp thịt pate,Bánh mì kẹp thịt pate,,,,,,,pending_capture,45_degree,Ổ bánh mì thịt xá xíu pate dưa leo,pending
+IMG011,IMG011.jpg,Bánh mì trứng ốp la,Bánh mì trứng ốp la,,,,,,,pending_capture,45_degree,Bánh mì kẹp 2 trứng gà ốp la,pending
+IMG012,IMG012.jpg,Ức gà áp chảo,Ức gà áp chảo,,,,,,,pending_capture,top_down,Khẩu phần ức gà áp chảo ăn kiêng,pending
+IMG013,IMG013.jpg,Thịt heo luộc,Thịt heo luộc,,,,,,,pending_capture,top_down,Đĩa thịt heo ba chỉ luộc thái lát,pending
+IMG014,IMG014.jpg,Thịt kho tàu nước dừa,Thịt kho tàu nước dừa,,,,,,,pending_capture,45_degree,Thịt kho hột vịt nước dừa miền Nam,pending
+IMG015,IMG015.jpg,Canh chua cá lóc,Canh chua cá lóc,,,,,,,pending_capture,top_down,Bát canh chua cá lóc bạc hà đậu bắp,pending
+IMG016,IMG016.jpg,Rau muống xào tỏi,Rau muống xào tỏi,,,,,,,pending_capture,top_down,Đĩa rau muống xào tỏi xanh giòn,pending
+IMG017,IMG017.jpg,Bông cải xanh hấp,Bông cải xanh hấp,,,,,,,pending_capture,top_down,Khẩu phần súp lơ xanh hấp thanh đạm,pending
+IMG018,IMG018.jpg,Đậu hũ rán,Đậu hũ rán,,,,,,,pending_capture,45_degree,Đĩa đậu phụ rán giòn miếng vuông,pending
+IMG019,IMG019.jpg,Gỏi cuốn tôm thịt,Gỏi cuốn tôm thịt,,,,,,,pending_capture,45_degree,Khẩu phần 3 cuốn gỏi cuốn tôm thịt,pending
+IMG020,IMG020.jpg,Chả giò rán,Chả giò rán,,,,,,,pending_capture,45_degree,Đĩa chả giò thịt rán vàng rụm,pending
+IMG021,IMG021.jpg,Bánh xèo miền Tây,Bánh xèo miền Tây,,,,,,,pending_capture,top_down,Bánh xèo tôm thịt giá đỗ,pending
+IMG022,IMG022.jpg,Cháo sườn,Cháo sườn,,,,,,,pending_capture,top_down,Bát cháo sườn xay nhuyễn kèm quẩy,pending
+IMG023,IMG023.jpg,Hủ tiếu Nam Vang,Hủ tiếu Nam Vang,,,,,,,pending_capture,top_down,Tô hủ tiếu nước Nam Vang tôm thịt cật,pending
+IMG024,IMG024.jpg,Cá nục kho cà chua,Cá nục kho cà chua,,,,,,,pending_capture,45_degree,Phần cá nục kho sốt cà chua,pending
+IMG025,IMG025.jpg,Bò xào hành tây,Bò xào hành tây,,,,,,,pending_capture,45_degree,Đĩa thịt bò xào hành tây cần tây,pending
+IMG026,IMG026.jpg,Salad xà lách dầu giấm,Salad xà lách dầu giấm,,,,,,,pending_capture,top_down,Đĩa salad rau xà lách cà chua dầu giấm,pending
+IMG027,IMG027.jpg,Cơm gà Hội An,Cơm gà Hội An,,,,,,,pending_capture,45_degree,Đĩa cơm gà xé Hội An kèm gỏi hành tây,pending
+IMG028,IMG028.jpg,Cơm chiên dương châu,Cơm chiên dương châu,,,,,,,pending_capture,top_down,Đĩa cơm chiên dương châu lạp xưởng đậu hà lan,pending
+IMG029,IMG029.jpg,Cá kho tộ,Cá kho tộ,,,,,,,pending_capture,45_degree,Thố cá lóc kho tộ tiêu ớt đậm đà,pending
+IMG030,IMG030.jpg,Canh khổ qua dồn thịt,Canh khổ qua dồn thịt,,,,,,,pending_capture,top_down,Tô canh mướp đắng nhồi thịt nạc băm,pending
