@@ -1,128 +1,129 @@
-# NutriSnap — QA Evaluation Plan (W1)
+# NutriSnap — Kế hoạch đánh giá QA AI (W1)
 
-**Owner:** Hoàng Quốc Tuấn  
-**Team:** Pair 3 — AI Orchestrator & QA/Benchmarking  
-**Status:** Planned targets; experimental results will be reported after evaluation in Week 7.
+**Người phụ trách:** Hoàng Quốc Tuấn  
+**Nhóm:** Cặp 3 — Điều phối AI và QA/Đánh giá chuẩn  
+**Trạng thái:** Các mục tiêu dự kiến; kết quả thực nghiệm sẽ được báo cáo sau khi đánh giá ở Tuần 7.
 
-## 1. Purpose
+## 1. Mục đích
 
-This document defines the initial evaluation plan for NutriSnap's AI Orchestrator, Tool Calling, food recognition, portion/calorie estimation, and consistency between the AI response and Backend-provided values.
+Tài liệu này xác định kế hoạch đánh giá ban đầu cho bộ điều phối AI của NutriSnap, chức năng gọi công cụ (Tool Calling), nhận diện món ăn, ước lượng khẩu phần/lượng calo và tính nhất quán giữa câu trả lời của AI với các giá trị do Backend cung cấp.
 
-The values in this document are **target goals**, not measured results. Do not report a target as an achieved result before running the relevant tests and recording evidence.
+Các giá trị trong tài liệu này là **mục tiêu dự kiến**, không phải kết quả đã đo lường. Không được báo cáo một mục tiêu là kết quả đã đạt được trước khi chạy các bài kiểm thử liên quan và lưu lại bằng chứng.
 
-## 2. Scope
+## 2. Phạm vi
 
-The W1 plan covers:
+Kế hoạch W1 bao gồm:
 
-- Correct selection of one of the four registered tools when a test scenario requires a tool.
-- Safe tool arguments, especially the rule that the LLM must not supply `user_id`.
-- Food recognition and estimated portion/calorie error for supported test cases.
-- Consistency between values returned by Backend tools and values stated by the assistant.
-- Basic automated-test structure using `pytest`.
+- Chọn đúng một trong bốn công cụ đã đăng ký khi kịch bản kiểm thử yêu cầu gọi công cụ.
+- Đảm bảo tham số công cụ an toàn, đặc biệt là quy tắc LLM không được tự truyền `user_id`.
+- Đánh giá khả năng nhận diện món ăn và sai số ước lượng khẩu phần/lượng calo đối với các trường hợp được hỗ trợ.
+- Đảm bảo tính nhất quán giữa giá trị do công cụ Backend trả về và giá trị trợ lý nêu trong câu trả lời.
+- Xây dựng cấu trúc kiểm thử tự động cơ bản bằng `pytest`.
 
-## 3. Target Goals
+## 3. Mục tiêu dự kiến
 
-| Area | Metric / acceptance target | Evaluation method |
+| Hạng mục | Chỉ số / mục tiêu nghiệm thu | Phương pháp đánh giá |
 |---|---|---|
-| Tool Calling | Tool Selection Accuracy **≥ 90%** on the defined test scenarios | Compare the tool selected by the assistant with the expected tool in each scenario |
-| Food recognition and portion/calorie estimation | MAPE **≤ 25%** for simple dishes photographed in adequate lighting | Compare predicted calorie values with ground-truth/reference values; record excluded or invalid samples |
-| Backend-to-assistant consistency | Every numeric nutrition value stated by the assistant must match the corresponding value returned by the Backend for the same response | Use deterministic test fixtures and compare the response values with tool output |
-| Tool argument security | Tool schemas must not expose `user_id` as an LLM-supplied argument | Inspect registered tool schemas and test that the field is absent |
-| Test execution | Relevant unit tests run through `pytest` and failures are documented | Run the project test command and preserve the test output |
+| Tool Calling | Độ chính xác lựa chọn công cụ (Tool Selection Accuracy) **≥ 90%** trên các kịch bản kiểm thử đã xác định | So sánh công cụ trợ lý chọn với công cụ mong đợi trong từng kịch bản |
+| Nhận diện món ăn và ước lượng khẩu phần/lượng calo | MAPE **≤ 25%** đối với món ăn đơn giản được chụp trong điều kiện ánh sáng phù hợp | So sánh lượng calo dự đoán với giá trị thực tế/tham chiếu; ghi lại các mẫu bị loại hoặc không hợp lệ |
+| Tính nhất quán giữa Backend và trợ lý | Mọi giá trị dinh dưỡng dạng số mà trợ lý nêu phải khớp với giá trị tương ứng do Backend trả về trong cùng câu trả lời | Sử dụng dữ liệu kiểm thử cố định và so sánh giá trị trong câu trả lời với đầu ra của công cụ |
+| Bảo mật tham số công cụ | Schema công cụ không được để lộ `user_id` dưới dạng tham số do LLM cung cấp | Kiểm tra schema công cụ đã đăng ký và xác nhận trường này không tồn tại |
+| Thực thi kiểm thử | Các bài kiểm thử đơn vị liên quan được chạy bằng `pytest` và lỗi được ghi nhận | Chạy lệnh kiểm thử của dự án và lưu lại kết quả |
 
-These are initial project targets. The team should confirm the test set, metric definitions, and any thresholds that are not specified in the project brief before treating them as final acceptance criteria.
+Đây là các mục tiêu ban đầu của dự án. Trước khi xem chúng là tiêu chí nghiệm thu cuối cùng, nhóm cần xác nhận bộ kiểm thử, định nghĩa các chỉ số và những ngưỡng chưa được nêu rõ trong đề bài dự án.
 
-## 4. Metrics and Definitions
+## 4. Các chỉ số và định nghĩa
 
-### 4.1 Tool Selection Accuracy
+### 4.1. Độ chính xác lựa chọn công cụ (Tool Selection Accuracy)
 
 \[
 \text{Tool Selection Accuracy} =
-\frac{\text{Number of scenarios with the expected tool selected}}
-{\text{Total valid tool-selection scenarios}} \times 100\%
+\frac{\text{Số kịch bản chọn đúng công cụ mong đợi}}
+{\text{Tổng số kịch bản lựa chọn công cụ hợp lệ}} \times 100\%
 \]
 
-Count a scenario as correct only when the selected tool matches the expected tool for that scenario. Record invalid outputs, missing tool calls, and multiple unexpected tool calls separately rather than silently removing them from the denominator.
+Chỉ tính một kịch bản là đúng khi công cụ được chọn trùng với công cụ mong đợi cho kịch bản đó. Cần ghi nhận riêng các đầu ra không hợp lệ, trường hợp không gọi công cụ và trường hợp gọi thêm công cụ ngoài dự kiến; không được âm thầm loại chúng khỏi mẫu số.
 
-### 4.2 Mean Absolute Percentage Error (MAPE)
+### 4.2. Sai số phần trăm tuyệt đối trung bình (MAPE)
 
 \[
 \text{MAPE} = \frac{100\%}{n}\sum_{i=1}^{n}
 \left|\frac{y_i-\hat{y}_i}{y_i}\right|
 \]
 
-Where:
-- \(y_i\) is the reference calorie value for sample \(i\).
-- \(\hat{y}_i\) is the predicted/estimated calorie value.
-- \(n\) is the number of valid samples with a non-zero reference value.
+Trong đó:
 
-MAPE is undefined when the reference value is zero. Such samples must be handled explicitly and reported, not divided by zero. The initial target applies to simple dishes with adequate lighting; more difficult samples should be reported separately.
+- \(y_i\) là giá trị calo tham chiếu của mẫu thứ \(i\).
+- \(\hat{y}_i\) là giá trị calo được dự đoán/ước lượng.
+- \(n\) là số mẫu hợp lệ có giá trị tham chiếu khác 0.
 
-### 4.3 Backend-to-Assistant Consistency
+MAPE không xác định khi giá trị tham chiếu bằng 0. Các mẫu như vậy phải được xử lý rõ ràng và báo cáo riêng, không được chia cho 0. Mục tiêu ban đầu áp dụng cho món ăn đơn giản trong điều kiện ánh sáng phù hợp; các mẫu khó hơn cần được báo cáo riêng.
 
-For each test case, compare nutrition numbers in the assistant response with the corresponding Backend tool result. The assistant must not invent, silently change, or contradict Backend-provided calorie and macronutrient values.
+### 4.3. Tính nhất quán giữa Backend và trợ lý
 
-The project brief distinguishes deterministic arithmetic from uncertain visual input: arithmetic using the reference database can be correct while the detected dish or estimated portion may still be uncertain. User-facing nutrition values should therefore be described as estimates where appropriate.
+Với mỗi trường hợp kiểm thử, so sánh số liệu dinh dưỡng trong câu trả lời của trợ lý với kết quả tương ứng từ công cụ Backend. Trợ lý không được tự tạo, âm thầm thay đổi hoặc đưa ra thông tin mâu thuẫn với lượng calo và các chất dinh dưỡng đa lượng do Backend cung cấp.
 
-## 5. Initial Test Scenarios
+Tài liệu dự án phân biệt phép tính xác định với đầu vào hình ảnh không chắc chắn: phép tính dựa trên cơ sở dữ liệu tham chiếu có thể chính xác, trong khi món ăn được nhận diện hoặc khẩu phần ước lượng vẫn có thể chưa chắc chắn. Vì vậy, khi phù hợp, các giá trị dinh dưỡng hiển thị cho người dùng cần được mô tả là giá trị ước tính.
 
-| ID | Scenario | Expected result |
+## 5. Các kịch bản kiểm thử ban đầu
+
+| Mã | Kịch bản | Kết quả mong đợi |
 |---|---|---|
-| TOOL-01 | User asks for today's calorie and macronutrient totals | `get_daily_nutrition` is selected |
-| TOOL-02 | User asks to record a meal | `log_meal` is selected; a write must not occur before explicit confirmation |
-| TOOL-03 | User asks for meal suggestions based on remaining calories and budget | `recommend_meals` is selected |
-| TOOL-04 | User asks for a progress summary over a period | `get_progress_summary` is selected |
-| SEC-01 | Inspect each registered tool's exposed arguments | No tool schema exposes `user_id` as an LLM argument |
-| SEC-02 | A meal-log request is not yet confirmed | Return a pending confirmation/preview; do not persist the meal |
-| CONS-01 | Backend returns fixed calorie and macro values | Assistant response reflects those values without changing them |
-| VIS-01 | Supported food image has an agreed reference label | Record recognition output and compare it with the reference label |
-| VIS-02 | Simple dish has a valid reference calorie value and portion | Calculate and record the calorie-estimation error |
+| TOOL-01 | Người dùng hỏi tổng lượng calo và các chất dinh dưỡng đa lượng đã tiêu thụ hôm nay | Chọn `get_daily_nutrition` |
+| TOOL-02 | Người dùng yêu cầu ghi nhận một bữa ăn | Chọn `log_meal`; không được lưu dữ liệu trước khi có xác nhận rõ ràng |
+| TOOL-03 | Người dùng yêu cầu gợi ý món ăn dựa trên lượng calo còn lại và ngân sách | Chọn `recommend_meals` |
+| TOOL-04 | Người dùng yêu cầu tóm tắt tiến độ trong một khoảng thời gian | Chọn `get_progress_summary` |
+| SEC-01 | Kiểm tra các tham số được công khai của từng công cụ đã đăng ký | Không schema công cụ nào để lộ `user_id` như một tham số do LLM cung cấp |
+| SEC-02 | Yêu cầu ghi nhận bữa ăn chưa được xác nhận | Trả về bước xác nhận/bản xem trước đang chờ; không lưu bữa ăn vào hệ thống |
+| CONS-01 | Backend trả về các giá trị calo và chất dinh dưỡng đa lượng cố định | Câu trả lời của trợ lý phản ánh đúng các giá trị đó, không thay đổi chúng |
+| VIS-01 | Hình ảnh món ăn được hỗ trợ có nhãn tham chiếu đã thống nhất | Ghi lại kết quả nhận diện và so sánh với nhãn tham chiếu |
+| VIS-02 | Món ăn đơn giản có giá trị calo và khẩu phần tham chiếu hợp lệ | Tính và ghi lại sai số ước lượng calo |
 
-These scenarios are a starting checklist. The actual automated tests must be adapted to the functions and return types implemented in the repository.
+Các kịch bản này là danh sách kiểm tra ban đầu. Những bài kiểm thử tự động thực tế phải được điều chỉnh theo các hàm và kiểu dữ liệu trả về đang được triển khai trong repository.
 
-## 6. Test Data and Evidence
+## 6. Dữ liệu kiểm thử và bằng chứng
 
-For every evaluation run, record:
+Với mỗi lần đánh giá, cần ghi lại:
 
-- Test ID and scenario description.
-- Input/prompt or image sample identifier.
-- Expected tool or reference value.
-- Actual output.
-- Pass/fail status.
-- Error details and notes about invalid or excluded samples.
+- Mã bài kiểm thử và mô tả kịch bản.
+- Đầu vào/lời nhắc hoặc mã định danh mẫu hình ảnh.
+- Công cụ mong đợi hoặc giá trị tham chiếu.
+- Đầu ra thực tế.
+- Trạng thái đạt/không đạt.
+- Chi tiết lỗi và ghi chú về các mẫu không hợp lệ hoặc bị loại trừ.
 
-Use deterministic fixtures for unit tests. Do not require a live Gemini API call for ordinary unit tests; isolate external API calls behind mocks or fixtures where possible. Do not commit API keys, `.env`, local databases, virtual environments, or other secrets.
+Sử dụng dữ liệu mẫu cố định cho kiểm thử đơn vị. Không yêu cầu gọi API Gemini trực tiếp trong các bài kiểm thử đơn vị thông thường; nếu có thể, hãy cô lập các lời gọi API bên ngoài bằng mock hoặc fixture. Không commit khóa API, file `.env`, cơ sở dữ liệu cục bộ, môi trường ảo hoặc thông tin bí mật khác.
 
-## 7. Pytest Structure for W1
+## 7. Cấu trúc pytest cho W1
 
-Use the repository's existing test layout. The team guide identifies these locations:
+Sử dụng cấu trúc kiểm thử hiện có của repository. Hướng dẫn của nhóm xác định các vị trí sau:
 
-- `tests/unit/test_tools.py` — tool schema, argument validation, tool-selection/dispatch behavior where locally testable.
-- `tests/unit/test_vision.py` — vision output and evaluation-metric behavior where the corresponding code exists.
-- Additional tests may be added under `tests/unit/` as the implementation becomes available.
+- `tests/unit/test_tools.py` — kiểm tra schema công cụ, xác thực tham số và hành vi chọn/điều phối công cụ trong phạm vi có thể kiểm thử cục bộ.
+- `tests/unit/test_vision.py` — kiểm tra đầu ra Vision và hành vi của các chỉ số đánh giá khi phần code tương ứng đã tồn tại.
+- Có thể bổ sung các bài kiểm thử khác trong `tests/unit/` khi phần triển khai sẵn sàng.
 
-Tests should verify behavior, not merely that files exist. Avoid hard-coding assumptions about function names or response shapes before checking the actual implementation. If a module is not implemented yet, record that dependency clearly and add the test when its interface is agreed.
+Bài kiểm thử cần xác minh hành vi thực tế, không chỉ kiểm tra sự tồn tại của file. Tránh mặc định cứng tên hàm hoặc cấu trúc dữ liệu trả về trước khi kiểm tra phần triển khai hiện tại. Nếu một module chưa được triển khai, hãy ghi rõ phần phụ thuộc đó và bổ sung bài kiểm thử khi giao diện của module đã được thống nhất.
 
-## 8. Week 1 Deliverables
+## 8. Các đầu việc cần hoàn thành trong Tuần 1
 
-- [ ] Agree on the initial scenarios and metric definitions with the AI Orchestrator partner.
-- [ ] Commit this evaluation plan to `docs/qa_evaluation_plan.md`.
-- [ ] Create/extend pytest unit tests in the repository's prescribed test directories.
-- [ ] Run available tests locally and record failures or missing implementation dependencies.
-- [ ] Update `docs/ai_use_log.md` if AI tools were used to assist with code or documentation.
-- [ ] Submit changes through a Pull Request targeting `main` and request review from the pair partner.
+- [ ] Thống nhất các kịch bản ban đầu và định nghĩa chỉ số với thành viên phụ trách AI Orchestrator.
+- [ ] Commit kế hoạch đánh giá này vào `docs/qa_evaluation_plan.md`.
+- [ ] Tạo/mở rộng các bài kiểm thử đơn vị pytest trong các thư mục kiểm thử được quy định của repository.
+- [ ] Chạy các bài kiểm thử hiện có trên máy và ghi nhận lỗi hoặc phần phụ thuộc chưa được triển khai.
+- [ ] Cập nhật `docs/ai_use_log.md` nếu có sử dụng công cụ AI để hỗ trợ code hoặc tài liệu.
+- [ ] Gửi thay đổi qua Pull Request hướng đến nhánh `main` và yêu cầu thành viên cùng cặp review.
 
-## 9. Week 7 Experimental Results (To Be Completed Later)
+## 9. Kết quả thực nghiệm Tuần 7 (sẽ hoàn thành sau)
 
-Do not fill this section with invented or target values. Complete it after the final benchmark has been run.
+Không điền các giá trị mục tiêu hoặc số liệu tự tạo vào phần này. Chỉ hoàn thiện sau khi đã chạy benchmark cuối cùng.
 
-| Metric | W1 target | W7 measured result | Evidence / notes |
+| Chỉ số | Mục tiêu W1 | Kết quả đo W7 | Bằng chứng / ghi chú |
 |---|---:|---:|---|
-| Tool Selection Accuracy | ≥ 90% | Pending | Test set and run output to be linked |
-| MAPE for simple dishes in adequate lighting | ≤ 25% | Pending | Valid sample count and calculation to be reported |
-| Backend-to-assistant consistency | Must match Backend values | Pending | Unit/integration test results to be reported |
-| Test execution | Relevant tests run and failures documented | Pending | Pytest output / CI run to be linked |
+| Độ chính xác lựa chọn công cụ (Tool Selection Accuracy) | ≥ 90% | Đang chờ | Cần đính kèm bộ kiểm thử và kết quả chạy |
+| MAPE cho món ăn đơn giản trong điều kiện ánh sáng phù hợp | ≤ 25% | Đang chờ | Cần báo cáo số mẫu hợp lệ và phép tính |
+| Tính nhất quán giữa Backend và trợ lý | Phải khớp với giá trị Backend | Đang chờ | Cần báo cáo kết quả kiểm thử đơn vị/tích hợp |
+| Thực thi kiểm thử | Các bài kiểm thử liên quan được chạy và lỗi được ghi nhận | Đang chờ | Cần đính kèm kết quả pytest/CI |
 
-## 10. Safety and Interpretation
+## 10. An toàn và diễn giải kết quả
 
-NutriSnap's visual recognition and portion estimates are inherently estimates. The Backend should perform deterministic nutrition arithmetic from the reference database, while the assistant should communicate uncertainty in visual inputs and must not present estimates as medical diagnoses. Evaluation must not encourage extreme calorie restriction or compensatory fasting.
+Kết quả nhận diện hình ảnh và ước lượng khẩu phần của NutriSnap về bản chất là các giá trị ước tính. Backend cần thực hiện phép tính dinh dưỡng xác định dựa trên cơ sở dữ liệu tham chiếu; trợ lý cần thể hiện sự không chắc chắn của đầu vào hình ảnh và không được trình bày các ước lượng như chẩn đoán y tế. Việc đánh giá không được khuyến khích hạn chế calo cực đoan hoặc nhịn ăn để bù trừ.
