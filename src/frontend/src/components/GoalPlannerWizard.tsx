@@ -1,15 +1,15 @@
 import { useState, useRef } from 'react';
 import { ArrowRight, Check, Leaf, ShieldCheck, Target, TrendingUp, ArrowLeft } from 'lucide-react';
 import { Field, Notice, PageHeading } from './UI';
-import { errorText } from '../api';
-import type { GoalInput, GoalKind, GoalResult, NutritionAPI } from '../types';
+import { errorText } from './api';
+import type { GoalInput, GoalKind, GoalResult, NutritionAPI } from './types';
 export function GoalPlannerWizard({api,demo,onComplete}:{api:NutritionAPI;demo:boolean;onComplete:()=>void}) {
   const [step,setStep]=useState(0), [busy,setBusy]=useState(false), [error,setError]=useState('');
   const [result,setResult]=useState<GoalResult|null>(null);
   const [form,setForm]=useState<GoalInput>({gender:'male',age:21,height_cm:172,current_weight_kg:68,target_weight_kg:68,activity_level:'moderate',goal_type:'maintain',weekly_pace_kg:0,daily_budget_vnd:60000});
   const heading=useRef<HTMLHeadingElement>(null), locked=useRef(false);
-  const update=(key:keyof GoalInput,value:string|number)=>{setForm(f=>({...f,[key]:value})); setError('');};
-  const selectGoal=(goal_type:GoalKind)=>setForm(f=>({...f,goal_type,weekly_pace_kg:goal_type==='maintain'?0:goal_type==='lose_weight'?0.5:0.25,target_weight_kg:goal_type==='maintain'?f.current_weight_kg:goal_type==='lose_weight'?f.current_weight_kg-2:f.current_weight_kg+2}));
+  const update=(key:keyof GoalInput,value:string|number)=>{setForm((f: GoalInput)=>({...f,[key]:value})); setError('');};
+  const selectGoal=(goal_type:GoalKind)=>setForm((f: GoalInput)=>({...f,goal_type,weekly_pace_kg:goal_type==='maintain'?0:goal_type==='lose_weight'?0.5:0.25,target_weight_kg:goal_type==='maintain'?f.current_weight_kg:goal_type==='lose_weight'?f.current_weight_kg-2:f.current_weight_kg+2}));
   const next=(value:number)=>{setStep(value);setError('');requestAnimationFrame(()=>heading.current?.focus());};
   const submit=async()=>{
     if(locked.current)return;

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Search, Trash2, Check, ArrowLeft } from 'lucide-react';
-import type { Food, MealType, NutritionAPI, Portion } from '../types';
-import { errorText } from '../api';
+import type { Food, MealType, NutritionAPI, Portion } from './types';
+import { errorText } from './api';
 import { Field, Notice } from './UI';
 export function PortionEditor({api,initial,meal,image,demo,onBack,onSaved}:{api:NutritionAPI;initial:Portion[];meal:MealType;image:string;demo:boolean;onBack:()=>void;onSaved:(calories:number)=>void}) {
   const [items,setItems]=useState(initial),[query,setQuery]=useState(''),[foods,setFoods]=useState<Food[]>([]),[replace,setReplace]=useState<string|null>(null),[notes,setNotes]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[searching,setSearching]=useState(false),[searched,setSearched]=useState(false);
   const locked=useRef(false),searchRef=useRef<HTMLInputElement>(null);
-  useEffect(()=>{let active=true;setFoods([]);setSearched(false);if(!query.trim())return;setSearching(true);const timer=setTimeout(()=>{api.search(query.trim()).then(f=>{if(active){setFoods(f);setSearched(true);}}).catch(e=>{if(active)setError(errorText(e));}).finally(()=>{if(active)setSearching(false);});},300);return()=>{active=false;clearTimeout(timer);};},[api,query]);
-  const totals=items.reduce((sum,i)=>sum.map((s,n)=>s+(Number(i.grams)||0)*i.per100[n]/100),[0,0,0,0]);
+  useEffect(()=>{let active=true;setFoods([]);setSearched(false);if(!query.trim())return;setSearching(true);const timer=setTimeout(()=>{api.search(query.trim()).then((f: Food[])=>{if(active){setFoods(f);setSearched(true);}}).catch((e: unknown)=>{if(active)setError(errorText(e));}).finally(()=>{if(active)setSearching(false);});},300);return()=>{active=false;clearTimeout(timer);};},[api,query]);
+  const totals=items.reduce((sum: number[],i)=>sum.map((s: number,n: number)=>s+(Number(i.grams)||0)*i.per100[n]/100),[0,0,0,0]);
   const valid=items.length>0&&items.every(i=>i.food_id!==null&&Number.isFinite(Number(i.grams))&&Number(i.grams)>=1&&Number(i.grams)<=3000);
   const select=(food:Food)=>{const portion:Portion={key:replace||crypto.randomUUID(),food_id:food.id,food_name:food.food_name,grams:replace?items.find(i=>i.key===replace)!.grams:'100',per100:[food.calories_per_100g,food.protein_per_100g,food.carbs_per_100g,food.fat_per_100g]};setItems(prev=>replace?prev.map(i=>i.key===replace?portion:i):[...prev,portion]);setReplace(null);setQuery('');setFoods([]);setError('');};
   const save=async()=>{if(!valid||locked.current)return;locked.current=true;setBusy(true);setError('');try{const result=await api.saveMeal(meal,items,notes);if(!result.success)throw new Error('Not saved');onSaved(result.total_calories);}catch(e){setError(errorText(e));}finally{locked.current=false;setBusy(false);}};
