@@ -16,12 +16,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.backend.main import app
-from src.backend.services.goal_service import calculate_bmr, calculate_tdee
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
     AuthResponse,
     GoalResponse,
 )
+from src.backend.services.goal_service import calculate_bmr, calculate_tdee
 
 # ==============================================================================
 # FIXTURES
@@ -99,6 +99,7 @@ def test_auth_login_missing_required_fields(client: TestClient):
 def test_auth_register_success(client: TestClient):
     """Đăng ký tài khoản hợp lệ: trả về 201 Created và không lộ hash mật khẩu."""
     from sqlmodel import Session, select
+
     from src.backend.models.database import engine
     from src.backend.models.schema import User
 
