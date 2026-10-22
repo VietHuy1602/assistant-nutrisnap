@@ -205,4 +205,40 @@ describe('RegisterPage', () => {
       resolveRegister!();
     });
   });
+
+  it('7. Lỗi 422 từ Backend: Ánh xạ lỗi vào đúng field tương ứng', async () => {
+    mockRegister.mockRejectedValueOnce(
+      new ApiError('Dữ liệu không hợp lệ.', {
+        status: 422,
+        fieldErrors: {
+          username: 'Tên đăng nhập không được chứa ký tự đặc biệt.',
+        },
+      }),
+    );
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <RegisterPage />
+      </MemoryRouter>,
+    );
+
+    const usernameInput = screen.getByLabelText(/Tên đăng nhập/i);
+    const emailInput = screen.getByLabelText(/Địa chỉ Email/i);
+    const passInput = screen.getByLabelText(/^Mật khẩu/i, { selector: 'input' });
+    const confirmInput = screen.getByLabelText(/Xác nhận mật khẩu/i, { selector: 'input' });
+    const submitBtn = screen.getByRole('button', { name: /Đăng ký tài khoản/i });
+
+    await user.type(usernameInput, 'bad@user');
+    await user.type(emailInput, 'user@example.com');
+    await user.type(passInput, 'Password123');
+    await user.type(confirmInput, 'Password123');
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Tên đăng nhập không được chứa ký tự đặc biệt.'),
+      ).toBeInTheDocument();
+    });
+  });
 });
