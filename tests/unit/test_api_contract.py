@@ -30,6 +30,16 @@ def test_health_check():
 
 def test_auth_register_validation():
     """Kiểm tra đăng ký thành công với mật khẩu chuẩn."""
+    from sqlmodel import Session, select
+    from src.backend.models.database import engine
+    from src.backend.models.schema import User
+
+    with Session(engine) as s:
+        u = s.exec(select(User).where(User.username == "thanhdat")).first()
+        if u:
+            s.delete(u)
+            s.commit()
+
     client = TestClient(app)
     payload = {
         "username": "thanhdat",

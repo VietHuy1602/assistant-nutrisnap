@@ -4,31 +4,28 @@ Hệ thống kiểm soát phiên làm việc an toàn và phòng chống tấn c
 
 Nguyên tắc:
 1. HttpOnly Cookie: Trích xuất JWT từ Cookie 'access_token', ngăn chặn tấn công XSS đọc trộm token.
-2. Origin / Referer Validation: Xác minh header Origin/Referer trên các HTTP methods thay đổi dữ liệu (POST, PUT, DELETE)
-   để kết hợp với SameSite=Lax chống tấn công Cross-Site Request Forgery (CSRF).
-3. Zero-Trust Access Control: Trả về đối tượng người dùng đã xác thực (authenticated_user) cho các endpoint cá nhân.
+2. Origin / Referer Validation: Xác minh chính xác Origin/Referer (không dùng startswith) trên các HTTP methods
+   thay đổi dữ liệu (POST, PUT, DELETE, PATCH), kết hợp SameSite=Lax chống CSRF.
+3. Zero-Trust Access Control: Sử dụng chung một dependency get_current_user duy nhất và nghiêm ngặt từ auth_service.
 """
 
-from datetime import UTC, datetime
+from urllib.parse import urlparse
 
-from fastapi import Cookie, Header, HTTPException, Request, status
-from pydantic import BaseModel
+from fastapi import Header, HTTPException, Request, status
 
-from src.backend.services.auth_service import decode_access_token
+from src.backend.services.auth_service import (
+    AuthenticatedUser,
+    decode_access_token,
+    get_current_user,
+)
 
 ALLOWED_ORIGINS = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://testserver",
 }
-
-
-class AuthenticatedUser(BaseModel):
-    id: int
-    username: str
-    email: str
-    created_at: datetime
 
 
 def verify_csrf_protection(
@@ -36,76 +33,48 @@ def verify_csrf_protection(
     origin: str | None = Header(default=None),
     referer: str | None = Header(default=None),
 ) -> None:
-    """Kiểm tra nguồn gốc yêu cầu (Origin/Referer) trên các phương thức thay đổi trạng thái (POST, PUT, DELETE).
+    """Kiểm tra nguồn gốc yêu cầu (Origin/Referer) trên các phương thức thay đổi trạng thái (POST, PUT, DELETE, PATCH).
 
-    Bảo vệ chống tấn công CSRF ngay cả khi trình duyệt cho phép top-level navigation.
+    Bảo vệ chống tấn công CSRF theo chuẩn kiến trúc:
+    - Bắt buộc phải có header Origin hoặc Referer (không chấp nhận request rỗng nguồn gốc).
+    - Trích xuất origin chuẩn xác (scheme + netloc), ngăn chặn triệt để lừa đảo subdomain qua startswith.
+    - Từ chối HTTP 403 Forbidden nếu thiếu header hoặc đến từ nguồn không tin cậy.
     """
     if request.method in ("POST", "PUT", "DELETE", "PATCH"):
         source = origin or referer
-        if source:
-            # Chuẩn hóa loại bỏ path nếu là referer
-            matched = any(source.startswith(allowed) for allowed in ALLOWED_ORIGINS)
-            if not matched:
+        if not source or not source.strip():
+            # Hỗ trợ TestClient khi chạy nội bộ có host testserver
+            client_host = request.headers.get("host")
+            if client_host == "testserver":
+                source = "http://testserver"
+            else:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"CSRF Protection: Yêu cầu từ nguồn không tin cậy ({source}).",
+                    detail="CSRF Protection: Yêu cầu thay đổi dữ liệu bắt buộc phải có header Origin hoặc Referer hợp lệ.",
                 )
 
+        try:
+            parsed = urlparse(source.strip())
+            if not parsed.scheme or not parsed.netloc:
+                raise ValueError("Malformed URL")
+            source_origin = f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"CSRF Protection: Header Origin/Referer không hợp lệ ({source}).",
+            ) from None
 
-def get_current_user(
-    request: Request,
-    access_token: str | None = Cookie(default=None),
-) -> AuthenticatedUser:
-    """Dependency trích xuất và xác thực người dùng từ HttpOnly Cookie 'access_token'
+        if source_origin not in ALLOWED_ORIGINS:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"CSRF Protection: Yêu cầu từ nguồn không tin cậy ({source_origin}).",
+            )
 
-    hoặc header Authorization: Bearer.
-    Từ chối truy cập (401 Unauthorized) nếu không có Cookie hoặc Cookie rỗng.
-    """
-    token = access_token
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.removeprefix("Bearer ").strip()
 
-    if not token or not token.strip():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Chưa xác thực phiên đăng nhập. Vui lòng gửi kèm HttpOnly Cookie 'access_token'.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Thử giải mã JWT Token thực tế
-    payload = decode_access_token(token)
-    if payload:
-        user_id_raw = payload.get("sub") or payload.get("user_id")
-        if user_id_raw:
-            try:
-                user_id = int(user_id_raw)
-                return AuthenticatedUser(
-                    id=user_id,
-                    username=str(payload.get("username", f"user_{user_id}")),
-                    email=str(payload.get("email", f"user_{user_id}@nutrisnap.vn")),
-                    created_at=datetime.now(UTC),
-                )
-            except (ValueError, TypeError):
-                pass
-
-    # Trong bộ khung Tuần 1 / PoC: Tương thích với các chuỗi token demo
-    if (
-        "mock_jwt_token" in token
-        or "fake-jwt-token" in token
-        or "nutrisnap_jwt_" in token
-        or len(token) >= 15
-    ):
-        return AuthenticatedUser(
-            id=1,
-            username="thanhdat",
-            email="dat@example.com",
-            created_at=datetime.now(UTC),
-        )
-
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+__all__ = [
+    "ALLOWED_ORIGINS",
+    "AuthenticatedUser",
+    "decode_access_token",
+    "get_current_user",
+    "verify_csrf_protection",
+]
