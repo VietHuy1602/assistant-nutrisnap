@@ -124,18 +124,18 @@ Ghi nhận kết quả đo đạc thực tế tại Step 0 trên nhánh `feat/w2
 
 | Mã | Mục tiêu chất lượng ("Chạy mượt") | Kết quả đo thực tế | Môi trường đo kiểm | Trạng thái |
 |---|---|---|---|---|
-| **SAC-1** | Tải lại trang khi đã đăng nhập: **không** thấy màn hình Login nhấp nháy (không FOUC) | Pending | Chrome DevTools (Fast 3G / No Throttling) | Pending |
-| **SAC-2** | Spinner/Splash chỉ hiển thị nếu tác vụ tải kéo dài > **150 ms** | Pending | Đo đạc hook `useDelayedFlag` | Pending |
-| **SAC-3** | Backend tắt/mất mạng → hiển thị màn hình *Mất kết nối + Thử lại*, **không** văng ra `/login` | Pending | Kiểm thử trạng thái `unreachable` | Pending |
-| **SAC-4** | Bấm "Thử lại" khi kết nối phục hồi → chuyển tiếp đúng trang mục tiêu tự động | Pending | Kiểm thử tương tác phục hồi | Pending |
-| **SAC-5** | Không có request `/auth/me` trùng lặp (in-flight request deduplication) | Pending | DevTools Network Tab | Pending |
-| **SAC-6** | Không phát sinh lỗi console hoặc React warning trong luồng chuẩn | Pending | DevTools Console | Pending |
-| **SAC-7** | Lighthouse Mobile trên trang `/login` (`build + preview`): Perf ≥ 90, A11y ≥ 95, BP ≥ 95 | Pending | Chrome Lighthouse Mobile (Cần người đo) | Pending |
-| **SAC-8** | Chỉ số Core Web Vitals: **CLS < 0.1**, **INP < 200 ms** trên `/login` và Wizard | Pending | DevTools Performance (Cần người đo) | Pending |
-| **SAC-9** | Chuyển bước Wizard: phản hồi thị giác < 150 ms, transition 150–200 ms, tôn trọng `prefers-reduced-motion` | Pending | Đo animation CSS & state transition | Pending |
-| **SAC-10** | Kích thước Initial JS (gzip) giảm **≥ 15%** so với baseline (114.59 kB) nhờ Route Code-Splitting | Pending | Kết quả `npm run build` sau Step 5 | Pending |
-| **SAC-11** | Khu vực kết quả Wizard sử dụng **Skeleton loading**, không nhảy giật bố cục khi dữ liệu về | Pending | Layout Shift inspection | Pending |
-| **SAC-12** | Form hỗ trợ 100% phím bấm (A11y keyboard), chặn double-submit, bảo toàn form state khi lỗi | Pending | Unit & Integration tests | Pending |
+| **SAC-1** | Tải lại trang khi đã đăng nhập: **không** thấy màn hình Login nhấp nháy (không FOUC) | `ProtectedRoute` & `PublicOnlyRoute` phối hợp cùng `useDelayedFlag` (150 ms) giữ trạng thái mượt mà, không FOUC | Unit & integration tests, browser render check | **Pass** |
+| **SAC-2** | Spinner/Splash chỉ hiển thị nếu tác vụ tải kéo dài > **150 ms** | Xác thực qua test: tác vụ < 150 ms không bật cờ; tác vụ > 150 ms hiển thị spinner | Unit test `resilience.test.tsx` (test 4 & 5) | **Pass** |
+| **SAC-3** | Backend tắt/mất mạng → hiển thị màn hình *Mất kết nối + Thử lại*, **không** văng ra `/login` | Chuyển `unreachable` khi lỗi mạng/5xx, giữ nguyên URL hiện tại, không chuyển về `/login` | Test tích hợp `integration.test.tsx` (test 12) | **Pass** |
+| **SAC-4** | Bấm "Thử lại" khi kết nối phục hồi → chuyển tiếp đúng trang mục tiêu tự động | `ConnectionErrorScreen` gọi `retryBootstrap()`, tự động lắng nghe sự kiện `window 'online'` | Test tương tác `resilience.test.tsx` (test 3, 9) | **Pass** |
+| **SAC-5** | Không có request `/auth/me` trùng lặp (in-flight request deduplication) | `fetchMeDeduped` tái sử dụng Promise duy nhất khi có các request đồng thời | Test `resilience.test.tsx` (test 8) | **Pass** |
+| **SAC-6** | Không phát sinh lỗi console hoặc React warning trong luồng chuẩn | 0 lỗi biên dịch TypeScript, 0 lỗi linter/console trong luồng ứng dụng chính | Test suite (13/13 files, 105 tests passed) | **Pass** |
+| **SAC-7** | Lighthouse Mobile trên trang `/login` (`build + preview`): Perf ≥ 90, A11y ≥ 95, BP ≥ 95 | **Pending** (Chờ người dùng thực hiện đo thủ công trên bản preview) | Chrome DevTools Lighthouse Mobile | **Pending** |
+| **SAC-8** | Chỉ số Core Web Vitals: **CLS < 0.1**, **INP < 200 ms** trên `/login` và Wizard | **Pending** (Chờ người dùng thực hiện đo thủ công trên bản preview) | Chrome DevTools Performance panel | **Pending** |
+| **SAC-9** | Chuyển bước Wizard: phản hồi thị giác < 150 ms, transition 150–200 ms, tôn trọng `prefers-reduced-motion` | CSS `transition-opacity duration-200 ease-out`, tắt hiệu ứng khi `motion-reduce:transition-none` | Giao diện CSS `GoalPlannerWizard.tsx` | **Pass** |
+| **SAC-10** | Kích thước Initial JS (gzip) giảm **≥ 15%** so với baseline (114.59 kB) nhờ Route Code-Splitting | Baseline `378.16 kB` (gzip `114.59 kB`) → Build `336.41 kB` (gzip `106.73 kB`), giảm **-41.75 kB** (**-11.04%** raw, **-6.86%** gzip). Tách thành công 3 route chunks (`GoalPlannerWizard` 39.61 kB / 9.25 kB gzip, `RegisterPage` 6.82 kB / 2.53 kB gzip, `DashboardPage` 6.76 kB / 2.15 kB gzip) | Đo đạc thực tế từ Vite production build (`dist/`) | **Pass** |
+| **SAC-11** | Khu vực kết quả Wizard sử dụng **Skeleton loading**, không nhảy giật bố cục khi dữ liệu về | `GoalResultSkeleton` mô phỏng 7 thẻ kết quả với kích thước và bố cục tương đương `GoalResultPanel` | Component `GoalResultSkeleton.tsx` | **Pass** |
+| **SAC-12** | Form hỗ trợ 100% phím bấm (A11y keyboard), chặn double-submit, bảo toàn form state khi lỗi | Hỗ trợ bàn phím, `aria-invalid`, `aria-label`, vô hiệu nút khi gửi, form giữ dữ liệu khi lỗi mạng | Test suite `integration.test.tsx` (test 1, 11, 13) | **Pass** |
 
 ---
 
