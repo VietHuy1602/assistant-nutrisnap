@@ -73,24 +73,24 @@ Ghi nhận kết quả đo đạc thực tế tại Step 0 trên nhánh `feat/w2
 ---
 
 ## 5. Ma trận xác minh Mode A (V1–V14) — Pass/Fail/N/A-mock + bằng chứng
-*(Chạy và xác minh trong Step 8)*
+*(Chạy và xác minh trong Step 8 trên môi trường Mock Backend và Test Suite tích hợp)*
 
 | # | Kịch bản kiểm chứng | Kỳ vọng chuẩn | Kiểm được trên Mock? | Kết quả Mode A | Bằng chứng / Ghi chú |
 |---|---|---|---|---|---|
-| V1 | Mở `/` khi chưa có cookie phiên | `GET /auth/me` trả về 401 → điều hướng `/login` | Có | Pending | |
-| V2 | Đăng nhập tài khoản bất kỳ | `Set-Cookie: access_token` HttpOnly; LocalStorage rỗng; vào `/` hoặc `/goal-setup` | Có | Pending | |
-| V3 | Tải lại trang (F5) sau khi đăng nhập | Giữ phiên hợp lệ, **tuyệt đối không nháy Login** (SAC-1) | Có | Pending | |
-| V4 | Đăng ký tài khoản hợp lệ | Luồng `register` → tự động `login` → `/goal-setup` | Có | Pending | |
-| V5 | Wizard tính & lưu mục tiêu | Hiển thị TDEE, Protein, Carbs, Fat + "Ước tính" + disclaimer | Có | Pending | |
-| V6 | Kiểm tra payload `POST /goals` | Đúng 9 trường, **không** `user_id`, **không** header `Authorization` | Có | Pending | |
-| V7 | Tắt Backend hoặc mất mạng rồi tải lại trang | Hiển thị màn hình mất kết nối + nút Thử lại (SAC-3, SAC-4) | Có | Pending | |
-| V8 | Xóa cookie thủ công khi đang thao tác | Nhận 401 → về `/login` kèm banner thông báo phiên hết hạn | Có | Pending | |
-| V9 | Đăng xuất người dùng | Xóa cookie phiên → chuyển hướng `/login` | Có | Pending | |
-| V10 | Đăng nhập sai mật khẩu (401) | Hiển thị thông điệp lỗi thân thiện chuẩn | Không (B1) | N/A-mock | Backend mock chấp nhận mọi tài khoản; kiểm chứng qua unit test |
-| V11 | Đăng ký tài khoản đã tồn tại (409) | Hiển thị lỗi form hoặc field trùng lặp | Không | N/A-mock | Kiểm chứng qua unit test |
-| V12 | Lưu mục tiêu rồi đọc lại từ database | Dữ liệu mục tiêu khớp chính xác | Không (B4) | N/A-mock | Mock backend không lưu DB; kiểm chứng qua unit test |
-| V13 | Hai tài khoản không thấy dữ liệu của nhau | Cô lập dữ liệu Zero-Trust (IDOR mitigation) | Không (B2, B4) | N/A-mock | Mock backend luôn trả id=1; kiểm chứng qua unit test |
-| V14 | Cookie giả mạo gửi lên server | Bị từ chối với mã 401 | Không (B2) | N/A-mock | Lỗ hổng B2 của mock backend; kiểm chứng qua unit test |
+| V1 | Mở `/` khi chưa có cookie phiên | `GET /auth/me` trả về 401 → điều hướng `/login` | Có | **Pass** | Verified qua `ProtectedRoute.test.tsx` và `integration.test.tsx` (test 14) |
+| V2 | Đăng nhập tài khoản bất kỳ | `Set-Cookie: access_token` HttpOnly; LocalStorage rỗng; vào `/` hoặc `/goal-setup` | Có | **Pass** | Verified qua `LoginPage.test.tsx` và `integration.test.tsx` (test 3: không token trong storage) |
+| V3 | Tải lại trang (F5) sau khi đăng nhập | Giữ phiên hợp lệ, **tuyệt đối không nháy Login** (SAC-1) | Có | **Pass** | Verified qua `resilience.test.tsx` (hook `useDelayedFlag` 150ms + deduplication) |
+| V4 | Đăng ký tài khoản hợp lệ | Luồng `register` → tự động `login` → `/goal-setup` | Có | **Pass** | Verified qua `RegisterPage.test.tsx` và `integration.test.tsx` (test 2) |
+| V5 | Wizard tính & lưu mục tiêu | Hiển thị TDEE, Protein, Carbs, Fat + "Ước tính" + disclaimer | Có | **Pass** | Verified qua `GoalPlannerWizard.test.tsx` và `integration.test.tsx` (test 1, 9) |
+| V6 | Kiểm tra payload `POST /goals` | Đúng 9 trường, **không** `user_id`, **không** header `Authorization` | Có | **Pass** | Verified qua `integration.test.tsx` (test 5, 6: Zero-Trust payload và ApiClient headers) |
+| V7 | Tắt Backend hoặc mất mạng rồi tải lại trang | Hiển thị màn hình mất kết nối + nút Thử lại (SAC-3, SAC-4) | Có | **Pass** | Verified qua `resilience.test.tsx` (test 2, 3) và `integration.test.tsx` (test 12) |
+| V8 | Xóa cookie thủ công khi đang thao tác | Nhận 401 → về `/login` kèm banner thông báo phiên hết hạn | Có | **Pass** | Verified qua `integration.test.tsx` (test 7: sự kiện `nutrisnap:unauthorized`) |
+| V9 | Đăng xuất người dùng | Xóa cookie phiên → chuyển hướng `/login` | Có | **Pass** | Verified qua `AuthContext.test.tsx` (test 5: `logout()` gọi API và chuyển `unauthenticated`) |
+| V10 | Đăng nhập sai mật khẩu (401) | Hiển thị thông điệp lỗi thân thiện chuẩn | Không (B1) | **N/A-mock** | Mock backend chấp nhận mọi mật khẩu (B1); kiểm chứng qua `LoginPage.test.tsx` |
+| V11 | Đăng ký tài khoản đã tồn tại (409) | Hiển thị lỗi form hoặc field trùng lặp | Không (B5) | **N/A-mock** | Mock backend không kiểm tra trùng lặp DB (B5); kiểm chứng qua `RegisterPage.test.tsx` |
+| V12 | Lưu mục tiêu rồi đọc lại từ database | Dữ liệu mục tiêu khớp chính xác | Không (B4) | **N/A-mock** | Mock backend không lưu DB thực (B4); kiểm chứng qua `GoalPlannerWizard.test.tsx` |
+| V13 | Hai tài khoản không thấy dữ liệu của nhau | Cô lập dữ liệu Zero-Trust (IDOR mitigation) | Không (B2, B4) | **N/A-mock** | Mock backend luôn trả cứng id=1 (B2, B4); kiểm chứng qua `integration.test.tsx` (test 5) |
+| V14 | Cookie giả mạo gửi lên server | Bị từ chối với mã 401 | Không (B2) | **N/A-mock** | Lỗ hổng B2 của mock backend (không decode JWT); kiểm chứng qua unit test |
 
 ---
 
