@@ -8,7 +8,7 @@ Zero-Trust Authentication: Xác thực người dùng qua HttpOnly Cookie 'acces
 
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.backend.schemas.api_contract import (
@@ -37,6 +37,7 @@ from src.backend.schemas.api_contract import (
     MealPreviewItem,
     MealPreviewRequest,
     MealPreviewResponse,
+    RecognizeFoodResponse,
     UserLoginRequest,
     UserPublicResponse,
     UserRegisterRequest,
@@ -45,6 +46,11 @@ from src.backend.schemas.api_contract import (
     WeightLogResponse,
 )
 from src.backend.services.auth_guard import AuthenticatedUser, get_current_user
+from src.backend.services.food_recognition import (
+    decode_base64_image,
+    get_fallback_recognition_response,
+    recognize_food_pipeline,
+)
 
 # Khởi tạo ứng dụng FastAPI với siêu dữ liệu OpenAPI đầy đủ
 app = FastAPI(
@@ -522,6 +528,68 @@ def get_weight_history(
         current_weight=68.5,
         target_weight=65.0,
     )
+
+
+# ==============================================================================
+# PHÂN HỆ 6b: NHẬN DIỆN MÓN ĂN AI & ÁNH XẠ FUZZY MATCHING (W3 MILESTONE POC)
+# ==============================================================================
+
+@app.post(
+    "/api/v1/ai/recognize-food",
+    response_model=RecognizeFoodResponse,
+    tags=["AI Vision & Recognition"],
+)
+@app.post(
+    "/api/v1/ai/analyze-dish",
+    response_model=RecognizeFoodResponse,
+    tags=["AI Vision & Recognition"],
+)
+async def recognize_food_endpoint(request: Request):
+    """
+    Đóng gói API Nhận diện món ăn & Ánh xạ Fuzzy Matching (Milestone PoC - Tuần 3).
+    Chuyên trách: Lê Hoàng Phú Hiếu (MSSV: 25127049 - Cặp 3: AI Intelligence & QA/Benchmarking).
+
+    Hỗ trợ linh hoạt các phương thức gửi ảnh:
+    1. Upload File qua multipart/form-data (field 'file' hoặc 'image').
+    2. Chuỗi Base64 qua application/json hoặc form-data (field 'image_base64').
+    3. Tự động kích hoạt cơ chế Mock Fallback khi API/mạng gặp sự cố (Zero-Crash Demo Guarantee).
+    """
+    content_type = request.headers.get("content-type", "").lower()
+    meal_type = "lunch"
+    image_bytes: bytes | None = None
+
+    try:
+        if "multipart/form-data" in content_type:
+            form = await request.form()
+            meal_type = str(form.get("meal_type") or "lunch")
+            file_field = form.get("file") or form.get("image")
+            if file_field and hasattr(file_field, "read"):
+                image_bytes = await file_field.read()
+            elif "image_base64" in form and form["image_base64"]:
+                image_bytes, _ = decode_base64_image(str(form["image_base64"]))
+        elif "application/json" in content_type:
+            body = await request.json()
+            meal_type = body.get("meal_type", "lunch")
+            b64 = body.get("image_base64")
+            if b64:
+                image_bytes, _ = decode_base64_image(b64)
+        else:
+            raw_body = await request.body()
+            if raw_body:
+                image_bytes = raw_body
+
+        if not image_bytes:
+            # Nếu không có ảnh, trả về dữ liệu mẫu Fallback an toàn cho Demo PoC
+            return get_fallback_recognition_response(meal_type=meal_type)
+
+        return recognize_food_pipeline(
+            image_input=image_bytes,
+            meal_type=meal_type,
+            use_mock_fallback=True,
+        )
+    except Exception:
+        # Cơ chế Mock Fallback bắt buộc: Đảm bảo không bao giờ crash 500 làm gián đoạn Demo
+        return get_fallback_recognition_response(meal_type=meal_type)
 
 
 # ==============================================================================
