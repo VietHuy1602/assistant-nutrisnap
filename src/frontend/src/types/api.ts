@@ -23,6 +23,33 @@ export interface AuthResponse {
   user: UserPublic;
 }
 
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  username_or_email: string;
+  password: string;
+}
+
+export type Gender = 'male' | 'female' | 'other';
+export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+export type GoalType = 'lose_weight' | 'maintain' | 'gain_muscle';
+
+export interface GoalCreateRequest {
+  gender: Gender;
+  age: number;
+  height_cm: number;
+  current_weight_kg: number;
+  target_weight_kg: number;
+  activity_level: ActivityLevel;
+  goal_type: GoalType;
+  weekly_pace_kg: number;
+  daily_budget_vnd: number;
+}
+
 export interface GoalData {
   id: number;
   user_id: number;
