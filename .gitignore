@@ -248,3 +248,6 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
+
+# Local draft guides
+docs/readmew*.md

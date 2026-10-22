@@ -212,6 +212,57 @@ class MealPreviewResponse(BaseModel):
     disclaimer: str = Field(default=RESPONSIBLE_NUTRITION_DISCLAIMER)
 
 
+# ==============================================================================
+# 4b. PHÂN HỆ NHẬN DIỆN MÓN ĂN AI & FUZZY MATCHING (W3 ENDPOINT CONTRACT)
+# ==============================================================================
+
+class RecognizedFoodItem(BaseModel):
+    """Món ăn được nhận diện qua AI Vision và ánh xạ bằng Fuzzy Matching."""
+    food_id: int | None = Field(default=None, description="ID trong bảng food_references nếu khớp")
+    food_name: str = Field(..., description="Tên món ăn (tiếng Việt chuẩn hóa hoặc tên gốc AI)")
+    matched_name: str | None = Field(default=None, description="Tên món khớp trong CSDL tham chiếu nếu khác")
+    match_score: float = Field(default=1.0, ge=0.0, le=1.0, description="Độ tương đồng Fuzzy Matching")
+    is_matched: bool = Field(default=True, description="Đã ánh xạ vào CSDL chuẩn hay chưa")
+    estimated_gram: float = Field(..., ge=1.0, le=3000.0, description="Khối lượng ước tính (gam)")
+    estimated_calories: float = Field(default=0.0, description="Calo ước tính tính theo công thức tất định")
+    protein_g: float = Field(default=0.0, description="Protein ước tính (g)")
+    carbs_g: float = Field(default=0.0, description="Tinh bột ước tính (g)")
+    fat_g: float = Field(default=0.0, description="Chất béo ước tính (g)")
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Độ tự tin của AI Vision")
+
+
+class RecognizeFoodRequest(BaseModel):
+    """Dữ liệu gửi lên khi nhận diện món ăn bằng chuỗi Base64."""
+    image_base64: str | None = Field(default=None, description="Chuỗi Base64 của ảnh chụp đĩa thức ăn")
+    meal_type: Literal["breakfast", "lunch", "dinner", "snack"] = Field(
+        default="lunch", description="Loại bữa ăn gợi ý"
+    )
+
+
+class RecognizeFoodResponse(BaseModel):
+    """Phản hồi kết quả nhận diện món ăn từ endpoint POST /api/v1/ai/recognize-food."""
+    success: bool = Field(default=True, description="Trạng thái thực thi")
+    status: Literal["pending_confirmation", "unrecognized"] = Field(
+        default="pending_confirmation",
+        description="Trạng thái: chờ xác nhận hoặc không nhận diện được"
+    )
+    meal_type: str = Field(default="lunch", description="Loại bữa ăn gợi ý")
+    detected_items: list[RecognizedFoodItem] = Field(
+        default_factory=list,
+        description="Danh sách món ăn nhận diện kèm thông tin dinh dưỡng"
+    )
+    total_estimated_calories: float = Field(default=0.0, description="Tổng calo ước tính tất định")
+    is_fallback: bool = Field(
+        default=False,
+        description="Cờ báo hiệu kết quả từ cơ chế Fallback khi gặp sự cố API/mạng"
+    )
+    message: str = Field(default="Nhận diện món ăn thành công.", description="Thông báo phản hồi")
+    disclaimer: str = Field(
+        default=RESPONSIBLE_NUTRITION_DISCLAIMER,
+        description="Khuyến cáo miễn trừ trách nhiệm y khoa"
+    )
+
+
 class MealItemConfirmInput(BaseModel):
     """Thông tin món ăn khi người dùng đã xác nhận / sửa đổi khối lượng."""
     food_id: int = Field(..., description="ID món ăn trong bảng food_references")
