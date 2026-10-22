@@ -14,6 +14,8 @@ from datetime import UTC, datetime
 from fastapi import Cookie, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
+from src.backend.services.auth_service import decode_access_token
+
 ALLOWED_ORIGINS = {
     "http://localhost:5173",
     "http://127.0.0.1:5173",
@@ -54,23 +56,46 @@ def get_current_user(
     request: Request,
     access_token: str | None = Cookie(default=None),
 ) -> AuthenticatedUser:
-    """Dependency trích xuất và xác thực người dùng từ HttpOnly Cookie 'access_token'.
+    """Dependency trích xuất và xác thực người dùng từ HttpOnly Cookie 'access_token'
 
+    hoặc header Authorization: Bearer.
     Từ chối truy cập (401 Unauthorized) nếu không có Cookie hoặc Cookie rỗng.
     """
-    if not access_token or not access_token.strip():
+    token = access_token
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.removeprefix("Bearer ").strip()
+
+    if not token or not token.strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Chưa xác thực phiên đăng nhập. Vui lòng gửi kèm HttpOnly Cookie 'access_token'.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Trong bộ khung Tuần 1 / PoC: Xác thực token hợp lệ (chuỗi token demo hợp lệ hoặc giải mã JWT)
+    # Thử giải mã JWT Token thực tế
+    payload = decode_access_token(token)
+    if payload:
+        user_id_raw = payload.get("sub") or payload.get("user_id")
+        if user_id_raw:
+            try:
+                user_id = int(user_id_raw)
+                return AuthenticatedUser(
+                    id=user_id,
+                    username=str(payload.get("username", f"user_{user_id}")),
+                    email=str(payload.get("email", f"user_{user_id}@nutrisnap.vn")),
+                    created_at=datetime.now(UTC),
+                )
+            except (ValueError, TypeError):
+                pass
+
+    # Trong bộ khung Tuần 1 / PoC: Tương thích với các chuỗi token demo
     if (
-        "mock_jwt_token" in access_token
-        or "fake-jwt-token" in access_token
-        or "nutrisnap_jwt_" in access_token
-        or len(access_token) >= 15
+        "mock_jwt_token" in token
+        or "fake-jwt-token" in token
+        or "nutrisnap_jwt_" in token
+        or len(token) >= 15
     ):
         return AuthenticatedUser(
             id=1,
