@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, ArrowRight, Save, AlertCircle, Info, Sparkles } from 'lucide-react';
@@ -9,6 +9,7 @@ import { StepGoal } from '../components/goal/StepGoal';
 import { StepSafety } from '../components/goal/StepSafety';
 import { StepReview } from '../components/goal/StepReview';
 import { GoalResultPanel } from '../components/goal/GoalResultPanel';
+import { GoalResultSkeleton } from '../components/goal/GoalResultSkeleton';
 import { goalApi } from '../api/goalApi';
 import { useAuth } from '../context/AuthContext';
 import { GoalData } from '../types/api';
@@ -21,6 +22,11 @@ export const GoalPlannerWizard: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [resultData, setResultData] = useState<GoalData | null>(null);
   const [existingGoal, setExistingGoal] = useState<GoalData | null>(null);
+  const stepHeaderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    stepHeaderRef.current?.focus();
+  }, [currentStep]);
 
   const form = useForm<GoalFormValues>({
     resolver: zodResolver(goalSchema),
@@ -142,10 +148,19 @@ export const GoalPlannerWizard: React.FC = () => {
     );
   }
 
+  // Nếu đang gửi dữ liệu lưu ở Bước 4 -> hiển thị Skeleton placeholder ngay lập tức để không nhảy layout (SAC-11)
+  if (isSubmitting && currentStep === 4) {
+    return (
+      <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6">
+        <GoalResultSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl mx-auto py-6 px-4 sm:px-6 space-y-6">
       {/* Header Wizard */}
-      <div className="space-y-1">
+      <div ref={stepHeaderRef} tabIndex={-1} className="space-y-1 outline-none">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-nutri-primary text-xs font-bold mb-1">
           <Sparkles className="w-3.5 h-3.5" />
           Thiết lập lộ trình thông minh
@@ -195,10 +210,15 @@ export const GoalPlannerWizard: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          {currentStep === 1 && <StepBody form={form} />}
-          {currentStep === 2 && <StepGoal form={form} />}
-          {currentStep === 3 && <StepSafety form={form} />}
-          {currentStep === 4 && <StepReview form={form} onEditStep={handleStepJump} />}
+          <div
+            key={currentStep}
+            className="min-h-[380px] transition-opacity duration-200 ease-out motion-reduce:transition-none"
+          >
+            {currentStep === 1 && <StepBody form={form} />}
+            {currentStep === 2 && <StepGoal form={form} />}
+            {currentStep === 3 && <StepSafety form={form} />}
+            {currentStep === 4 && <StepReview form={form} onEditStep={handleStepJump} />}
+          </div>
 
           {/* Navigation Controls */}
           <div className="flex items-center justify-between pt-6 border-t border-slate-100 mt-8">
