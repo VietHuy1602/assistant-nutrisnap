@@ -14,21 +14,24 @@
 ---
 
 ## 2. Kết quả kiểm toán (A1–A11) & Remediation
-*(Sẽ được điền chi tiết tại Step 1 — Kiểm toán chỉ-đọc)*
+- **Thời điểm thực hiện kiểm toán:** 23/10/2026 (Step 1 — Kiểm toán chỉ-đọc).
+- **Trạng thái Remediation R1:** **Không cần thực hiện** (Mã nguồn đã tuân thủ 100% HttpOnly Cookie từ trước, không còn tàn dư của `localStorage` / `sessionStorage` hay header `Authorization` trong mã ứng dụng).
 
 | # | Hạng mục kiểm toán | Kỳ vọng chuẩn `NS-FE-W2-001` | Kết quả thực tế | Trạng thái |
-|---|---|---|---|---|
-| A1 | Cơ chế phiên (Session Management) | HttpOnly Cookie + `withCredentials: true`; **không** dùng `localStorage`/`sessionStorage`/header `Authorization` | Pending | Pending |
-| A2 | Cấu hình `apiClient` | `withCredentials: true`, timeout, request/response interceptors, chuẩn hóa lỗi `ApiError` | Pending | Pending |
-| A3 | Trạng thái `AuthContext` | `loading/authenticated/unauthenticated`; bootstrap qua `/auth/me`; bắt sự kiện 401 | Pending | Pending |
-| A4 | Điều hướng & Route Guards | `ProtectedRoute`, `PublicOnlyRoute`, `safeRedirect` ngăn chặn Open Redirect | Pending | Pending |
-| A5 | Trang Đăng nhập (`LoginPage`) | Không giá trị mặc định; bắt lỗi chuẩn `detail` của FastAPI; link Đăng ký; banner hết hạn | Pending | Pending |
-| A6 | Trang Đăng ký (`RegisterPage`) | Luồng `register → login → /goal-setup`; payload không gửi `confirmPassword` | Pending | Pending |
-| A7 | Wizard Onboarding (`GoalPlannerWizard`) | 4 bước + kết quả; payload đúng 9 field, không `user_id`; hiển thị TDEE, Protein, Carbs, Fat | Pending | Pending |
-| A8 | Nhãn minh bạch Y khoa | "Ước tính" + `DisclaimerBadge` + ghi chú nguyên văn pháp lý/y khoa của Wizard | Pending | Pending |
-| A9 | Dọn dẹp mã nguồn | Xóa bỏ trang mồ côi `GoalPlannerPage.tsx`; không còn import mồ côi | Pending | Pending |
-| A10 | Bộ kiểm thử tự động | Bao phủ đầy đủ schema validation, route guards, auth pages, wizard | Pending | Pending |
-| A11 | Thanh điều hướng (Navbar / AppShell) | Tab "Mục tiêu" trỏ đúng về `/goal-setup` | Pending | Pending |
+|---|---|---|---|:---:|
+| A1 | Cơ chế phiên (Session Management) | HttpOnly Cookie + `withCredentials: true`; **không** dùng `localStorage`/`sessionStorage`/header `Authorization` | `client.ts` cấu hình `withCredentials: true`; `AuthContext.tsx` suy phiên từ `/auth/me`; `security.test.ts` & `LoginPage.test.tsx` chặn storage/Authorization. | **Đạt** |
+| A2 | Cấu hình `apiClient` | `withCredentials: true`, timeout, request/response interceptors, chuẩn hóa lỗi `ApiError` | `timeout: 15_000`, `X-Requested-With`, `X-Request-ID`, tự động dispatch `UNAUTHORIZED_EVENT` (401 trừ probe paths), chuẩn hóa lỗi qua `normalizeAxiosError`. | **Đạt** |
+| A3 | Trạng thái `AuthContext` | `loading/authenticated/unauthenticated`; bootstrap qua `/auth/me`; bắt sự kiện 401 | Cung cấp đủ 3 trạng thái phiên, `login`, `register`, `logout`, `refresh`, lắng nghe sự kiện 401 toàn cục kích hoạt `sessionExpired`. | **Đạt** |
+| A4 | Điều hướng & Route Guards | `ProtectedRoute`, `PublicOnlyRoute`, `safeRedirect` ngăn chặn Open Redirect | `ProtectedRoute.tsx` (loading → Spinner; unauthenticated → `/login`), `PublicOnlyRoute.tsx`, `safeRedirect.ts` chặn Open Redirect (`//`, `\`, `://`). | **Đạt** |
+| A5 | Trang Đăng nhập (`LoginPage`) | Không giá trị mặc định; bắt lỗi chuẩn `detail` của FastAPI; link Đăng ký; banner hết hạn | Form rỗng mặc định, bắt lỗi 401 và lỗi FastAPI `detail`, hiển thị banner khi `sessionExpired`, liên kết `/register`, dùng `safeRedirect`. | **Đạt** |
+| A6 | Trang Đăng ký (`RegisterPage`) | Luồng `register → login → /goal-setup`; payload không gửi `confirmPassword` | Payload gửi đi chỉ gồm `username`, `email`, `password`; tự động `login` sau `register` và chuyển `/goal-setup`; ánh xạ lỗi Pydantic 422 vào field. | **Đạt** |
+| A7 | Wizard Onboarding (`GoalPlannerWizard`) | 4 bước + kết quả; payload đúng 9 field, không `user_id`; hiển thị TDEE, Protein, Carbs, Fat | 4 bước (`StepBody`, `StepGoal`, `StepSafety`, `StepReview`) + `GoalResultPanel`; payload đúng 9 field Zero-Trust; hiển thị đầy đủ TDEE, BMR, Calo, Protein, Carbs, Fat, Ngân sách. | **Đạt** |
+| A8 | Nhãn minh bạch Y khoa | "Ước tính" + `DisclaimerBadge` + ghi chú nguyên văn pháp lý/y khoa của Wizard | Có `DisclaimerBadge` ở Login, Register, GoalResult; mọi thẻ dinh dưỡng đều gắn nhãn "Ước tính"; `StepSafety` có ghi chú nguyên văn `DISCLAIMER_WIZARD`. | **Đạt** |
+| A9 | Dọn dẹp mã nguồn | Xóa bỏ trang mồ côi `GoalPlannerPage.tsx`; không còn import mồ côi | Không tồn tại file cũ; `npm run build` (`tsc`) biên dịch sạch sẽ không cảnh báo import lỗi. | **Đạt** |
+| A10 | Bộ kiểm thử tự động | Bao phủ đầy đủ schema validation, route guards, auth pages, wizard | 10 tệp test, **68/68 test cases PASS (0 fail)**. | **Đạt** |
+| A11 | Thanh điều hướng (Navbar / AppShell) | Tab "Mục tiêu" trỏ đúng về `/goal-setup` | `Navbar.tsx` có `NavLink to="/goal-setup"` với nhãn "Mục tiêu"; `App.tsx` định tuyến `/goal-setup` chuẩn xác. | **Đạt** |
+
+- **Ghi nhận Step 2 (Token thiết kế Figma):** Tạm thời ghi nhận **Pending** do đang chờ hoàn thiện bảng 7.3 từ Track A (Khôi Nguyên). Chuyển thẳng sang Step 3.
 
 ---
 
