@@ -463,6 +463,44 @@ def get_daily_dashboard_data(
     remaining_fat_g = round(target_fat_g - consumed_fat_g, 1)
     remaining_budget_vnd = int(daily_budget_vnd - consumed_budget_vnd)
 
+    cal_progress = (
+        round((consumed_calories / target_calories) * 100, 1)
+        if target_calories > 0
+        else 0.0
+    )
+    macros_data = {
+        "protein": {
+            "consumed": consumed_protein_g,
+            "target": target_protein_g,
+            "unit": "g",
+            "progress_percent": (
+                round((consumed_protein_g / target_protein_g) * 100, 1)
+                if target_protein_g > 0
+                else 0.0
+            ),
+        },
+        "carbs": {
+            "consumed": consumed_carbs_g,
+            "target": target_carbs_g,
+            "unit": "g",
+            "progress_percent": (
+                round((consumed_carbs_g / target_carbs_g) * 100, 1)
+                if target_carbs_g > 0
+                else 0.0
+            ),
+        },
+        "fat": {
+            "consumed": consumed_fat_g,
+            "target": target_fat_g,
+            "unit": "g",
+            "progress_percent": (
+                round((consumed_fat_g / target_fat_g) * 100, 1)
+                if target_fat_g > 0
+                else 0.0
+            ),
+        },
+    }
+
     return {
         "date": query_date.isoformat() if hasattr(query_date, "isoformat") else str(query_date),
         "user_id": authenticated_user_id,
@@ -490,7 +528,10 @@ def get_daily_dashboard_data(
         "target_calories": target_calories,
         "consumed_calories": consumed_calories,
         "remaining_calories": remaining_calories,
+        "calories_progress_percent": cal_progress,
+        "macros": macros_data,
         "meals_count": len(meals_detail_list),
         "meals": meals_detail_list,
+        "meals_summary": meals_detail_list,
         "disclaimer": DISCLAIMER_TEXT,
     }
