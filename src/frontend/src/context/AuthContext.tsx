@@ -17,7 +17,7 @@ export interface AuthContextType {
   user: UserPublic | null;
   hasGoal: boolean;
   sessionExpired: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<boolean>;
   register: (payload: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = useCallback(async (credentials: LoginRequest) => {
+  const login = useCallback(async (credentials: LoginRequest): Promise<boolean> => {
     await authApi.login(credentials);
     try {
       const meRes = await authApi.me();
@@ -82,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setHasGoal(meRes.has_goal);
       setStatus('authenticated');
       setSessionExpired(false);
+      return meRes.has_goal;
     } catch {
       setUser(null);
       setHasGoal(false);
