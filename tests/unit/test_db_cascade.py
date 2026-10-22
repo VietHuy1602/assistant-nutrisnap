@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, SQLModel, select
 
-from src.backend.database import create_db_engine
+from src.backend.models.database import create_db_engine
 from src.backend.models.schema import (
     ChatMessage,
     ChatSession,

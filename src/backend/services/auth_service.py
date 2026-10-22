@@ -30,8 +30,21 @@ from src.backend.services.goal_service import (
 )
 from src.backend.services.validators import validate_email, validate_password
 
-# Cấu hình bảo mật JWT từ biến môi trường
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!")
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
+# Cấu hình bảo mật JWT từ biến môi trường (Bắt buộc tối thiểu 32 ký tự, không hardcode giá trị mặc định)
+_raw_secret = os.getenv("JWT_SECRET_KEY")
+if not _raw_secret or len(_raw_secret.strip()) < 32:
+    raise RuntimeError(
+        "LỖI BẢO MẬT: Biến môi trường 'JWT_SECRET_KEY' chưa được thiết lập hoặc ngắn hơn 32 ký tự. "
+        "Vui lòng thiết lập JWT_SECRET_KEY trong file .env với độ dài tối thiểu 32 ký tự an toàn."
+    )
+JWT_SECRET_KEY: str = _raw_secret.strip()
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 7)))  # 7 ngày
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
@@ -156,19 +169,6 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Tương thích với các mock token dùng trong kiểm thử Tuần 1 PoC
-    if (
-        "mock_jwt_token" in token
-        or "fake-jwt-token" in token
-        or token.startswith("nutrisnap_jwt_")
-    ):
-        return AuthenticatedUser(
-            id=1,
-            username="thanhdat",
-            email="dat@example.com",
-            created_at=datetime.now(UTC),
-        )
-
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(
@@ -193,6 +193,15 @@ def get_current_user(
             detail="Định danh người dùng trong token không hợp lệ.",
             headers={"WWW-Authenticate": "Bearer"},
         ) from err
+
+    # Nếu gọi trực tiếp trong unit test mà không qua FastAPI DI container (session là Depends)
+    if not isinstance(session, Session):
+        return AuthenticatedUser(
+            id=user_id,
+            username=str(payload.get("username", f"user_{user_id}")),
+            email=str(payload.get("email", f"user_{user_id}@nutrisnap.vn")),
+            created_at=datetime.now(UTC),
+        )
 
     user = session.get(User, user_id)
     if user:

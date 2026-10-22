@@ -439,10 +439,21 @@ def test_food_search_and_deterministic_math(client: TestClient, db_session: Sess
 # ==============================================================================
 
 
-def test_logout_clears_cookie(client: TestClient):
+def test_logout_clears_cookie(client: TestClient, db_session: Session):
     """Kiểm tra gọi POST /api/v1/auth/logout xóa Cookie access_token."""
-    client.post("/api/v1/auth/login", json={"username_or_email": "thanhdat", "password": "Password123"})
-    assert "access_token" in client.cookies
+    register_with_initial_goal(
+        session=db_session,
+        username="thanhdat",
+        email="dat@example.com",
+        password="Password123",
+        initial_goal=None,
+    )
+    login_res = client.post(
+        "/api/v1/auth/login",
+        json={"username_or_email": "thanhdat", "password": "Password123"},
+    )
+    assert login_res.status_code == 200
+    assert "access_token" in login_res.cookies
 
     logout_res = client.post("/api/v1/auth/logout")
     assert logout_res.status_code == 200

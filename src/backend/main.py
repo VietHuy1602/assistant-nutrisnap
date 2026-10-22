@@ -11,8 +11,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.backend.models.database import init_db
@@ -39,14 +38,15 @@ from src.backend.schemas.api_contract import (
     MealPreviewRequest,
     MealPreviewResponse,
     RecognizeFoodResponse,
-    UserLoginRequest,
-    UserPublicResponse,
-    UserRegisterRequest,
     WeightHistoryResponse,
     WeightLogRequest,
     WeightLogResponse,
 )
-from src.backend.services.auth_guard import AuthenticatedUser, get_current_user
+from src.backend.services.auth_guard import (
+    AuthenticatedUser,
+    get_current_user,
+    verify_csrf_protection,
+)
 from src.backend.services.food_recognition import (
     decode_base64_image,
     get_fallback_recognition_response,
@@ -119,6 +119,7 @@ def health_check():
     "/api/v1/meals/preview",
     response_model=MealPreviewResponse,
     tags=["Meal Logging"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def preview_meal(req: MealPreviewRequest):
     """Bước 1 (Two-Step Confirmation): Phân tích ảnh/giọng nói để tạo bản nháp.
@@ -151,6 +152,7 @@ def preview_meal(req: MealPreviewRequest):
     response_model=MealLogResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Meal Logging"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def log_meal_confirmed(
     req: MealLogRequest,
@@ -268,6 +270,7 @@ def get_daily_dashboard(
     response_model=WeightLogResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Weight Tracking"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def log_weight(
     req: WeightLogRequest,
@@ -380,6 +383,7 @@ async def recognize_food_endpoint(request: Request):
     "/api/v1/assistant/chat",
     response_model=ChatMessageResponse,
     tags=["Assistant Chat"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def chat_with_assistant(
     req: ChatMessageRequest,
@@ -420,6 +424,7 @@ def chat_with_assistant(
     "/api/v1/assistant/action-card/confirm",
     response_model=ActionCardConfirmResponse,
     tags=["Assistant Chat"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def confirm_action_card(
     req: ActionCardConfirmRequest,
