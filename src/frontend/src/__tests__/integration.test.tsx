@@ -562,6 +562,57 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     expect(getSpy).toHaveBeenCalledWith('/dashboard/daily');
   });
 
+  it.each(['success', 'cancel', 'failure', 'invalid', 'refresh-error'])('Chat save coordinates Dashboard refresh: %s (simulated transport)', async outcome => {
+    const day = {
+      date: '2026-10-23', target_calories: 2000, consumed_calories: 0, remaining_calories: 2000,
+      calories_progress_percent: 0, meals_summary: [], disclaimer: 'Ước tính tham khảo.',
+      macros: Object.fromEntries(['protein', 'carbs', 'fat'].map(key => [key, { consumed: 0, target: 100, unit: 'g', progress_percent: 0 }])),
+    };
+    const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: day });
+    getSpy.mockResolvedValueOnce({ data: day });
+    if (outcome === 'refresh-error') getSpy.mockRejectedValueOnce(new Error('Dashboard unavailable'));
+    else getSpy.mockResolvedValueOnce({ data: { ...day, consumed_calories: 135, remaining_calories: 1865, meals_summary: [{ id: 42 }] } });
+    const postSpy = vi.spyOn(apiClient, 'post').mockImplementation(async url => {
+      if (url === '/assistant/chat') return { data: {
+        reply_text: 'Bản nháp tích hợp kiểm thử.',
+        action_card: { type: 'confirm_log_meal', status: 'pending_user_action', data: {
+          meal_type: 'lunch', total_calories: 100,
+          items: [{ food_id: 7, food_name: 'Món kiểm thử', estimated_gram: 100, calories: 100, protein_g: 2, carbs_g: 20, fat_g: 1 }],
+        } },
+      } };
+      if (outcome === 'failure') throw new ApiError('Rejected', { status: 400 });
+      return { status: 201, data: { success: outcome !== 'invalid', meal_id: 42, total_calories: 135, logged_at: '2026-10-23T12:00:00Z' } };
+    });
+    const user = userEvent.setup();
+    render(<MemoryRouter><AuthProvider><Routes><Route element={<ProtectedRoute />}><Route element={<AppShell />}><Route path="/" element={<DashboardPage />} /></Route></Route></Routes></AuthProvider></MemoryRouter>);
+    await screen.findByRole('button', { name: 'Mở trợ lý AI' });
+    await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole('button', { name: 'Mở trợ lý AI' }));
+    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    const confirm = await screen.findByRole('button', { name: 'Xác nhận lưu' });
+    if (outcome === 'cancel') {
+      await user.click(screen.getByRole('button', { name: 'Hủy' }));
+      expect(screen.getByText('Đã hủy · Bữa ăn chưa được lưu')).toBeInTheDocument();
+      expect(postSpy).toHaveBeenCalledTimes(1);
+    } else {
+      await user.click(confirm);
+      if (outcome === 'failure' || outcome === 'invalid') await screen.findByRole('alert');
+      else {
+        expect(await screen.findByText(/Đã lưu vào nhật ký · 135 kcal/)).toBeInTheDocument();
+        await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(2));
+      }
+    }
+    await user.keyboard('{Escape}');
+    if (outcome === 'success') expect(await screen.findByText('1.865')).toBeInTheDocument();
+    if (outcome === 'refresh-error') {
+      expect(await screen.findByRole('alert')).toHaveTextContent('Chưa tải được dữ liệu dinh dưỡng');
+      await user.click(screen.getByRole('button', { name: 'Mở trợ lý AI' }));
+      expect(screen.getByText(/Đã lưu vào nhật ký · 135 kcal/)).toBeInTheDocument();
+      await user.keyboard('{Escape}');
+    }
+    expect(getSpy).toHaveBeenCalledTimes(outcome === 'success' || outcome === 'refresh-error' ? 2 : 1);
+  });
+
   it('Setup banner is reachable by keyboard and Enter navigates without saving (isolated no-goal UI)', async () => {
     const postSpy = vi.spyOn(apiClient, 'post');
     const user = userEvent.setup();
@@ -591,8 +642,8 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
   it('Chat cancellation displays an unsaved state without logging a meal (simulated API reply)', async () => {
     const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: {
       reply_text: 'Kiểm tra bản nháp thử nghiệm.',
-      action_card: { status: 'pending_user_action', data: { meal_type: 'lunch', total_calories: 100,
-        items: [{ food_name: 'Món kiểm thử', estimated_gram: 100, calories: 100 }] } },
+      action_card: { type: 'confirm_log_meal', status: 'pending_user_action', data: { meal_type: 'lunch', total_calories: 100,
+        items: [{ food_id: 7, food_name: 'Món kiểm thử', estimated_gram: 100, calories: 100, protein_g: 2, carbs_g: 20, fat_g: 1 }] } },
     } });
     const user = userEvent.setup();
     render(<MemoryRouter><AuthProvider><Routes><Route element={<AppShell />}><Route path="/" element={<div>Trang kiểm thử</div>} /></Route></Routes></AuthProvider></MemoryRouter>);
