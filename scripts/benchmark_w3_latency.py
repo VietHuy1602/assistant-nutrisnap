@@ -34,11 +34,11 @@ os.environ.setdefault(
 os.environ.setdefault("APP_ENV", "testing")
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session, select
 
 from src.backend.main import app
 from src.backend.models.database import engine, init_db
 from src.backend.models.schema import FoodReference
-from sqlmodel import Session, select
 
 # Đảm bảo CSDL được khởi tạo và nạp dữ liệu tham chiếu
 init_db()
@@ -117,7 +117,7 @@ def run_benchmarks():
     })
 
     login_latencies = []
-    for i in range(1, N_RUNS + 1):
+    for _i in range(1, N_RUNS + 1):
         run_counter += 1
         t0 = time.perf_counter()
         resp = client.post("/api/v1/auth/login", json=login_payload)
@@ -158,7 +158,7 @@ def run_benchmarks():
     })
 
     recognition_latencies = []
-    for i in range(1, N_RUNS + 1):
+    for _i in range(1, N_RUNS + 1):
         run_counter += 1
         t0 = time.perf_counter()
         resp = client.post("/api/v1/ai/recognize-food", json=rec_payload)
@@ -208,7 +208,7 @@ def run_benchmarks():
     })
 
     save_meal_latencies = []
-    for i in range(1, N_RUNS + 1):
+    for _i in range(1, N_RUNS + 1):
         run_counter += 1
         t0 = time.perf_counter()
         resp = client.post("/api/v1/meals/log", json=meal_payload)
@@ -248,7 +248,7 @@ def run_benchmarks():
     })
 
     dashboard_latencies = []
-    for i in range(1, N_RUNS + 1):
+    for _i in range(1, N_RUNS + 1):
         run_counter += 1
         t0 = time.perf_counter()
         resp = client.get("/api/v1/meals/daily-dashboard")
@@ -281,18 +281,24 @@ def run_benchmarks():
     r_dash = w_client.get("/api/v1/meals/daily-dashboard")
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
+    warmup_success = (
+        r_login.status_code == 200
+        and r_rec.status_code == 200
+        and r_save.status_code == 201
+        and r_dash.status_code == 200
+    )
     records.append({
         "run_id": "warmup_e2e",
         "stage": "e2e_pipeline",
         "duration_ms": warmup_ms,
-        "status": "success" if (r_login.status_code == 200 and r_save.status_code == 201) else "failed",
+        "status": "success" if warmup_success else "failed",
         "environment": ENV_NAME,
         "image_size_bytes": IMAGE_SIZE_BYTES,
         "notes": "warmup_excluded_from_stats",
     })
 
     e2e_latencies = []
-    for i in range(1, N_RUNS + 1):
+    for _i in range(1, N_RUNS + 1):
         run_counter += 1
         pipe_client = TestClient(app)
         t0 = time.perf_counter()
