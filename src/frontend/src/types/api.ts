@@ -71,6 +71,31 @@ export interface MacroDetail {
   progress_percent: number;
 }
 
+export interface DailyDashboardMealItem {
+  id?: number;
+  food_id?: number;
+  food_name: string;
+  estimated_gram: number;
+  calories?: number;
+  estimated_calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  estimated_price_vnd?: number;
+}
+
+export interface DailyDashboardMeal {
+  id: number;
+  meal_type: string;
+  image_path?: string | null;
+  logged_at: string;
+  total_calories: number;
+  total_protein_g?: number;
+  total_carbs_g?: number;
+  total_fat_g?: number;
+  items: DailyDashboardMealItem[];
+}
+
 export interface DailyDashboardData {
   date: string;
   target_calories: number;
@@ -82,20 +107,8 @@ export interface DailyDashboardData {
     carbs: MacroDetail;
     fat: MacroDetail;
   };
-  meals_summary: Array<{
-    id: number;
-    meal_type: string;
-    image_path?: string;
-    logged_at: string;
-    total_calories: number;
-    items: Array<{
-      id: number;
-      food_id: number;
-      food_name: string;
-      estimated_gram: number;
-      estimated_calories: number;
-    }>;
-  }>;
+  meals?: DailyDashboardMeal[];
+  meals_summary: DailyDashboardMeal[];
   disclaimer: string;
 }
 
@@ -124,4 +137,99 @@ export interface ChatMessageResponse {
   reply_text: string;
   action_card?: ActionCard;
   disclaimer: string;
+}
+
+// ==============================================================================
+// W3 PoC: AI VISION RECOGNITION & MEAL LOGGING CONTRACTS
+// ==============================================================================
+
+export interface RecognizedFoodItem {
+  food_id: number | null;
+  food_name: string;
+  matched_name?: string | null;
+  match_score?: number;
+  is_matched: boolean;
+  estimated_gram: number;
+  estimated_calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  confidence: number;
+}
+
+export interface RecognizeFoodResponse {
+  success: boolean;
+  status: 'pending_confirmation' | 'unrecognized';
+  meal_type: string;
+  detected_items: RecognizedFoodItem[];
+  total_estimated_calories: number;
+  is_fallback?: boolean;
+  message?: string;
+  disclaimer?: string;
+}
+
+export interface MealItemInput {
+  food_id?: number | null;
+  food_name?: string | null;
+  estimated_gram: number;
+  eaten_ratio?: number;
+}
+
+export interface CalculatedMealItem {
+  food_id: number;
+  food_name: string;
+  estimated_gram: number;
+  eaten_ratio: number;
+  effective_gram: number;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  estimated_price_vnd: number;
+}
+
+export interface NutritionCalculationResult {
+  items: CalculatedMealItem[];
+  total_weight_g: number;
+  total_calories: number;
+  total_protein_g: number;
+  total_carbs_g: number;
+  total_fat_g: number;
+  total_estimated_price_vnd: number;
+  disclaimer: string;
+}
+
+export interface MealLogRequest {
+  meal_type: string;
+  items: MealItemInput[];
+  image_path?: string | null;
+  logged_at?: string | null;
+  is_confirmed: boolean;
+  notes?: string | null;
+}
+
+export interface MealLogResponse {
+  status: 'pending_confirmation' | 'logged';
+  meal_id?: number | null;
+  meal_type: string;
+  logged_at: string;
+  nutrition: NutritionCalculationResult;
+  disclaimer: string;
+  success: boolean;
+  total_calories?: number | null;
+}
+
+export interface FoodReferenceItem {
+  id: number;
+  food_name: string;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
+  avg_price_vnd: number;
+}
+
+export interface FoodSearchResponse {
+  total: number;
+  items: FoodReferenceItem[];
 }

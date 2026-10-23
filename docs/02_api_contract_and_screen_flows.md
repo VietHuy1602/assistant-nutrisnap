@@ -95,11 +95,11 @@ Mọi API tuân thủ:
 | Goal                | GET    | /api/v1/goals                   | Lấy mục tiêu dinh dưỡng hiện tại |
 | Goal                | POST   | /api/v1/goals                   | Tạo / cập nhật mục tiêu cá nhân  |
 | Foods               | GET    | /api/v1/foods/search            | Tra cứu món ăn từ CSDL 500 món   |
-| Meals (Logging)     | POST   | /api/v1/meals/preview           | Bóc tách ảnh/text tạo bản nháp   |
-| Meals (Logging)     | POST   | /api/v1/meals/log               | Xác nhận ghi bữa ăn vào CSDL     |
+| AI Vision           | POST   | /api/v1/ai/recognize-food       | Nhận diện ảnh món ăn qua AI      |
+| Meals (Preview/Log) | POST   | /api/v1/meals/log               | Xem trước dinh dưỡng (is_confirmed=false) hoặc Ghi CSDL (is_confirmed=true) |
 | Meals (Logging)     | GET    | /api/v1/meals/today             | Danh sách các bữa ăn hôm nay     |
 | Meals (Logging)     | DELETE | /api/v1/meals/{meal_id}         | Xóa một bữa ăn                   |
-| Dashboard           | GET    | /api/v1/dashboard/daily         | Tổng calo, macro, hạn mức ngày   |
+| Dashboard           | GET    | /api/v1/meals/daily-dashboard   | Tổng calo, macro, hạn mức ngày   |
 | Assistant           | POST   | /api/v1/assistant/chat          | Gửi tin nhắn và nhận phản hồi AI |
 | Assistant           | GET    | /api/v1/assistant/history       | Lấy lịch sử hội thoại gần nhất   |
 +---------------------------------------------------------------------------------------------------+
@@ -258,7 +258,7 @@ Mọi API tuân thủ:
 
 ### 4.4 Phân hệ Dashboard Dinh dưỡng Trong Ngày
 
-#### `GET /api/v1/dashboard/daily?date=2026-10-20`
+#### `GET /api/v1/meals/daily-dashboard?date=2026-10-20`
 * **Response (200 OK):**
 ```json
 {
