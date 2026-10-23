@@ -38,6 +38,10 @@ from src.backend.services.nutrition_service import (
     get_daily_dashboard_data,
     log_user_meal,
 )
+from src.backend.services.tool_security import (
+    sanitize_llm_tool_arguments,
+    verify_session_ownership,
+)
 
 MEAL_TYPE_MAPPING = {
     "breakfast": "Sáng",
@@ -436,9 +440,7 @@ def dispatch_tool_call(
     - Xóa bỏ triệt để user_id và authenticated_user_id nếu LLM/client cố tình gửi vào.
     - Ép buộc sử dụng authenticated_user_id xác thực từ phiên đăng nhập backend.
     """
-    safe_args = dict(tool_args or {})
-    safe_args.pop("user_id", None)
-    safe_args.pop("authenticated_user_id", None)
+    safe_args = sanitize_llm_tool_arguments(tool_args)
 
     clean_name = tool_name.strip()
 
@@ -489,13 +491,15 @@ def create_or_get_chat_session(
 ) -> ChatSession:
     """Tạo mới hoặc kiểm tra quyền sở hữu phiên chat (WHERE user_id == authenticated_user_id)."""
     if session_id is not None:
+        verify_session_ownership(
+            session=session,
+            session_id=session_id,
+            authenticated_user_id=authenticated_user_id,
+            raise_exception=True,
+        )
         chat_session = session.get(ChatSession, session_id)
         if not chat_session:
             raise ValueError("Không tìm thấy phiên hội thoại")
-        if chat_session.user_id != authenticated_user_id:
-            raise PermissionError(
-                "Cảnh báo bảo mật: Không có quyền truy cập phiên hội thoại của người dùng khác"
-            )
         return chat_session
 
     chat_session = ChatSession(user_id=authenticated_user_id, started_at=utc_now())
@@ -503,6 +507,9 @@ def create_or_get_chat_session(
     session.commit()
     session.refresh(chat_session)
     return chat_session
+
+
+get_or_create_chat_session = create_or_get_chat_session
 
 
 def save_chat_message(

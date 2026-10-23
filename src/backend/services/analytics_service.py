@@ -141,6 +141,7 @@ def analyze_user_patterns(
     session: Session,
     authenticated_user_id: int,
     days_range: int = 14,
+    days: int | None = None,
     reference_date: date | None = None,
 ) -> dict[str, Any]:
     """Phân tích nhật ký ăn uống 7–14 ngày của người dùng để nhận diện mẫu thói quen:
@@ -149,16 +150,17 @@ def analyze_user_patterns(
     - Đếm số ngày có ghi nhận nhật ký (logged_days_count = D).
     - Rào chắn: Nếu D < 5, trả về status='insufficient_data' và patterns=[].
     - Khi D >= 5, phân tích 3 mẫu:
-      1. skipping_breakfast: Tỷ lệ ngày ăn sáng < 50%.
-      2. low_protein: Lượng đạm trung bình < 75% mục tiêu target_protein_g.
-      3. late_night_eating: Có >= 3 ngày hoặc >= 30% số ngày ăn sau 21:00.
+      1. skipping_breakfast: Bỏ bữa sáng >= 40% số ngày hoặc tỷ lệ ăn sáng < 50%.
+      2. low_protein: Lượng đạm trung bình < 80% mục tiêu target_protein_g.
+      3. late_night_eating: Có >= 2 ngày hoặc >= 25% số ngày ăn sau 21:00.
     - Tuyệt đối không phán xét, locked_daily_target_calories giữ nguyên theo Goal.
     """
-    if days_range < 7 or days_range > 30:
+    effective_days = days if days is not None else days_range
+    if effective_days < 7 or effective_days > 30:
         raise ValueError("days_range phải nằm trong khoảng từ 7 đến 30 ngày")
 
     end_date = reference_date or get_vn_today()
-    start_date = end_date - timedelta(days=days_range - 1)
+    start_date = end_date - timedelta(days=effective_days - 1)
 
     # 1. Truy vấn mục tiêu cá nhân từ Goal
     goal = session.exec(select(Goal).where(Goal.user_id == authenticated_user_id)).first()
@@ -263,7 +265,8 @@ def analyze_user_patterns(
     detected_patterns: list[dict[str, Any]] = []
 
     # Mẫu 1: Hay bỏ bữa sáng (skipping_breakfast)
-    if breakfast_rate < 0.50:
+    skipping_breakfast_rate = round((d_total - d_breakfast) / d_total, 2)
+    if breakfast_rate < 0.50 or skipping_breakfast_rate >= 0.40:
         detected_patterns.append(
             {
                 "pattern_code": "skipping_breakfast",
@@ -283,7 +286,7 @@ def analyze_user_patterns(
         )
 
     # Mẫu 2: Thiếu hụt chất đạm (low_protein)
-    if avg_daily_protein < 0.75 * target_protein_g:
+    if avg_daily_protein < 0.80 * target_protein_g:
         detected_patterns.append(
             {
                 "pattern_code": "low_protein",
@@ -302,7 +305,7 @@ def analyze_user_patterns(
         )
 
     # Mẫu 3: Thói quen ăn khuya sau 21:00 (late_night_eating)
-    if d_late_night >= 3 or late_night_rate >= 0.30:
+    if d_late_night >= 2 or late_night_rate >= 0.25:
         detected_patterns.append(
             {
                 "pattern_code": "late_night_eating",
@@ -350,7 +353,10 @@ def simulate_food_swap(
     session: Session,
     current_food_id: int | None = None,
     current_food_name: str | None = None,
-    portion_gram: float = 250.0,
+    portion_gram: float | None = None,
+    current_gram: float | None = None,
+    target_food_id: int | None = None,
+    target_gram: float | None = None,
     swap_goal: str = "reduce_calories",
     max_budget_vnd: int | None = None,
     same_category_only: bool = True,
@@ -358,14 +364,16 @@ def simulate_food_swap(
 ) -> dict[str, Any]:
     """Mô phỏng đổi món ăn theo chuẩn đại số tất định:
 
-    - Kiểm tra an toàn y tế qua validate_portion_gram(portion_gram).
+    - Hỗ trợ cả portion_gram và current_gram, target_food_id và target_gram.
+    - Kiểm tra an toàn y tế qua validate_portion_gram.
     - swap_goal: 'reduce_calories', 'high_protein', 'balanced_saver'.
-    - Tính dinh dưỡng và chi phí món gốc trên portion_gram.
-    - Tìm và xếp hạng món thay thế từ bảng food_references.
-    - Tính toán chính xác độ chênh lệch delta_calories, delta_protein_g, delta_price_vnd.
+    - Tính dinh dưỡng và chi phí món gốc.
+    - Tính toán chính xác độ chênh lệch calories_diff, protein_diff_g, carbs_diff_g, fat_diff_g, price_diff_vnd.
     """
+    actual_gram = current_gram if current_gram is not None else (portion_gram if portion_gram is not None else 250.0)
+
     # 1. Xác thực đầu vào
-    is_valid, msg = validate_portion_gram(portion_gram)
+    is_valid, msg = validate_portion_gram(actual_gram)
     if not is_valid:
         raise ValueError(msg)
 
@@ -381,7 +389,7 @@ def simulate_food_swap(
     source_ref = resolve_food_reference(session, food_id=current_food_id, food_name=current_food_name)
 
     # 2. Tính dinh dưỡng món gốc
-    factor = portion_gram / 100.0
+    factor = actual_gram / 100.0
     calo_src = round(factor * source_ref.calories_per_100g, 2)
     protein_src = round(factor * source_ref.protein_per_100g, 2)
     carbs_src = round(factor * source_ref.carbs_per_100g, 2)
@@ -389,6 +397,35 @@ def simulate_food_swap(
     price_src = round(factor * source_ref.avg_price_vnd)
 
     source_category = classify_food_category(source_ref.food_name)
+
+    # Nếu có target_food_id cụ thể được chỉ định trực tiếp:
+    target_calc = None
+    if target_food_id is not None:
+        target_ref = resolve_food_reference(session, food_id=target_food_id)
+        t_gram = target_gram if target_gram is not None else actual_gram
+        t_cal = round((t_gram / 100.0) * target_ref.calories_per_100g, 2)
+        t_prot = round((t_gram / 100.0) * target_ref.protein_per_100g, 2)
+        t_carb = round((t_gram / 100.0) * target_ref.carbs_per_100g, 2)
+        t_fat = round((t_gram / 100.0) * target_ref.fat_per_100g, 2)
+        t_price = round((t_gram / 100.0) * target_ref.avg_price_vnd)
+        target_calc = {
+            "target_food": {
+                "food_id": target_ref.id,
+                "food_name": target_ref.food_name,
+                "category": classify_food_category(target_ref.food_name),
+                "portion_gram": t_gram,
+                "calories": t_cal,
+                "protein_g": t_prot,
+                "carbs_g": t_carb,
+                "fat_g": t_fat,
+                "estimated_price_vnd": t_price,
+            },
+            "calories_diff": round(t_cal - calo_src, 2),
+            "protein_diff_g": round(t_prot - protein_src, 2),
+            "carbs_diff_g": round(t_carb - carbs_src, 2),
+            "fat_diff_g": round(t_fat - fat_src, 2),
+            "price_diff_vnd": int(t_price - price_src),
+        }
 
     # 3. Lấy và lọc danh sách ứng viên từ food_references
     all_refs = session.exec(select(FoodReference)).all()
@@ -472,7 +509,7 @@ def simulate_food_swap(
                 "food_id": cand.id,
                 "food_name": cand.food_name,
                 "category": classify_food_category(cand.food_name),
-                "portion_gram": portion_gram,
+                "portion_gram": actual_gram,
                 "calories": calo_alt,
                 "protein_g": prot_alt,
                 "carbs_g": carbs_alt,
@@ -484,6 +521,11 @@ def simulate_food_swap(
                 "delta_carbs_g": delta_carbs,
                 "delta_fat_g": delta_fat,
                 "delta_price_vnd": delta_price,
+                "calories_diff": delta_cal,
+                "protein_diff_g": delta_prot,
+                "carbs_diff_g": delta_carbs,
+                "fat_diff_g": delta_fat,
+                "price_diff_vnd": delta_price,
                 "comparison_delta": {
                     "delta_calories": delta_cal,
                     "calories_saved": calories_saved,
@@ -495,13 +537,13 @@ def simulate_food_swap(
             }
         )
 
-    return {
+    out_res: dict[str, Any] = {
         "status": "success",
         "source_food": {
             "food_id": source_ref.id,
             "food_name": source_ref.food_name,
             "category": source_category,
-            "portion_gram": portion_gram,
+            "portion_gram": actual_gram,
             "calories": calo_src,
             "protein_g": protein_src,
             "carbs_g": carbs_src,
@@ -509,14 +551,24 @@ def simulate_food_swap(
             "estimated_price_vnd": price_src,
         },
         "swap_goal": swap_goal,
-        "portion_gram": portion_gram,
+        "portion_gram": actual_gram,
         "max_budget_vnd": max_budget_vnd,
         "same_category_only": same_category_only,
         "alternatives_count": len(alternatives),
         "alternatives": alternatives,
+        "calories_diff": alternatives[0]["delta_calories"] if alternatives else 0.0,
+        "protein_diff_g": alternatives[0]["delta_protein_g"] if alternatives else 0.0,
+        "carbs_diff_g": alternatives[0]["delta_carbs_g"] if alternatives else 0.0,
+        "fat_diff_g": alternatives[0]["delta_fat_g"] if alternatives else 0.0,
+        "price_diff_vnd": alternatives[0]["delta_price_vnd"] if alternatives else 0,
         "non_restrictive_note": (
             "Gợi ý thay thế mang tính tham khảo linh hoạt, "
             "bạn vẫn có thể thưởng thức món ăn yêu thích với khẩu phần hợp lý."
         ),
         "disclaimer": DISCLAIMER_TEXT,
     }
+
+    if target_calc is not None:
+        out_res.update(target_calc)
+
+    return out_res
