@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera } from 'lucide-react';
+import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
@@ -26,7 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-wrap items-center justify-between gap-3 py-3 lg:flex-nowrap lg:py-0">
         {/* Brand Logo */}
         <Link to="/" className="flex min-h-11 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-nutri-primary">
@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
         </Link>
 
         {/* Navigation Tabs */}
-        <nav aria-label="Điều hướng chính" className="flex w-full items-center justify-between gap-1 sm:w-auto sm:gap-2">
+        <nav aria-label="Điều hướng chính" className="flex w-full flex-wrap items-center justify-between gap-1 lg:w-auto sm:gap-2">
           <NavLink
             to="/"
             aria-label="Tổng quan"
@@ -92,6 +92,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           >
             <Target className="w-4 h-4" />
             <span className="hidden sm:inline">Mục tiêu</span>
+          </NavLink>
+
+          <NavLink
+            to="/monthly-report"
+            aria-label="Báo cáo tháng"
+            className={({ isActive }) =>
+              `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
+                isActive
+                  ? 'bg-emerald-50 text-nutri-primary font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`
+            }
+          >
+            <FileText className="w-4 h-4" aria-hidden="true" />
+            <span className="hidden sm:inline">Báo cáo tháng</span>
           </NavLink>
 
           {/* Quick Chat Assistant Trigger */}
