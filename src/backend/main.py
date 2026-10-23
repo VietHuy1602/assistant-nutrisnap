@@ -18,6 +18,7 @@ from sqlmodel import Session
 from src.backend.api.v1.router import api_router
 from src.backend.models.database import init_db
 from src.backend.models.database import get_session, init_db
+from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
 from src.backend.routers.auth_goal_router import router as auth_goal_router
 from src.backend.routers.meal_router import router as meal_router
@@ -85,10 +86,14 @@ app.add_middleware(
 # Nối API Router chuẩn vị (Auth register, login, me endpoints)
 app.include_router(api_router, prefix="/api/v1")
 
-# Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant
+# Nối API Router chuẩn vị (Auth register, login, me endpoints)
+app.include_router(api_router, prefix="/api/v1")
+
+# Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics
 app.include_router(auth_goal_router)
 app.include_router(meal_router)
 app.include_router(assistant_router)
+app.include_router(analytics_router)
 
 
 
