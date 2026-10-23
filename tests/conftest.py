@@ -24,3 +24,4 @@ def setup_test_database():
             from scripts.seed_food_references import seed_foods
 
             seed_foods()
+

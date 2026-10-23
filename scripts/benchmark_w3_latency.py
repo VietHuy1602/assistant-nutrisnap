@@ -295,24 +295,21 @@ def run_benchmarks():
     r_dash = w_client.get("/api/v1/meals/daily-dashboard")
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
-    records.append(
-        {
-            "run_id": "warmup_e2e",
-            "stage": "e2e_pipeline",
-            "duration_ms": warmup_ms,
-            "status": "success"
-            if (
-                r_login.status_code == 200
-                and r_rec.status_code == 200
-                and r_save.status_code == 201
-                and r_dash.status_code == 200
-            )
-            else "failed",
-            "environment": ENV_NAME,
-            "image_size_bytes": IMAGE_SIZE_BYTES,
-            "notes": "warmup_excluded_from_stats",
-        }
+    warmup_success = (
+        r_login.status_code == 200
+        and r_rec.status_code == 200
+        and r_save.status_code == 201
+        and r_dash.status_code == 200
     )
+    records.append({
+        "run_id": "warmup_e2e",
+        "stage": "e2e_pipeline",
+        "duration_ms": warmup_ms,
+        "status": "success" if warmup_success else "failed",
+        "environment": ENV_NAME,
+        "image_size_bytes": IMAGE_SIZE_BYTES,
+        "notes": "warmup_excluded_from_stats",
+    })
 
     e2e_latencies = []
     for _i in range(1, N_RUNS + 1):

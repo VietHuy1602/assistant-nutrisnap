@@ -100,8 +100,12 @@ class OrchestratorResponse(BaseModel):
     action_card: Optional[dict[str, Any]] = Field(default=None, description="Thẻ hành động preview bữa ăn")
     clarification_needed: bool = Field(default=False, description="Đang yêu cầu người dùng làm rõ thông tin")
     is_fallback: bool = Field(default=False, description="Chạy qua chế độ dự phòng thông minh (Offline/Fallback)")
-    voice_modifier_result: Optional[dict[str, Any]] = Field(default=None, description="Kết quả phân tích điều chỉnh món ăn từ giọng nói")
-    applied_modifications: list[str] = Field(default_factory=list, description="Danh sách tóm tắt các điều chỉnh từ voice modifier")
+    voice_modifier_result: Optional[dict[str, Any]] = Field(
+        default=None, description="Kết quả phân tích điều chỉnh món ăn từ giọng nói"
+    )
+    applied_modifications: list[str] = Field(
+        default_factory=list, description="Danh sách tóm tắt các điều chỉnh từ voice modifier"
+    )
     disclaimer: str = Field(default=DISCLAIMER_TEXT, description="Tuyên bố miễn trừ trách nhiệm y tế")
 
     model_config = ConfigDict(extra="ignore")
@@ -323,7 +327,6 @@ def check_clarification_needed(
             )
 
     # Trường hợp 3: Nêu tên món nhưng còn quá chung chung, thiếu loại cụ thể hoặc khẩu phần
-    # Ví dụ: "Ghi giúp tôi món phở", "tôi ăn phở", "ăn cơm", "vừa ăn bún"
     if any(k in clean_msg for k in ["ghi", "lưu", "ăn", "note"]):
         # Phở chung chung
         if re.search(r"\bphở\b", clean_msg) and not any(
@@ -348,8 +351,6 @@ def check_clarification_needed(
                 "Bạn vừa ăn bún gì nhỉ (ví dụ: bún bò Huế, bún chả, bún riêu cua...) "
                 "và khẩu phần khoảng 1 tô vừa (~400g) hay tô lớn?"
             )
-
-
 
     return False, None
 
@@ -504,7 +505,6 @@ def synthesize_tool_output(
                 f"{ema_str}\n"
             )
 
-
         coach_encouragement = (
             f"Bạn đã duy trì ghi chép **{streak}/{days} ngày** với tổng cộng **{total_meals} bữa ăn**! "
             "Sự kiên trì chính là chìa khóa quan trọng nhất để đạt được mục tiêu sức khỏe bền vững."
@@ -619,7 +619,6 @@ class AIOrchestrator:
             t_args = explicit_tool_call.get("tool_args") or explicit_tool_call.get("args") or {}
 
             if t_name:
-                # Kiểm tra clarification cho explicit call
                 needs_clarify, clarify_msg = check_clarification_needed(
                     message=message,
                     tool_name=str(t_name),
@@ -724,7 +723,6 @@ class AIOrchestrator:
                 function_calls.append(fn)
 
         if not function_calls:
-            # Không gọi tool, LLM trả lời trực tiếp
             raw_reply = response.text or ""
             return OrchestratorResponse(
                 reply=raw_reply,
@@ -900,7 +898,6 @@ class AIOrchestrator:
                 "lịch sử",
             ]
         ):
-            # Trích xuất số ngày (ví dụ: 14 ngày, 30 ngày)
             days_range = 7
             days_match = re.search(r"(\d+)\s*ngày", msg_lower)
             if days_match:
@@ -923,7 +920,6 @@ class AIOrchestrator:
 
         # Ý định 4: Ghi nhận bữa ăn cụ thể / log_meal
         if any(k in msg_lower for k in ["ghi", "lưu", "note", "vừa ăn", "mới ăn"]):
-            # Nhận diện món ăn rõ ràng và khẩu phần
             dish_name = "Cơm tấm sườn nướng"
             dish_gram = 300.0
             meal_type = "lunch"
@@ -950,7 +946,6 @@ class AIOrchestrator:
                 dish_name = "Trứng gà ốp la (1 quả)"
                 dish_gram = 60.0
 
-            # Xác định loại bữa ăn
             if "sáng" in msg_lower:
                 meal_type = "breakfast"
             elif "tối" in msg_lower:
@@ -958,7 +953,6 @@ class AIOrchestrator:
             elif "phụ" in msg_lower or "vặt" in msg_lower:
                 meal_type = "snack"
 
-            # Kiểm tra xem người dùng có chỉ định số gram cụ thể không
             gram_match = re.search(r"(\d+)\s*(g|gram|gam)", msg_lower)
             if gram_match:
                 dish_gram = float(gram_match.group(1))
