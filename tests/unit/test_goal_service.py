@@ -12,7 +12,7 @@ Kiểm tra đầy đủ 6 kịch bản theo đặc tả kỹ thuật Tuần 2:
 import pytest
 from sqlmodel import Session, SQLModel, select
 
-from src.backend.database import create_db_engine
+from src.backend.models.database import create_db_engine
 from src.backend.models.schema import Goal, User, WeightLog
 from src.backend.services.goal_service import (
     GoalPlanInput,

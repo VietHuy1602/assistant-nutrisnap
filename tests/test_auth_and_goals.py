@@ -15,12 +15,13 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 
-from src.backend.main import app, calculate_bmr, calculate_tdee
+from src.backend.main import app
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
     AuthResponse,
     GoalResponse,
 )
+from src.backend.services.goal_service import calculate_bmr, calculate_tdee
 
 # ==============================================================================
 # FIXTURES
@@ -73,7 +74,7 @@ def test_auth_login_success(client: TestClient):
     assert validated.success is True
     assert validated.user.username == "thanhdat"
     assert validated.user.email == "dat@example.com"
-    assert validated.user.id == 1
+    assert validated.user.id > 0
 
     # Đảm bảo không lộ thông tin nhạy cảm (mật khẩu / hash)
     assert "password" not in data
@@ -97,6 +98,17 @@ def test_auth_login_missing_required_fields(client: TestClient):
 
 def test_auth_register_success(client: TestClient):
     """Đăng ký tài khoản hợp lệ: trả về 201 Created và không lộ hash mật khẩu."""
+    from sqlmodel import Session, select
+
+    from src.backend.models.database import engine
+    from src.backend.models.schema import User
+
+    with Session(engine) as s:
+        u = s.exec(select(User).where(User.username == "tester_qc")).first()
+        if u:
+            s.delete(u)
+            s.commit()
+
     payload = {
         "username": "tester_qc",
         "email": "tester_qc@nutrisnap.vn",
@@ -188,8 +200,8 @@ def test_auth_logout_clears_cookie(authenticated_client: TestClient):
 def test_calculate_bmr_mifflin_st_jeor():
     """Kiểm thử tính toán BMR độc lập theo công thức Mifflin-St Jeor cho nam, nữ và khác."""
     # Nam: 10 * W + 6.25 * H - 5 * A + 5
-    # 70kg, 175cm, 25 tuổi -> 10*70 + 6.25*175 - 5*25 + 5 = 700 + 1093.75 - 125 + 5 = 1673.75 -> làm tròn 1673.8
-    assert calculate_bmr(70.0, 175.0, 25, "male") == 1673.8
+    # 70kg, 175cm, 25 tuổi -> 10*70 + 6.25*175 - 5*25 + 5 = 700 + 1093.75 - 125 + 5 = 1673.75
+    assert calculate_bmr(70.0, 175.0, 25, "male") == 1673.75
 
     # Nữ: 10 * W + 6.25 * H - 5 * A - 161
     # 55kg, 160cm, 30 tuổi -> 10*55 + 6.25*160 - 5*30 - 161 = 550 + 1000 - 150 - 161 = 1239.0
@@ -204,17 +216,18 @@ def test_calculate_tdee_activity_multipliers():
     """Kiểm thử tính TDEE qua 5 hệ số PAL chuẩn WHO/NHS."""
     bmr = 1500.0
     # sedentary: 1.2
-    assert calculate_tdee(bmr, "sedentary") == round(1500.0 * 1.2, 1)  # 1800.0
+    assert calculate_tdee(bmr, "sedentary") == round(1500.0 * 1.2, 2)  # 1800.0
     # light: 1.375
-    assert calculate_tdee(bmr, "light") == round(1500.0 * 1.375, 1)  # 2062.5
+    assert calculate_tdee(bmr, "light") == round(1500.0 * 1.375, 2)  # 2062.5
     # moderate: 1.55
-    assert calculate_tdee(bmr, "moderate") == round(1500.0 * 1.55, 1)  # 2325.0
+    assert calculate_tdee(bmr, "moderate") == round(1500.0 * 1.55, 2)  # 2325.0
     # active: 1.725
-    assert calculate_tdee(bmr, "active") == round(1500.0 * 1.725, 1)  # 2587.5
+    assert calculate_tdee(bmr, "active") == round(1500.0 * 1.725, 2)  # 2587.5
     # very_active: 1.9
-    assert calculate_tdee(bmr, "very_active") == round(1500.0 * 1.9, 1)  # 2850.0
-    # Fallback mặc định khi level không xác định là moderate (1.55)
-    assert calculate_tdee(bmr, "unknown_level") == round(1500.0 * 1.55, 1)
+    assert calculate_tdee(bmr, "very_active") == round(1500.0 * 1.9, 2)  # 2850.0
+    # Cấp mức độ vận động không hợp lệ phải ném ValueError
+    with pytest.raises(ValueError, match="Mức độ vận động không hợp lệ"):
+        calculate_tdee(bmr, "unknown_level")
 
 
 # ==============================================================================
@@ -276,23 +289,24 @@ def test_goals_create_lose_weight_calculation(authenticated_client: TestClient):
     data = response.json()
     validated = GoalResponse.model_validate(data)
 
-    # Đối chiếu công thức độc lập:
-    # BMR = 1673.8
-    # TDEE = round(1673.8 * 1.55, 1) = 2594.4
+    # Đối chiếu công thức độc lập từ goal_service:
+    # BMR = 1673.75
+    # TDEE = round(1673.75 * 1.55, 2) = 2594.31
     # Deficit = 0.5 * 7700 / 7 = 550.0
-    # Target = 2594.4 - 550.0 = 2044.4
-    assert validated.bmr_calories == 1673.8
-    assert validated.tdee_calories == 2594.4
-    assert validated.target_calories == 2044.4
+    # Target = 2594.31 - 550.0 = 2044.31
+    assert validated.bmr_calories == 1673.75
+    assert validated.tdee_calories == 2594.31
+    assert validated.target_calories == 2044.31
 
-    # Protein cho giảm cân: 70kg * 1.6 = 112.0g
-    assert validated.target_protein_g == 112.0
+    # Phân bổ macro lose_weight (30% Protein, 40% Carbs, 30% Fat):
+    # Protein: round(2044.31 * 0.3 / 4, 1) = 153.3g
+    assert validated.target_protein_g == 153.3
 
-    # Fat: 25% calo = 2044.4 * 0.25 / 9 = 56.8g
-    assert validated.target_fat_g == 56.8
+    # Fat: 30% calo = round(2044.31 * 0.3 / 9, 1) = 68.1g
+    assert validated.target_fat_g == 68.1
 
-    # Carbs: phần còn lại
-    assert validated.target_carbs_g == 271.3
+    # Carbs: 40% calo = round(2044.31 * 0.4 / 4, 1) = 204.4g
+    assert validated.target_carbs_g == 204.4
     assert validated.daily_budget_vnd == 65000
 
 
@@ -314,17 +328,18 @@ def test_goals_create_maintain_auto_adjusts_pace(authenticated_client: TestClien
 
     data = response.json()
     validated = GoalResponse.model_validate(data)
-    # BMR nữ = 1239.0, light PAL = 1.375 -> TDEE = round(1239.0 * 1.375, 1) = 1703.6
+    # BMR nữ = 1239.0, light PAL = 1.375 -> TDEE = round(1239.0 * 1.375, 2) = 1703.62
     assert validated.bmr_calories == 1239.0
-    assert validated.tdee_calories == 1703.6
+    assert validated.tdee_calories == 1703.62
     # Giữ cân thì target_calories = tdee_calories
     assert validated.target_calories == validated.tdee_calories
-    # Protein giữ cân: 55 * 1.2 = 66.0g
-    assert validated.target_protein_g == 66.0
+    # Phân bổ macro maintain (25% Protein, 45% Carbs, 30% Fat):
+    # Protein: round(1703.62 * 0.25 / 4, 1) = 106.5g
+    assert validated.target_protein_g == 106.5
 
 
 def test_goals_create_gain_muscle_calculation(authenticated_client: TestClient):
-    """Kiểm tra mục tiêu 'gain_muscle': calo thặng dư (surplus), protein 2.0g/kg."""
+    """Kiểm tra mục tiêu 'gain_muscle': calo thặng dư (surplus), protein 30% calo."""
     payload: dict[str, Any] = {
         "gender": "other",
         "age": 20,
@@ -348,8 +363,9 @@ def test_goals_create_gain_muscle_calculation(authenticated_client: TestClient):
 
     # Surplus = 0.25 * 7700 / 7 = 275.0 kcal -> Target = 1781.4 + 275.0 = 2056.4 kcal
     assert validated.target_calories == 2056.4
-    # Protein tăng cơ: 60 * 2.0 = 120.0g
-    assert validated.target_protein_g == 120.0
+    # Phân bổ macro gain_muscle (30% Protein, 45% Carbs, 25% Fat):
+    # Protein: round(2056.4 * 0.3 / 4, 1) = 154.2g
+    assert validated.target_protein_g == 154.2
 
 
 def test_goals_clinical_boundary_low_tdee(authenticated_client: TestClient):

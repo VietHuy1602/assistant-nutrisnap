@@ -32,13 +32,13 @@ export const DashboardPage: React.FC = () => {
   }
 
   const targetCalo = data?.target_calories || 1800;
-  const consumedCalo = data?.consumed_calories || 1250;
-  const remainingCalo = data?.remaining_calories || 550;
-  const percent = Math.min(Math.round((consumedCalo / targetCalo) * 100), 100);
+  const consumedCalo = data?.consumed_calories || 0;
+  const remainingCalo = data?.remaining_calories ?? Math.max(0, targetCalo - consumedCalo);
+  const percent = data?.calories_progress_percent ?? Math.min(Math.round((consumedCalo / (targetCalo || 1)) * 100), 100);
 
-  const protein = data?.macros.protein || { consumed: 85, target: 120, unit: 'g' };
-  const carbs = data?.macros.carbs || { consumed: 145, target: 200, unit: 'g' };
-  const fat = data?.macros.fat || { consumed: 40, target: 55, unit: 'g' };
+  const protein = data?.macros?.protein || { consumed: 0, target: 120, unit: 'g' };
+  const carbs = data?.macros?.carbs || { consumed: 0, target: 200, unit: 'g' };
+  const fat = data?.macros?.fat || { consumed: 0, target: 55, unit: 'g' };
 
   return (
     <div className="space-y-6">

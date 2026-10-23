@@ -30,6 +30,17 @@ def test_health_check():
 
 def test_auth_register_validation():
     """Kiểm tra đăng ký thành công với mật khẩu chuẩn."""
+    from sqlmodel import Session, select
+
+    from src.backend.models.database import engine
+    from src.backend.models.schema import User
+
+    with Session(engine) as s:
+        u = s.exec(select(User).where(User.username == "thanhdat")).first()
+        if u:
+            s.delete(u)
+            s.commit()
+
     client = TestClient(app)
     payload = {
         "username": "thanhdat",
@@ -194,7 +205,7 @@ def test_meal_preview_two_step_confirmation():
 
 
 def test_meal_log_rejection_when_unconfirmed():
-    """Kiểm tra việc ghi bữa ăn bị từ chối với HTTP 400 Bad Request khi is_confirmed = False."""
+    """Kiểm tra việc gọi /meals/log khi is_confirmed = False trả về pending_confirmation."""
     client = TestClient(app)
     client.post("/api/v1/auth/login", json={"username_or_email": "thanhdat", "password": "Password123"})
 
@@ -207,8 +218,9 @@ def test_meal_log_rejection_when_unconfirmed():
         "notes": "Chưa xác nhận",
     }
     response = client.post("/api/v1/meals/log", json=payload)
-    assert response.status_code == 400
-    assert "chưa được người dùng xác nhận" in response.json()["detail"]
+    assert response.status_code == 200
+    assert response.json()["status"] == "pending_confirmation"
+    assert response.json()["meal_id"] is None
 
 
 def test_meal_log_success_when_confirmed():

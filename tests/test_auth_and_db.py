@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, SQLModel
 
-from src.backend.database import create_db_engine
+from src.backend.models.database import create_db_engine
 from src.backend.models.schema import Goal, User
 from src.backend.services.auth_guard import get_current_user, verify_csrf_protection
 
@@ -68,14 +68,25 @@ def test_auth_rejects_empty_or_short_invalid_cookie(cookie_value: str):
     assert exc_info.value.status_code == 401
 
 
-def test_auth_guard_accepts_current_demo_token_format():
-    """Document the current proof-of-concept token behavior."""
-    user = get_current_user(
-        request=make_request(), access_token="mock_jwt_token_for_tests"
-    )
+def test_auth_guard_accepts_valid_jwt_token():
+    """Kiểm tra get_current_user giải mã thành công JWT hợp lệ được ký bởi JWT_SECRET_KEY."""
+    from src.backend.services.auth_service import create_access_token
 
+    token = create_access_token({
+        "sub": "1",
+        "username": "thanhdat",
+        "email": "dat@example.com",
+    })
+    user = get_current_user(request=make_request(), access_token=token)
     assert user.id == 1
     assert user.username == "thanhdat"
+
+
+def test_auth_guard_rejects_arbitrary_string():
+    """Token chuỗi ngẫu nhiên không có chữ ký JWT hợp lệ phải bị từ chối 401."""
+    with pytest.raises(HTTPException) as exc_info:
+        get_current_user(request=make_request(), access_token="xxxxxxxxxxxxxxxxx")
+    assert exc_info.value.status_code == 401
 
 
 def test_csrf_allows_configured_origin():
@@ -96,6 +107,34 @@ def test_csrf_rejects_untrusted_origin():
         verify_csrf_protection(
             request=request,
             origin="https://malicious.example",
+            referer=None,
+        )
+
+    assert exc_info.value.status_code == 403
+
+
+def test_csrf_rejects_subdomain_spoofing():
+    """Tên miền giả mạo subdomain startswith (http://localhost:5173.evil.com) phải bị chặn 403."""
+    request = make_request("POST")
+
+    with pytest.raises(HTTPException) as exc_info:
+        verify_csrf_protection(
+            request=request,
+            origin="http://localhost:5173.evil.com",
+            referer=None,
+        )
+
+    assert exc_info.value.status_code == 403
+
+
+def test_csrf_rejects_missing_origin_and_referer():
+    """Yêu cầu POST thiếu cả Origin và Referer phải bị chặn 403."""
+    request = make_request("POST")
+
+    with pytest.raises(HTTPException) as exc_info:
+        verify_csrf_protection(
+            request=request,
+            origin=None,
             referer=None,
         )
 

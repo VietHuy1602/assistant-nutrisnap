@@ -1,25 +1,32 @@
 """
 src/backend/core/config.py
 Quản lý cấu hình bảo mật và biến môi trường thông qua pydantic-settings.
-Thực thi chính sách Fail-fast: ứng dụng không thể khởi động nếu thiếu SECRET_KEY
-hoặc SECRET_KEY có độ dài nhỏ hơn 32 ký tự.
+Thực thi chính sách Fail-fast: ứng dụng không thể khởi động nếu thiếu JWT_SECRET_KEY
+hoặc JWT_SECRET_KEY có độ dài nhỏ hơn 32 ký tự.
 """
 
-import os
-
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Cấu hình bảo mật và dịch vụ cho NutriSnap / NutriScan."""
+    """Cấu hình bảo mật và dịch vụ cho NutriSnap."""
 
-    # SECRET_KEY bắt buộc, fail-fast nếu thiếu hoặc < 32 ký tự
-    SECRET_KEY: str = Field(default_factory=lambda: os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET_KEY") or "")
+    # JWT_SECRET_KEY bắt buộc, fail-fast nếu thiếu hoặc < 32 ký tự, không hard-code mặc định
+    JWT_SECRET_KEY: str = Field(
+        ...,
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "SECRET_KEY"),
+        description="Khóa bảo mật JWT bí mật tối thiểu 32 ký tự",
+    )
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    JWT_ISSUER: str = "nutriscan-api"
+    # Mặc định 7 ngày (10080 phút) theo kiến trúc Tuần 2; sẽ giảm xuống 15-30 phút khi triển khai Refresh Token ở tuần sau
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
+    JWT_ISSUER: str = "nutrisnap-api"
     BCRYPT_ROUNDS: int = 12
+
+    AUTH_COOKIE_NAME: str = "access_token"
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
 
     # Cấu hình CSDL và môi trường
     DATABASE_URL: str = "sqlite:///./nutrisnap.db"
@@ -32,16 +39,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("SECRET_KEY")
+    @field_validator("JWT_SECRET_KEY")
     @classmethod
     def validate_secret_key(cls, v: str) -> str:
-        """Kiểm định tính hợp lệ của SECRET_KEY theo chuẩn bảo mật."""
+        """Kiểm định tính hợp lệ của JWT_SECRET_KEY theo chuẩn bảo mật."""
         if not v or len(v.strip()) < 32:
             raise ValueError(
-                "SECRET_KEY bắt buộc và phải có độ dài tối thiểu 32 ký tự. "
+                "LỖI BẢO MẬT: Biến môi trường 'JWT_SECRET_KEY' chưa được thiết lập hoặc ngắn hơn 32 ký tự. "
                 "Vui lòng tạo khóa an toàn (ví dụ: openssl rand -hex 32) và thiết lập trong .env"
             )
         return v.strip()
+
+    @property
+    def SECRET_KEY(self) -> str:
+        return self.JWT_SECRET_KEY
+
 
 
 # Hàm factory lấy settings mới
@@ -49,14 +61,5 @@ def get_settings(**kwargs) -> Settings:
     return Settings(**kwargs)
 
 
-# Khởi tạo instance toàn cục (lazy / graceful nếu chưa nạp .env lúc import)
-try:
-    settings = Settings()
-except Exception:
-    # Nếu đang ở môi trường test hoặc chưa có .env, kiểm tra xem có biến môi trường tạm thời không
-    _temp_key = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET_KEY")
-    if _temp_key and len(_temp_key.strip()) >= 32:
-        settings = Settings(SECRET_KEY=_temp_key.strip())
-    else:
-        # Giữ placeholder nếu module được inspect
-        settings = None  # type: ignore
+# Khởi tạo instance toàn cục
+settings: Settings = Settings()

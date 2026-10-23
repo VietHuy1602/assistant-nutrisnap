@@ -4,7 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 import { PublicOnlyRoute } from '../components/PublicOnlyRoute';
 
-let mockAuthStatus: 'loading' | 'authenticated' | 'unauthenticated' = 'loading';
+let mockAuthStatus: 'loading' | 'authenticated' | 'unauthenticated' | 'unreachable' = 'loading';
 let mockHasGoal = false;
 
 vi.mock('../context/AuthContext', () => ({

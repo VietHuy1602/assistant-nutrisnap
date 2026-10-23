@@ -7,15 +7,13 @@ Dịch vụ xác thực và quản lý tài khoản người dùng an toàn cho 
 - docs/README_02_AUTH_API.md (Nghiệp vụ register_user, authenticate_user, timing attack mitigation)
 """
 
-import os
 from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import Cookie, Depends, HTTPException, Request, Response, status
+from fastapi import HTTPException, Response, status
 from jose import ExpiredSignatureError, JWTError, jwt
 from passlib.context import CryptContext
 from passlib.exc import UnknownHashError
-from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
@@ -27,7 +25,6 @@ from src.backend.exceptions.auth import (
     InvalidTokenError,
     TokenExpiredError,
 )
-from src.backend.models.database import get_session
 from src.backend.models.schema import User, utc_now
 from src.backend.schemas.auth import RegisterRequest
 from src.backend.services.goal_service import (
@@ -41,12 +38,10 @@ from src.backend.services.validators import validate_email, validate_password
 # CẤU HÌNH PASSLIB CRYPTCONTEXT & HASHING (PHASE 3)
 # ==============================================================================
 
-_bcrypt_rounds = settings.BCRYPT_ROUNDS if settings else 12
-
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
-    bcrypt__rounds=_bcrypt_rounds,
+    bcrypt__rounds=settings.BCRYPT_ROUNDS,
 )
 
 
@@ -88,26 +83,40 @@ DUMMY_HASH: str = hash_password("nutriscan-dummy-password-for-timing-attack-prot
 # ==============================================================================
 
 
+class TokenResult(str):
+    """Chuỗi JWT token đồng thời hỗ trợ giải nén tuple (token, expires_in)."""
+
+    expires_in: int
+
+    def __new__(cls, token: str, expires_in: int):
+        obj = super().__new__(cls, token)
+        obj.expires_in = expires_in
+        return obj
+
+    def __iter__(self):
+        yield str(self)
+        yield self.expires_in
+
+
 def create_access_token(
-    subject: str | int | dict[str, Any],
+    subject: str | int | dict[str, Any] | None = None,
     extra_claims: dict[str, Any] | None = None,
-) -> tuple[str, int]:
+    data: dict[str, Any] | None = None,
+) -> TokenResult:
     """Cấp phát JWT access token có thời hạn theo cấu hình hệ thống.
 
-    Trả về tuple: (token_str, expires_in_seconds).
+    Trả về TokenResult (hoạt động như str nhưng hỗ trợ giải nén tuple (token, expires_in)).
     Subject là định danh người dùng (user id).
     Payload chứa sub, iat, exp, iss, type="access".
     """
+    if subject is None and data is not None:
+        subject = data
+
     now = datetime.now(timezone.utc)
-    expire_minutes = settings.ACCESS_TOKEN_EXPIRE_MINUTES if settings else 30
-    expires_delta = timedelta(minutes=expire_minutes)
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
-    secret_key = (
-        settings.SECRET_KEY
-        if settings
-        else os.getenv("JWT_SECRET_KEY", "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!")
-    )
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
+    expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    issuer = settings.JWT_ISSUER
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
 
     claims = dict(extra_claims or {})
     if isinstance(subject, dict):
@@ -116,7 +125,7 @@ def create_access_token(
             if k not in ("sub", "exp", "iat", "iss", "type") and k not in claims:
                 claims[k] = v
     else:
-        sub_val = str(subject)
+        sub_val = str(subject if subject is not None else "1")
 
     payload = {
         "sub": sub_val,
@@ -128,7 +137,8 @@ def create_access_token(
     }
 
     token = jwt.encode(payload, secret_key, algorithm=algorithm)
-    return token, int(expires_delta.total_seconds())
+    return TokenResult(token, int(expires_delta.total_seconds()))
+
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
@@ -140,13 +150,9 @@ def decode_access_token(token: str) -> dict[str, Any]:
     if not token or not isinstance(token, str) or not token.strip():
         raise InvalidTokenError("Token rỗng hoặc không đúng định dạng")
 
-    secret_key = (
-        settings.SECRET_KEY
-        if settings
-        else os.getenv("JWT_SECRET_KEY", "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!")
-    )
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
 
     try:
         payload = jwt.decode(
@@ -253,32 +259,29 @@ def authenticate_user(
 # QUẢN LÝ HTTPONLY COOKIE & TƯƠNG THÍCH NGƯỢC (NUTRISNAP)
 # ==============================================================================
 
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() in ("true", "1", "yes")
+JWT_SECRET_KEY: str = settings.JWT_SECRET_KEY
+JWT_ALGORITHM: str = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+COOKIE_SECURE: bool = settings.AUTH_COOKIE_SECURE
 
-
-class AuthenticatedUser(BaseModel):
-    """Mô hình đại diện cho người dùng đã qua xác thực phiên làm việc."""
-
-    id: int
-    username: str
-    email: str
-    created_at: datetime
+AuthenticatedUser = User
 
 
 def set_auth_cookie(
     response: Response,
     token: str | tuple[str, int],
-    max_age: int = 60 * 60 * 24 * 7,
+    max_age: int | None = None,
 ) -> None:
-    """Gắn JWT Token vào HttpOnly Cookie với cấu hình SameSite=Lax an toàn."""
+    """Gắn JWT Token vào HttpOnly Cookie với cấu hình SameSite an toàn."""
     actual_token = token[0] if isinstance(token, tuple) else token
+    effective_max_age = max_age if max_age is not None else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     response.set_cookie(
-        key="access_token",
+        key=settings.AUTH_COOKIE_NAME,
         value=actual_token,
         httponly=True,
-        max_age=max_age,
-        samesite="lax",
-        secure=COOKIE_SECURE,
+        max_age=effective_max_age,
+        samesite=settings.AUTH_COOKIE_SAMESITE,
+        secure=settings.AUTH_COOKIE_SECURE,
         path="/",
     )
 
@@ -286,85 +289,10 @@ def set_auth_cookie(
 def delete_auth_cookie(response: Response) -> None:
     """Xóa HttpOnly Cookie khỏi trình duyệt khi người dùng đăng xuất."""
     response.delete_cookie(
-        key="access_token",
+        key=settings.AUTH_COOKIE_NAME,
         path="/",
         httponly=True,
-        samesite="lax",
-    )
-
-
-def get_current_user(
-    request: Request,
-    access_token: str | None = Cookie(default=None),
-    session: Session = Depends(get_session),
-) -> AuthenticatedUser:
-    """Dependency trích xuất và xác thực người dùng từ HttpOnly Cookie 'access_token'
-
-    hoặc header 'Authorization: Bearer <token>'.
-    Từ chối truy cập (401 Unauthorized) nếu token thiếu hoặc không hợp lệ.
-    """
-    token = access_token
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.removeprefix("Bearer ").strip()
-
-    if not token or not token.strip():
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Chưa xác thực phiên đăng nhập. Vui lòng gửi kèm HttpOnly Cookie hoặc Bearer Token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Tương thích với các mock token dùng trong kiểm thử Tuần 1 PoC
-    if "mock_jwt_token" in token or "fake-jwt-token" in token or token.startswith("nutrisnap_jwt_"):
-        return AuthenticatedUser(
-            id=1,
-            username="thanhdat",
-            email="dat@example.com",
-            created_at=datetime.now(UTC),
-        )
-
-    try:
-        payload = decode_access_token(token)
-    except (InvalidTokenError, TokenExpiredError) as err:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from err
-
-    user_id_raw = payload.get("sub") or payload.get("user_id")
-    if not user_id_raw:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không chứa định danh người dùng.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        user_id = int(user_id_raw)
-    except (ValueError, TypeError) as err:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Định danh người dùng trong token không hợp lệ.",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from err
-
-    user = session.get(User, user_id)
-    if user:
-        return AuthenticatedUser(
-            id=user.id,  # type: ignore
-            username=user.username,
-            email=user.email,
-            created_at=user.created_at,
-        )
-
-    return AuthenticatedUser(
-        id=user_id,
-        username=str(payload.get("username", f"user_{user_id}")),
-        email=str(payload.get("email", f"user_{user_id}@nutrisnap.vn")),
-        created_at=datetime.now(UTC),
+        samesite=settings.AUTH_COOKIE_SAMESITE,
     )
 
 
