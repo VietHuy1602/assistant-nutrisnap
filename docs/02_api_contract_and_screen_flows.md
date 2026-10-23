@@ -296,7 +296,8 @@ Mọi API tuân thủ:
 
 ### 4.5 Phân hệ Trợ lý Ảo AI (Assistant Chat with Action Cards)
 
-#### `POST /api/v1/assistant/chat`
+#### 1. `POST /api/v1/assistant/chat`
+* **Nguyên tắc bảo mật:** Zero-Trust (không gửi `user_id` hay `Authorization` header trong request; định danh người dùng được trích xuất hoàn toàn từ HttpOnly Cookie JWT).
 * **Request Body:**
 ```json
 {
@@ -307,26 +308,66 @@ Mọi API tuân thủ:
 * **Response (200 OK):**
 ```json
 {
+  "session_id": 1,
+  "reply": "Mình đã tính toán xong bữa trưa của bạn với bún chả (~520 kcal). Bạn kiểm tra lại định lượng bên dưới và bấm Xác nhận để mình lưu vào nhật ký nhé!",
   "reply_text": "Mình đã tính toán xong bữa trưa của bạn với bún chả (~520 kcal). Bạn kiểm tra lại định lượng bên dưới và bấm Xác nhận để mình lưu vào nhật ký nhé!",
+  "pending_confirmation": true,
   "action_card": {
     "type": "confirm_log_meal",
     "status": "pending_user_action",
-    "data": {
-      "meal_type": "lunch",
-      "items": [
-        {
-          "food_name": "Bún chả Hà Nội",
-          "food_id": 24,
-          "estimated_gram": 350.0,
-          "calories": 521.5,
-          "protein_g": 24.0,
-          "carbs_g": 62.0,
-          "fat_g": 18.5
-        }
-      ],
-      "total_calories": 521.5
+    "meal_type": "lunch",
+    "items": [
+      {
+        "food_id": 24,
+        "food_name": "Bún chả Hà Nội",
+        "estimated_gram": 350.0,
+        "calories": 521.5,
+        "protein_g": 24.0,
+        "carbs_g": 62.0,
+        "fat_g": 18.5
+      }
+    ],
+    "total_calories": 521.5,
+    "totals": {
+      "calories": 521.5,
+      "protein": 24.0,
+      "carbs": 62.0,
+      "fat": 18.5
     }
   },
+  "tool_result": null,
+  "disclaimer": "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo. Trợ lý không thay thế tư vấn y khoa."
+}
+```
+
+#### 2. `GET /api/v1/assistant/sessions/{id}/messages`
+* **Query Parameters:** `limit: int` (mặc định 20, tối đa 100).
+* **Response (200 OK):** Danh sách tin nhắn văn bản trong phiên; thẻ hành động trong lịch sử tuân thủ ADR-W4-04 (hiển thị ở trạng thái `readonly`).
+
+#### 3. Xác nhận Thẻ Hành động (Chiến lược S2 — `POST /api/v1/meals/log`)
+* **Request Body:**
+```json
+{
+  "meal_type": "lunch",
+  "items": [
+    {
+      "food_id": 24,
+      "estimated_gram": 350.0
+    }
+  ],
+  "is_confirmed": true
+}
+```
+* **Response (201 Created):**
+```json
+{
+  "success": true,
+  "meal_id": 46,
+  "logged_at": "2026-10-24T12:30:00Z",
+  "total_calories": 521.5,
+  "status": "logged",
   "disclaimer": "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo."
 }
 ```
+* **Đồng bộ giao diện:** Khi xác nhận thành công, Frontend phát sự kiện bus `nutrisnap:meal-logged` với payload `{ source: 'chat', date: 'YYYY-MM-DD', mealId: 46 }`. `useDailyDashboard` lắng nghe sự kiện, kiểm tra đúng ngày và gộp (debounce 300ms) để thực hiện refetch êm vòng calo Dashboard mà không tải lại trang.
+
