@@ -188,6 +188,22 @@ async def login_endpoint(
                 db.commit()
                 db.refresh(user)
 
+            existing_goal = db.exec(select(Goal).where(Goal.user_id == user.id)).first()
+            if not existing_goal:
+                existing_goal = Goal(
+                    user_id=user.id,
+                    target_weight=65.0,
+                    bmr_calories=1540.0,
+                    tdee_calories=2100.0,
+                    target_calories=1800.0,
+                    target_protein_g=130.0,
+                    target_carbs_g=190.0,
+                    target_fat_g=55.0,
+                    daily_budget_vnd=60000,
+                )
+                db.add(existing_goal)
+                db.commit()
+
             token, _ = create_access_token(
                 subject=str(user.id),
                 extra_claims={"username": user.username, "email": user.email},
