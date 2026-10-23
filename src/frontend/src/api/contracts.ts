@@ -138,6 +138,7 @@ export const dailyDashboardMealItemSchema = z.object({
   food_name: z.string().default('Món ăn'),
   estimated_gram: z.number().default(0),
   calories: z.number().default(0),
+  estimated_calories: z.number().optional(),
   protein_g: z.number().optional(),
   carbs_g: z.number().optional(),
   fat_g: z.number().optional(),

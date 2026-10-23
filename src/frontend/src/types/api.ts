@@ -71,6 +71,31 @@ export interface MacroDetail {
   progress_percent: number;
 }
 
+export interface DailyDashboardMealItem {
+  id?: number;
+  food_id?: number;
+  food_name: string;
+  estimated_gram: number;
+  calories?: number;
+  estimated_calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  estimated_price_vnd?: number;
+}
+
+export interface DailyDashboardMeal {
+  id: number;
+  meal_type: string;
+  image_path?: string | null;
+  logged_at: string;
+  total_calories: number;
+  total_protein_g?: number;
+  total_carbs_g?: number;
+  total_fat_g?: number;
+  items: DailyDashboardMealItem[];
+}
+
 export interface DailyDashboardData {
   date: string;
   target_calories: number;
@@ -82,20 +107,8 @@ export interface DailyDashboardData {
     carbs: MacroDetail;
     fat: MacroDetail;
   };
-  meals_summary: Array<{
-    id: number;
-    meal_type: string;
-    image_path?: string;
-    logged_at: string;
-    total_calories: number;
-    items: Array<{
-      id: number;
-      food_id: number;
-      food_name: string;
-      estimated_gram: number;
-      estimated_calories: number;
-    }>;
-  }>;
+  meals?: DailyDashboardMeal[];
+  meals_summary: DailyDashboardMeal[];
   disclaimer: string;
 }
 
