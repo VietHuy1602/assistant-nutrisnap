@@ -18,7 +18,12 @@ $$\text{Đăng nhập} \longrightarrow \text{Chụp/chọn ảnh} \longrightarro
    - **Frontend:** 186/186 test **PASSED** (100%), 0 test thất bại trên 18 test suite, thời gian chạy 9.51s.
    - **Tổng cộng:** 375/375 test **PASSED** (100%).
 2. **Khắc phục lỗi baseline ban đầu:** Đã điều tra chính xác nguyên nhân gốc rễ của 5 lỗi kiểm thử backend trên môi trường local (gồm lỗi thiếu Goal record của tài khoản mock và lỗi thiếu dữ liệu tham chiếu 500 món khi khởi tạo database kiểm thử) và xử lý triệt để mà không sửa đổi bất kỳ assertion nào để ép pass.
-3. **Độ trễ hệ thống thực tế:** Đã đo đạc thực tế 130 lượt (25 lượt đo chính thức + 1 lượt warm-up cho mỗi chặng trong 5 chặng) và lưu trữ dạng bảng tại `data/benchmark/w3_latency_results.csv`. Thời gian xử lý máy toàn luồng E2E đạt P50 = 229.09 ms, P95 = 237.60 ms (chưa bao gồm thời gian gọi mạng bên ngoài khi dùng Gemini Vision thật).
+3. **Độ trễ hạ tầng nội bộ (Local SQLite Baseline với Mock AI Fallback):** Đã đo đạc thực tế 130 lượt (25 lượt đo chính thức + 1 lượt warm-up cho mỗi chặng trong 5 chặng) và lưu trữ dạng bảng tại `data/benchmark/w3_latency_results.csv` với môi trường ghi nhận là `local-windows-sqlite-mockai`. Thời gian xử lý máy toàn luồng E2E đạt P50 = 229.09 ms, P95 = 237.60 ms.
+   > [!IMPORTANT]
+   > **Lưu ý minh bạch dữ liệu & Liêm chính học thuật:**
+   > - Do môi trường kiểm thử local không cấu hình `GEMINI_API_KEY`, chặng nhận diện món ăn (~4.5 ms) được thực thi hoàn toàn bằng cơ chế **Mock Fallback nội bộ** (Zero-Crash Demo Guarantee).
+   > - **Độ trễ và tỉ lệ nhận diện thực tế trên bộ 30 ảnh benchmark chưa được đo đạc bằng mô hình Vision AI thật.**
+   > - **Khi báo cáo hoặc thuyết trình, tuyệt đối không được trình bày các số liệu này là kết quả của Vision AI thật.** Khi tích hợp Gemini Vision API thật trên đám mây, độ trễ nhận diện sẽ phụ thuộc vào đường truyền mạng và thời gian suy luận của LLM (ước tính 1.200 ms – 2.500 ms).
 
 ---
 
@@ -35,9 +40,9 @@ $$\text{Đăng nhập} \longrightarrow \text{Chụp/chọn ảnh} \longrightarro
 - **Đo lường độ trễ (Latency Benchmarking):** Đo thời gian request-to-response cho 5 chặng vận hành.
 
 ### 2.2 Ngoài phạm vi / Giới hạn thử nghiệm (Out-of-Scope)
-- Thử nghiệm trên phần cứng camera vật lý trong môi trường tự động hóa: Được kiểm tra qua giả lập file ảnh và trình điều khiển HTML5 MediaStream mock trong Vitest.
-- Gọi API Gemini Vision thật trên môi trường không có khóa mạng: Môi trường thử nghiệm local không cấu hình `GEMINI_API_KEY`, do đó chặng nhận diện ảnh tự động kích hoạt chế độ Fallback đã thiết kế trong kiến trúc.
-- Tải đồng thời quy mô lớn (Stress testing / Load testing > 1.000 RPS).
+- **Thử nghiệm trên phần cứng camera vật lý:** Được kiểm tra qua giả lập file ảnh và trình điều khiển HTML5 MediaStream mock trong Vitest.
+- **Đo lường trên mô hình Vision AI thật & bộ benchmark 30 ảnh:** Do môi trường thử nghiệm chưa cấu hình `GEMINI_API_KEY` và bộ 30 ảnh tại `data/benchmark/images/` đang trong tiến trình hoàn thiện nhãn ground-truth cân đo thực tế, độ trễ và tỉ lệ nhận diện (MAE/MAPE) của Vision AI thật **chưa được đo đạc**. Chặng nhận diện hiện tại tự động kích hoạt chế độ Mock Fallback cục bộ (Zero-Crash Demo Guarantee).
+- **Tải đồng thời quy mô lớn (Stress testing / Load testing > 1.000 RPS).**
 
 ---
 
@@ -181,15 +186,21 @@ Dữ liệu đo đạc thực tế được ghi nhận đầy đủ tại [`data
 | Chặng kiểm thử | Mô tả endpoint | Số lượt ($N$) | Trung bình (Mean) | Trung vị (P50) | Phân vị 95 (P95) | Min | Max | Tỷ lệ lỗi |
 |:---|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **1. Đăng nhập** | `POST /api/v1/auth/login` | 25 | **188.97 ms** | **188.23 ms** | **192.86 ms** | 186.40 ms | 196.41 ms | 0.0% |
-| **2. Nhận diện ảnh** | `POST /api/v1/ai/recognize-food` | 25 | **4.47 ms** | **4.46 ms** | **4.99 ms** | 3.62 ms | 5.20 ms | 0.0% |
+| **2. Nhận diện ảnh (Mock Fallback)** | `POST /api/v1/ai/recognize-food` | 25 | **4.47 ms** | **4.46 ms** | **4.99 ms** | 3.62 ms | 5.20 ms | 0.0% |
 | **3. Lưu món** | `POST /api/v1/meals/log` | 25 | **9.81 ms** | **9.88 ms** | **10.79 ms** | 8.78 ms | 11.05 ms | 0.0% |
 | **4. Dashboard** | `GET /api/v1/meals/daily-dashboard` | 25 | **15.61 ms** | **14.98 ms** | **16.54 ms** | 14.09 ms | 30.38 ms | 0.0% |
-| **5. Toàn luồng E2E** | Nối tiếp 4 chặng trong 1 chu kỳ | 25 | **228.98 ms** | **229.09 ms** | **237.60 ms** | 221.51 ms | 239.28 ms | 0.0% |
+| **5. Toàn luồng E2E (Mock Baseline)** | Nối tiếp 4 chặng trong 1 chu kỳ | 25 | **228.98 ms** | **229.09 ms** | **237.60 ms** | 221.51 ms | 239.28 ms | 0.0% |
+
+> [!WARNING]
+> ### QUY TẮC BẮT BUỘC KHI BÁO CÁO & THUYẾT TRÌNH (ACADEMIC INTEGRITY & DATA TRANSPARENCY)
+> - **Tuyệt đối KHÔNG ĐƯỢC trình bày số liệu chặng nhận diện ảnh (4.47 ms) là kết quả của Vision AI thật.**
+> - Môi trường benchmark ghi nhận chính thức trong tập tin `w3_latency_results.csv` là `local-windows-sqlite-mockai` (chạy trên máy phát triển, không có `GEMINI_API_KEY`).
+> - Số liệu 4.47 ms chỉ phản ánh tốc độ trả lời của bộ xử lý Fallback nội bộ, nhằm kiểm thử luồng dữ liệu kiến trúc và chứng minh cơ chế **Zero-Crash Demo Guarantee** hoạt động trơn tru.
+> - **Độ trễ và tỉ lệ nhận diện thật trên 30 ảnh benchmark chưa được đo đạc bằng mô hình Vision AI thật.** Khi gọi API Google Gemini Vision qua mạng Internet trên đám mây, độ trễ nhận diện thực tế ước tính sẽ dao động từ 1.200 ms đến 2.500 ms.
 
 > [!NOTE]
-> - Dự án hiện tại **chưa định nghĩa tài liệu SLA / Ngưỡng nghiệm thu chính thức** cho từng chặng độ trễ. Các số liệu trên phản ánh đúng thực tế đo lường trên môi trường local.
+> - Dự án hiện tại **chưa định nghĩa tài liệu SLA / Ngưỡng nghiệm thu chính thức** cho từng chặng độ trễ. Các số liệu trên phản ánh đúng thực tế đo lường trên môi trường local baseline.
 > - **Chặng đăng nhập (~188 ms):** Chiếm phần lớn thời gian do thuật toán băm mật khẩu bảo mật `bcrypt` chạy 12 rounds theo tiêu chuẩn an toàn chống tấn công brute-force.
-> - **Chặng nhận diện ảnh (~4.5 ms):** Đo lường trên cơ chế Mock Fallback nội bộ (Zero-Crash Demo Guarantee). Khi có khóa `GEMINI_API_KEY` và gọi mô hình Gemini Vision trên đám mây, độ trễ sẽ phụ thuộc thêm vào mạng Internet và thời gian suy luận của LLM (thường từ 1.200 ms đến 2.500 ms).
 > - **Chặng lưu món & Dashboard (< 16 ms):** Thực thi cực kỳ nhanh nhờ CSDL SQLite cục bộ và thuật toán tính toán dinh dưỡng tất định (deterministic algebraic math).
 
 ---
@@ -207,11 +218,11 @@ Dữ liệu đo đạc thực tế được ghi nhận đầy đủ tại [`data
 
 ### 10.1 Các giới hạn hiện tại của bản thử nghiệm
 1. **Camera vật lý:** Chưa kiểm thử trên thiết bị di động thật với camera phần cứng; hiện tại kiểm thử thông qua giao diện Web API FileReader và mock stream trong Vitest.
-2. **Khóa Gemini Vision:** Trên môi trường chưa cấu hình biến `GEMINI_API_KEY`, hệ thống vận hành trơn tru nhờ cơ chế Zero-Crash Mock Fallback, tuy nhiên chưa phản ánh thời gian suy luận thực tế của API Google Generative AI.
+2. **Khóa Gemini Vision & Bộ Benchmark 30 ảnh:** Do môi trường thử nghiệm chưa cấu hình biến `GEMINI_API_KEY`, hệ thống vận hành trơn tru nhờ cơ chế Zero-Crash Mock Fallback nội bộ; độ trễ và tỉ lệ nhận diện (MAE/MAPE) của mô hình Vision AI thật trên 30 ảnh chưa được đo đạc. Khi báo cáo, kết quả này không đại diện cho Vision AI thật.
 3. **Cơ sở dữ liệu:** Thử nghiệm trên SQLite cục bộ. Khi triển khai production với PostgreSQL/MySQL qua mạng, cần tái đo lường độ trễ kết nối database (connection pool latency).
 
 ### 10.2 Khuyến nghị cho các giai đoạn tiếp theo
-1. Bổ sung bộ benchmark 30 ảnh món ăn Việt Nam thật (`data/benchmark/benchmark_30_meals.csv`) khi có ảnh chụp thực địa từ cân điện tử để đánh giá chỉ số MAE/MAPE theo mục 4.6 của Cẩm nang dự án.
+1. Hoàn tất thu thập khối lượng cân thực địa và ảnh chụp thật cho bộ benchmark 30 ảnh (`data/benchmark/benchmark_30_meals.csv`) để chạy đánh giá độc lập chỉ số MAE/MAPE theo mục 4.6 của Cẩm nang dự án.
 2. Cấu hình biến môi trường staging có `GEMINI_API_KEY` để đo độ trễ mạng thực tế của Gemini Vision API.
 3. Tích hợp kiểm thử tự động E2E qua Playwright/Cypress trên trình duyệt thật (Chrome/Firefox/Safari) để đo lường thêm độ trễ render UI của người dùng.
 
@@ -219,7 +230,7 @@ Dữ liệu đo đạc thực tế được ghi nhận đầy đủ tại [`data
 
 ## 11. Kết luận
 
-Bản thử nghiệm PoC Tuần 3 (W3) của NutriSnap đã **hoàn thành 100% mục tiêu kiểm thử E2E**:
+Bản thử nghiệm PoC Tuần 3 (W3) của NutriSnap đã **hoàn thành 100% mục tiêu kiểm thử E2E về mặt kiến trúc và tích hợp hệ thống**:
 - Đảm bảo trọn vẹn luồng nghiệp vụ từ Đăng nhập $\rightarrow$ Chụp ảnh $\rightarrow$ Nhận diện $\rightarrow$ Sửa gam $\rightarrow$ Lưu $\rightarrow$ Dashboard.
 - Đạt tỷ lệ vượt qua kiểm thử tự động **375/375 bài test (100% PASS)** trên cả Backend và Frontend.
-- Toàn bộ dữ liệu độ trễ đã được đo đạc minh bạch, ghi nhận chi tiết và đối chiếu khoa học.
+- Toàn bộ dữ liệu độ trễ đã được đo đạc minh bạch trên môi trường local baseline mock fallback, ghi nhận chi tiết và tuân thủ chặt chẽ nguyên tắc liêm chính học thuật (không ngộ nhận số liệu mock fallback là kết quả của Vision AI thật).

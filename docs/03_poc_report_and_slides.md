@@ -169,6 +169,7 @@ Script `scripts/seed_demo_accounts.py` được thiết kế lũy đẳng (chạ
 - **Kết quả nghiệm thu PoC Tuần 3:**
   - Đạt 100% test cases tự động (`test_w3_nutrition_and_meals.py`).
   - Hệ thống vận hành ổn định, sẵn sàng chuyển giao cho Cặp 2 (Frontend) và Cặp 3 (AI Intelligence).
+  - **Minh bạch số liệu PoC:** Số liệu đo đạc độ trễ được kiểm thử trên môi trường local baseline với Mock Fallback nội bộ; độ trễ và tỉ lệ nhận diện thật trên 30 ảnh chưa đo bằng Vision AI thật (do chưa cấu hình `GEMINI_API_KEY`), không trình bày đây là kết quả của Vision AI thật.
 - **Kế hoạch tiếp theo:**
   - Tuần 4: Lập trình 4 Tool Executors, bảo mật công cụ chống Prompt Injection (`tool_security.py`).
   - Tuần 5: Thuật toán làm mịn xu hướng cân nặng EMA, phân tích thói quen 7-14 ngày và Food Swap Simulator.
