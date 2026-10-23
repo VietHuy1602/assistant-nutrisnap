@@ -20,6 +20,19 @@ const MealCaptureFlow = React.lazy(() =>
 const GoalPlannerWizard = React.lazy(() =>
   import('./pages/GoalPlannerWizard').then((m) => ({ default: m.GoalPlannerWizard })),
 );
+const MonthlyReportView = React.lazy(() => import('./pages/MonthlyReportView'));
+
+// Route adapter only: no monthly API contract or report data is assumed.
+const MonthlyReportRoute: React.FC = () => {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(new Date());
+  const part = (type: string) => parts.find(value => value.type === type)?.value ?? '';
+  const today = `${part('year')}-${part('month')}-${part('day')}`;
+  const [month, setMonth] = React.useState(() => today.slice(0, 7));
+
+  return <MonthlyReportView month={month} today={today} loadState="empty" onMonthChange={setMonth} />;
+};
 
 // Chỉ import ApiStatusBadge trong môi trường phát triển (DEV)
 const DevApiStatusBadge = import.meta.env.DEV
@@ -62,6 +75,7 @@ export const App: React.FC = () => {
               <Route path="/" element={<BasicDashboard />} />
               <Route path="/capture" element={<MealCaptureFlow />} />
               <Route path="/goal-setup" element={<GoalPlannerWizard />} />
+              <Route path="/monthly-report" element={<MonthlyReportRoute />} />
             </Route>
           </Route>
 
