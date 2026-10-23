@@ -346,8 +346,6 @@ def get_current_user(
     try:
         payload = decode_access_token(token)
     except (InvalidTokenError, TokenExpiredError) as err:
-    payload = decode_access_token(token)
-    if not payload:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
