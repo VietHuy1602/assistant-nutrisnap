@@ -11,10 +11,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.backend.api.v1.router import api_router
 from src.backend.models.database import init_db
 from src.backend.routers.auth_goal_router import router as auth_goal_router
 from src.backend.schemas.api_contract import (
@@ -39,9 +39,6 @@ from src.backend.schemas.api_contract import (
     MealPreviewRequest,
     MealPreviewResponse,
     RecognizeFoodResponse,
-    UserLoginRequest,
-    UserPublicResponse,
-    UserRegisterRequest,
     WeightHistoryResponse,
     WeightLogRequest,
     WeightLogResponse,
@@ -91,8 +88,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Nối API Router chuẩn v1 (Auth register, login, me endpoints)
+app.include_router(api_router, prefix="/api/v1")
+
 # Nối toàn bộ router Auth + Goal + Weight + Food references
 app.include_router(auth_goal_router)
+
 
 
 # ==============================================================================
