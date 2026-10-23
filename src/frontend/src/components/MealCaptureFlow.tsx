@@ -5,10 +5,12 @@ import { errorText } from './api';
 import { Notice, Field } from './UI';
 import { PortionEditor } from './PortionEditor';
 import styles from './MealLogging.module.css';
+import { VoiceNoteUI } from './VoiceNoteUI';
 
 export function MealCaptureFlow({ api, demo, initialMode = 'photo', onSaved, onClose }: {
   api: NutritionAPI; demo: boolean; initialMode?: 'photo' | 'manual'; onSaved?: () => void; onClose?: () => void;
 }) {
+  const [draftNote, setDraftNote] = useState('');
   const [meal, setMeal] = useState<MealType>('lunch');
   const [image, setImage] = useState('');
   const [items, setItems] = useState<Portion[] | null>(initialMode === 'manual' ? [] : null);
@@ -83,7 +85,7 @@ export function MealCaptureFlow({ api, demo, initialMode = 'photo', onSaved, onC
   };
   const requestClose = () => {
     if (busy || editorBusy) return;
-    if (saved === null && (image || items !== null)) setConfirmClose(true);
+    if (saved === null && (image || items !== null || draftNote.trim())) setConfirmClose(true);
     else { stop(); onClose?.(); }
   };
 
@@ -95,9 +97,9 @@ export function MealCaptureFlow({ api, demo, initialMode = 'photo', onSaved, onC
       <button type="button" className="secondary" onClick={() => { stop(); onClose?.(); }}>Bỏ bản nháp</button>
     </div></div></div>}
     {saved !== null ? <section className="card saved-state" role="status"><Check className="success-icon" aria-hidden="true" /><h2>{demo ? 'Đã hoàn tất mô phỏng' : 'Đã lưu vào nhật ký'}</h2><p>{Math.round(saved)} kcal ước tính · {demo ? 'Không ghi dữ liệu thật.' : 'Đã nhận xác nhận từ hệ thống.'}</p><Notice />
-      <button type="button" className="primary" onClick={() => { setSaved(null); setConfirmClose(false); setItems(initialMode === 'manual' ? [] : null); setImage(''); }}>Thêm bữa ăn khác <ArrowRight size={18} aria-hidden="true" /></button>
+      <button type="button" className="primary" onClick={() => { setSaved(null); setDraftNote(''); setConfirmClose(false); setItems(initialMode === 'manual' ? [] : null); setImage(''); }}>Thêm bữa ăn khác <ArrowRight size={18} aria-hidden="true" /></button>
     </section> : items ? <><Field label="Bữa ăn"><select disabled={editorBusy} value={meal} onChange={event => setMeal(event.target.value as MealType)}><option value="breakfast">Bữa sáng</option><option value="lunch">Bữa trưa</option><option value="dinner">Bữa tối</option><option value="snack">Bữa phụ</option></select></Field>
-      <PortionEditor api={api} initial={items} meal={meal} image={image} demo={demo} onBusyChange={setEditorBusy} onBack={() => { setItems(null); setConfirmClose(false); }} onSaved={calories => { setSaved(calories); setConfirmClose(false); onSaved?.(); }} /></>
+      <PortionEditor draftNote={draftNote} onDraftNoteChange={setDraftNote} api={api} initial={items} meal={meal} image={image} demo={demo} onBusyChange={setEditorBusy} onBack={() => { setItems(null); setDraftNote(''); setConfirmClose(false); }} onSaved={calories => { setSaved(calories); setConfirmClose(false); onSaved?.(); }} /></>
       : <div className="capture-layout"><section className="card capture-card"><div className="section-top"><h2>Ảnh bữa ăn</h2><span className="status-pill">BƯỚC 1 / 2</span></div>
         <Field label="Bữa ăn"><select disabled={busy} value={meal} onChange={event => setMeal(event.target.value as MealType)}><option value="breakfast">Bữa sáng</option><option value="lunch">Bữa trưa</option><option value="dinner">Bữa tối</option><option value="snack">Bữa phụ</option></select></Field>
         <div className={`camera-stage ${image ? 'has-image' : ''}`}>
@@ -106,7 +108,7 @@ export function MealCaptureFlow({ api, demo, initialMode = 'photo', onSaved, onC
         <input className="sr-only" ref={file} type="file" accept="image/jpeg,image/png,image/webp" aria-label="Chọn ảnh bữa ăn" onChange={event => { readFile(event.target.files?.[0]); event.target.value = ''; }} />
         <div className="capture-actions">{camera ? <button type="button" className="primary" onClick={capture}><Camera size={18} aria-hidden="true" />Chụp ảnh</button> : <button type="button" className="primary" disabled={busy} onClick={() => void openCamera()}><Camera size={18} aria-hidden="true" />Mở camera</button>}
           <button type="button" className="secondary" disabled={busy} onClick={() => file.current?.click()}><Upload size={18} aria-hidden="true" />{image ? 'Đổi ảnh' : 'Tải ảnh lên'}</button></div>
-        <p className="subtle">JPG, PNG, WebP · Tối đa 8 MB</p>
+        <p className="subtle">JPG, PNG, WebP · Tối đa 8 MB</p><VoiceNoteUI note={draftNote} onChange={setDraftNote} disabled={busy} />
         {error && <p className="error" role="alert">{error}</p>}{busy && <p role="status" className="subtle">Đang xử lý… Bạn sẽ kiểm tra kết quả trước khi lưu.</p>}
         {image && <button type="button" className="primary" disabled={busy || camera} onClick={() => void recognize()}>{busy ? 'Đang nhận diện…' : 'Nhận diện món ăn'}<ArrowRight size={18} aria-hidden="true" /></button>}
         <button type="button" className="text-button" disabled={busy} onClick={() => { stop(); setError(''); setItems([]); }}>Chọn món thủ công <ArrowRight size={16} aria-hidden="true" /></button>

@@ -107,13 +107,15 @@ def delete_meal(
     current_user: AuthenticatedUser = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Xóa bữa ăn theo ID."""
+    """Xóa bữa ăn theo ID sau khi xác thực quyền sở hữu."""
     from src.backend.models.schema import Meal
+    from src.backend.services.tool_security import verify_meal_ownership
 
-    meal = session.get(Meal, meal_id)
-    if meal and meal.user_id == current_user.id:
-        session.delete(meal)
-        session.commit()
+    if verify_meal_ownership(session=session, meal_id=meal_id, authenticated_user_id=current_user.id):
+        meal = session.get(Meal, meal_id)
+        if meal:
+            session.delete(meal)
+            session.commit()
     return {
         "success": True,
         "message": f"Đã xóa bữa ăn #{meal_id} thành công.",

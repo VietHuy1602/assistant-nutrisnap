@@ -339,7 +339,7 @@ def register_with_initial_goal(
     is_valid_pwd, pwd_msg = validate_password(password)
     if not is_valid_pwd:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=pwd_msg,
         )
 

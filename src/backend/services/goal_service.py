@@ -124,6 +124,9 @@ def calculate_bmr(weight_kg: float, height_cm: float, age: int, gender: str) -> 
     return round(bmr, 2)
 
 
+calculate_bmr_mifflin_st_jeor = calculate_bmr
+
+
 def calculate_tdee(bmr: float, activity_level: str) -> float:
     """Tính TDEE dựa trên BMR và hệ số hoạt động thể chất (PAL):
 
@@ -254,6 +257,43 @@ def log_user_weight(
     session.commit()
     session.refresh(new_log)
     return new_log
+
+
+def calculate_goal_plan(plan_input: GoalPlanInput, user_id: int = 0) -> GoalPlanResponse:
+    """Tính toán thuần túy kế hoạch dinh dưỡng mục tiêu từ thông số thể trạng."""
+    bmr = calculate_bmr(
+        weight_kg=plan_input.current_weight_kg,
+        height_cm=plan_input.height_cm,
+        age=plan_input.age,
+        gender=plan_input.gender,
+    )
+    tdee = calculate_tdee(bmr=bmr, activity_level=plan_input.activity_level)
+    target_calo, is_floor = calculate_target_calories(
+        tdee=tdee,
+        goal_type=plan_input.goal_type,
+        weekly_pace_kg=plan_input.weekly_pace_kg,
+        gender=plan_input.gender,
+    )
+    macros = calculate_macro_split(target_calories=target_calo, goal_type=plan_input.goal_type)
+    target_weight = (
+        plan_input.target_weight_kg
+        if plan_input.target_weight_kg is not None
+        else (plan_input.target_weight if plan_input.target_weight is not None else plan_input.current_weight_kg)
+    )
+    return GoalPlanResponse(
+        id=None,
+        user_id=user_id,
+        target_weight=target_weight,
+        bmr_calories=bmr,
+        tdee_calories=tdee,
+        target_calories=target_calo,
+        target_protein_g=macros["protein_g"],
+        target_carbs_g=macros["carbs_g"],
+        target_fat_g=macros["fat_g"],
+        daily_budget_vnd=plan_input.daily_budget_vnd,
+        is_adjusted_to_safety_floor=is_floor,
+        disclaimer=DISCLAIMER_TEXT,
+    )
 
 
 def save_or_update_user_goal(
