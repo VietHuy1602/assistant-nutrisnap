@@ -24,19 +24,19 @@ describe('Monthly report application route', () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     // UTC is still September; the business date in Vietnam is already October.
     vi.setSystemTime(new Date('2026-09-30T18:00:00Z'));
-    const get = vi.spyOn(apiClient, 'get');
+    const get = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { days: [] } } as any);
     render(<MemoryRouter initialEntries={['/monthly-report']}><App /></MemoryRouter>);
     expect(await screen.findByRole('heading', { name: 'Báo cáo tháng' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Tháng 10/2026' })).toBeInTheDocument();
-    expect(screen.getByText(/Chưa có dữ liệu báo cáo cho tháng này/)).toBeInTheDocument();
+    expect(await screen.findByText(/Chưa có dữ liệu báo cáo cho tháng này/)).toBeInTheDocument();
     expect(screen.queryByText('Dữ liệu minh họa')).not.toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'In / Lưu PDF' })).toBeDisabled();
     expect(screen.getByRole('link', { name: 'Báo cáo tháng' })).toHaveAttribute('aria-current', 'page');
-    expect(get).not.toHaveBeenCalled();
+    expect(get).toHaveBeenCalled();
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Tháng' }), '09');
     expect(screen.getByRole('heading', { name: 'Tháng 9/2026' })).toBeInTheDocument();
-    expect(get).not.toHaveBeenCalled();
+    expect(get).toHaveBeenCalledTimes(2);
   });
 
   it('navigates from the Dashboard using the new link and keeps other links', async () => {
