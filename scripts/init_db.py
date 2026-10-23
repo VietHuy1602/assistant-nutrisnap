@@ -16,7 +16,7 @@ if hasattr(sys.stderr, "reconfigure"):
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
-from src.backend.database import DB_PATH, init_db
+from src.backend.models.database import DB_PATH, init_db
 
 
 def main():

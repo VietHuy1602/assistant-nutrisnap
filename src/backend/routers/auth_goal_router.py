@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
 from src.backend.models.database import get_session
-from src.backend.models.schema import FoodReference, Goal, User, WeightLog, get_vn_today
+from src.backend.models.schema import FoodReference, Goal, WeightLog, get_vn_today
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
     AuthResponse,
@@ -27,6 +27,7 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
+from src.backend.services.auth_guard import verify_csrf_protection
 from src.backend.services.auth_service import (
     AuthenticatedUser,
     authenticate_user,
@@ -78,6 +79,7 @@ class AuthWithGoalResponse(BaseModel):
     response_model=AuthWithGoalResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản kèm mục tiêu dinh dưỡng ban đầu trong 1 Transaction duy nhất",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def register_user_with_initial_goal(
     req: UserRegisterWithGoalRequest,
@@ -117,23 +119,13 @@ def register_user_with_initial_goal(
     response_model=AuthResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản người dùng chuẩn",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def register_user(
     req: UserRegisterRequest,
     session: Session = Depends(get_session),
 ):
     """Đăng ký tài khoản mới. Trả về thông tin người dùng và gợi ý thiết lập mục tiêu."""
-    # Hỗ trợ tương thích ngược cho tài khoản demo 'thanhdat' đã khởi tạo từ Tuần 1
-    if req.username.strip() == "thanhdat" and req.email.strip().lower() == "dat@example.com":
-        existing = session.exec(select(User).where(User.username == "thanhdat")).first()
-        if existing:
-            return AuthResponse(
-                success=True,
-                message="Đăng ký tài khoản thành công! Vui lòng thiết lập mục tiêu dinh dưỡng.",
-                has_goal=False,
-                user=UserPublicResponse.model_validate(existing),
-            )
-
     new_user, _ = register_with_initial_goal(
         session=session,
         username=req.username,
@@ -155,6 +147,7 @@ def register_user(
     "/auth/login",
     response_model=AuthResponse,
     summary="Đăng nhập và cấp phát HttpOnly Cookie JWT",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def login_user(
     req: UserLoginRequest,
@@ -180,26 +173,6 @@ def login_user(
             user=UserPublicResponse.model_validate(user),
         )
 
-    # Fallback cho mock user 'thanhdat' trong các bài test PoC
-    if req.username_or_email == "thanhdat" and req.password == "Password123":
-        token = create_access_token({
-            "sub": "1",
-            "username": "thanhdat",
-            "email": "dat@example.com",
-        })
-        set_auth_cookie(response, token)
-        return AuthResponse(
-            success=True,
-            message="Đăng nhập thành công qua HttpOnly Cookie.",
-            has_goal=True,
-            user=UserPublicResponse(
-                id=1,
-                username="thanhdat",
-                email="dat@example.com",
-                created_at=datetime.now(UTC),
-            ),
-        )
-
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Tên đăng nhập hoặc mật khẩu không chính xác.",
@@ -218,7 +191,7 @@ def get_current_user_profile(
 ):
     """Xác thực người dùng từ Cookie JWT và trả về thông tin hồ sơ."""
     existing_goal = session.exec(select(Goal).where(Goal.user_id == current_user.id)).first()
-    has_goal = existing_goal is not None or current_user.id == 1
+    has_goal = existing_goal is not None
 
     return AuthResponse(
         success=True,
@@ -232,6 +205,7 @@ def get_current_user_profile(
     "/auth/logout",
     response_model=BaseResponse,
     summary="Đăng xuất và xóa HttpOnly Cookie",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def logout_user(response: Response):
     """Đăng xuất, xóa HttpOnly Cookie khỏi trình duyệt."""
@@ -274,19 +248,9 @@ def get_user_goal(
             disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
         )
 
-    # Fallback cho mock test user #1
-    return GoalResponse(
-        id=1,
-        user_id=current_user.id,
-        target_weight=67.0,
-        bmr_calories=1690.0,
-        tdee_calories=2150.0,
-        target_calories=1650.0,
-        target_protein_g=125.0,
-        target_carbs_g=185.0,
-        target_fat_g=45.0,
-        daily_budget_vnd=60000,
-        disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Người dùng chưa thiết lập mục tiêu dinh dưỡng.",
     )
 
 
@@ -294,6 +258,7 @@ def get_user_goal(
     "/goals",
     response_model=GoalResponse,
     summary="Thiết lập hoặc cập nhật mục tiêu dinh dưỡng cá nhân",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def create_or_update_goal_endpoint(
     req: GoalCreateRequest,
@@ -357,6 +322,7 @@ def create_or_update_goal_endpoint(
     response_model=WeightLogResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Ghi nhận chỉ số cân nặng hàng ngày",
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def log_weight_endpoint(
     req: WeightLogRequest,

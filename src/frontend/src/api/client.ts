@@ -39,8 +39,22 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (res) => res,
-  (error: AxiosError) => {
-    const url = error.config?.url ?? '';
+  async (error: AxiosError) => {
+    const config = error.config as (typeof error.config & { _retryCount?: number });
+    const method = (config?.method ?? '').toUpperCase();
+    const isGet = method === 'GET';
+    const status = error.response?.status;
+    const isNetworkOr5xx = !error.response || status === 502 || status === 503 || status === 504;
+
+    // Retry có kiểm soát: Tối đa 1 lần đối với request GET mang tính idempotent (/auth/me, /goals)
+    // khi gặp lỗi mạng hoặc mã 502/503/504 (chờ 400 ms). Tuyệt đối KHÔNG retry POST (§8 Step 4)
+    if (config && isGet && isNetworkOr5xx && (config._retryCount ?? 0) < 1) {
+      config._retryCount = (config._retryCount ?? 0) + 1;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      return apiClient.request(config);
+    }
+
+    const url = config?.url ?? '';
     if (error.response?.status === 401 && !AUTH_PROBE_PATHS.some((p) => url.endsWith(p))) {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));

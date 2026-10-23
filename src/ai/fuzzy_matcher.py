@@ -171,7 +171,7 @@ class FuzzyFoodMatcher:
         try:
             from sqlmodel import Session, select
 
-            from src.backend.database import engine
+            from src.backend.models.database import engine
             from src.backend.models.schema import FoodReference
 
             with Session(engine) as session:

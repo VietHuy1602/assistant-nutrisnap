@@ -24,6 +24,25 @@ export function isApiError(e: unknown): e is ApiError {
   return e instanceof ApiError;
 }
 
+export class ContractError extends ApiError {
+  readonly code: string;
+  readonly context: string;
+  readonly issues: string[];
+
+  constructor(code = 'CONTRACT_MISMATCH', context = '', issues: string[] = []) {
+    super('Máy chủ trả về dữ liệu không đúng định dạng (mã CONTRACT_MISMATCH). Vui lòng thử lại hoặc liên hệ nhóm phát triển.');
+    this.name = 'ContractError';
+    this.code = code;
+    this.context = context;
+    this.issues = issues;
+  }
+}
+
+export function isContractError(e: unknown): e is ContractError {
+  return e instanceof ContractError;
+}
+
+
 interface PydanticErrorDetail {
   loc?: Array<string | number>;
   msg?: string;

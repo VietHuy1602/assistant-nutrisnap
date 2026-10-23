@@ -13,10 +13,13 @@ from datetime import UTC, datetime
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session
 
 from src.backend.api.v1.router import api_router
 from src.backend.models.database import init_db
+from src.backend.models.database import get_session, init_db
 from src.backend.routers.auth_goal_router import router as auth_goal_router
+from src.backend.routers.meal_router import router as meal_router
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
     ActionCard,
@@ -28,13 +31,6 @@ from src.backend.schemas.api_contract import (
     ChatHistoryResponse,
     ChatMessageRequest,
     ChatMessageResponse,
-    DailyDashboardResponse,
-    DashboardMacros,
-    MacroDetail,
-    MealDetailResponse,
-    MealItemDetail,
-    MealLogRequest,
-    MealLogResponse,
     MealPreviewItem,
     MealPreviewRequest,
     MealPreviewResponse,
@@ -43,12 +39,17 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
-from src.backend.services.auth_guard import AuthenticatedUser, get_current_user
+from src.backend.services.auth_guard import (
+    AuthenticatedUser,
+    get_current_user,
+    verify_csrf_protection,
+)
 from src.backend.services.food_recognition import (
     decode_base64_image,
     get_fallback_recognition_response,
     recognize_food_pipeline,
 )
+from src.backend.services.nutrition_service import get_daily_dashboard_data
 
 
 @asynccontextmanager
@@ -93,6 +94,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 # Nối toàn bộ router Auth + Goal + Weight + Food references
 app.include_router(auth_goal_router)
+app.include_router(meal_router)
 
 
 
@@ -120,6 +122,7 @@ def health_check():
     "/api/v1/meals/preview",
     response_model=MealPreviewResponse,
     tags=["Meal Logging"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def preview_meal(req: MealPreviewRequest):
     """Bước 1 (Two-Step Confirmation): Phân tích ảnh/giọng nói để tạo bản nháp.
@@ -147,117 +150,23 @@ def preview_meal(req: MealPreviewRequest):
     )
 
 
-@app.post(
-    "/api/v1/meals/log",
-    response_model=MealLogResponse,
-    status_code=status.HTTP_201_CREATED,
-    tags=["Meal Logging"],
-)
-def log_meal_confirmed(
-    req: MealLogRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Bước 2 (Two-Step Confirmation): Lưu bữa ăn vào CSDL khi người dùng đã bấm Xác nhận.
-
-    Chỉ thực thi ghi dữ liệu khi is_confirmed = True. Nếu False, từ chối với HTTP 400 Bad Request.
-    """
-    if not req.is_confirmed:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Yêu cầu bị từ chối: Bữa ăn chưa được người dùng xác nhận (is_confirmed=False).",
-        )
-
-    return MealLogResponse(
-        success=True,
-        meal_id=101,
-        logged_at=datetime.now(UTC),
-        total_calories=460.0,
-        message="Ghi nhận bữa ăn thành công!",
-        disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
-    )
-
-
-@app.get(
-    "/api/v1/meals/today",
-    response_model=list[MealDetailResponse],
-    tags=["Meal Logging"],
-)
-def get_today_meals(
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Lấy danh sách các bữa ăn đã ghi nhận trong ngày hôm nay."""
-    return [
-        MealDetailResponse(
-            id=101,
-            meal_type="breakfast",
-            image_path=None,
-            logged_at=datetime.now(UTC),
-            total_calories=460.0,
-            items=[
-                MealItemDetail(
-                    id=1,
-                    food_id=1,
-                    food_name="Phở bò tái",
-                    estimated_gram=400.0,
-                    estimated_calories=460.0,
-                )
-            ],
-        )
-    ]
-
-
-@app.delete(
-    "/api/v1/meals/{meal_id}",
-    response_model=BaseResponse,
-    tags=["Meal Logging"],
-)
-def delete_meal(
-    meal_id: int,
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Xóa một bữa ăn đã ghi nhận khỏi CSDL."""
-    return BaseResponse(
-        success=True,
-        message=f"Đã xóa bữa ăn #{meal_id} thành công.",
-        disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
-    )
-
-
 # ==============================================================================
-# PHÂN HỆ DASHBOARD DINH DƯỠNG TRONG NGÀY (DAILY DASHBOARD)
+# PHÂN HỆ DASHBOARD DINH DƯỠNG TRONG NGÀY (DAILY DASHBOARD - ALIAS)
 # ==============================================================================
 
 
-@app.get(
-    "/api/v1/meals/daily-dashboard",
-    response_model=DailyDashboardResponse,
-    tags=["Dashboard"],
-)
 @app.get(
     "/api/v1/dashboard/daily",
-    response_model=DailyDashboardResponse,
     tags=["Dashboard"],
 )
-def get_daily_dashboard(
+def get_daily_dashboard_legacy(
     date_str: str | None = Query(None, alias="date"),
     current_user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ):
-    """Cung cấp tổng hợp Calo, 3 thanh Macro và danh sách bữa ăn hôm nay."""
-    today = date_str or datetime.now(UTC).strftime("%Y-%m-%d")
-    return DailyDashboardResponse(
-        date=today,
-        target_calories=1800.0,
-        consumed_calories=1250.0,
-        remaining_calories=550.0,
-        calories_progress_percent=69.4,
-        macros=DashboardMacros(
-            protein=MacroDetail(consumed=85.0, target=120.0, unit="g", progress_percent=70.8),
-            carbs=MacroDetail(consumed=145.0, target=200.0, unit="g", progress_percent=72.5),
-            fat=MacroDetail(consumed=40.0, target=55.0, unit="g", progress_percent=72.7),
-        ),
-        meals_summary=[],
-        disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
-    )
+    """Cung cấp tổng hợp Calo, 3 thanh Macro và danh sách bữa ăn hôm nay (Alias)."""
+    target_dt = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else None
+    return get_daily_dashboard_data(session, current_user.id, target_dt)
 
 
 # ==============================================================================
@@ -269,6 +178,7 @@ def get_daily_dashboard(
     response_model=WeightLogResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Weight Tracking"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def log_weight(
     req: WeightLogRequest,
@@ -381,6 +291,7 @@ async def recognize_food_endpoint(request: Request):
     "/api/v1/assistant/chat",
     response_model=ChatMessageResponse,
     tags=["Assistant Chat"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def chat_with_assistant(
     req: ChatMessageRequest,
@@ -421,6 +332,7 @@ def chat_with_assistant(
     "/api/v1/assistant/action-card/confirm",
     response_model=ActionCardConfirmResponse,
     tags=["Assistant Chat"],
+    dependencies=[Depends(verify_csrf_protection)],
 )
 def confirm_action_card(
     req: ActionCardConfirmRequest,
