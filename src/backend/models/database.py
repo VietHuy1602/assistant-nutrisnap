@@ -15,9 +15,9 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import event, text
+from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, SQLModel, create_engine
 
 logger = logging.getLogger(__name__)
@@ -65,30 +65,21 @@ def init_db(target_engine: Engine | None = None) -> None:
 
     SQLModel.metadata.create_all(eng)
 
-    # Đồng bộ cột bổ sung cho bảng users nếu chưa có trong SQLite cục bộ
-    try:
-        with eng.connect() as conn:
-            existing_tables = [
-                r[0]
-                for r in conn.execute(
-                    text("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-                ).fetchall()
-            ]
-            if existing_tables:
-                columns = [
-                    r[1] for r in conn.execute(text("PRAGMA table_info(users)")).fetchall()
-                ]
-                if "full_name" not in columns:
-                    conn.execute(text("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)"))
+    # Tự động đồng bộ các cột mới nếu bảng users đã tồn tại từ trước (SQLite migration)
+    with eng.connect() as conn:
+        try:
+            result = conn.exec_driver_sql("PRAGMA table_info(users)")
+            existing_cols = {row[1] for row in result.fetchall()}
+            if existing_cols:
+                if "full_name" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
                     logger.warning("Đã tự động bổ sung cột 'full_name' vào bảng 'users'.")
-                if "is_active" not in columns:
-                    conn.execute(
-                        text("ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT 1")
-                    )
+                if "is_active" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
                     logger.warning("Đã tự động bổ sung cột 'is_active' vào bảng 'users'.")
-                conn.commit()
-    except (OperationalError, SQLAlchemyError) as exc:
-        logger.warning("Không thể tự động cập nhật schema bảng users: %s", exc)
+            conn.commit()
+        except SQLAlchemyError as exc:
+            logger.warning("Không thể tự động cập nhật schema bảng users: %s", exc)
 
 
 # Tự động đồng bộ schema CSDL khi module được nạp

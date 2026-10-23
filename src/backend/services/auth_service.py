@@ -38,6 +38,7 @@ from src.backend.services.validators import validate_email, validate_password
 # CẤU HÌNH PASSLIB CRYPTCONTEXT & HASHING (PHASE 3)
 # ==============================================================================
 
+
 pwd_context = CryptContext(
     schemes=["bcrypt"],
     deprecated="auto",
@@ -84,13 +85,20 @@ DUMMY_HASH: str = hash_password("nutriscan-dummy-password-for-timing-attack-prot
 
 
 class TokenResult(str):
-    """Chuỗi JWT token đồng thời hỗ trợ giải nén tuple (token, expires_in)."""
+    """Chuỗi Token JWT tương thích cả hai giao diện:
+    1. Chuỗi str thông thường (khi dùng trực tiếp: token = create_access_token(...)).
+    2. Tuple unpack 2 phần tử (khi unpack: token, expires_in = create_access_token(...)).
+    """
 
-    expires_in: int
+    expires_in: int = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
 
-    def __new__(cls, token: str, expires_in: int):
+    def __new__(cls, token: str, expires_in: int | None = None):
         obj = super().__new__(cls, token)
-        obj.expires_in = expires_in
+        obj.expires_in = (
+            expires_in
+            if expires_in is not None
+            else settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        )
         return obj
 
     def __iter__(self):
@@ -98,16 +106,21 @@ class TokenResult(str):
         yield self.expires_in
 
 
+TokenString = TokenResult
+
+
 def create_access_token(
     subject: str | int | dict[str, Any] | None = None,
     extra_claims: dict[str, Any] | None = None,
     data: dict[str, Any] | None = None,
+    **kwargs: Any,
 ) -> TokenResult:
     """Cấp phát JWT access token có thời hạn theo cấu hình hệ thống.
 
-    Trả về TokenResult (hoạt động như str nhưng hỗ trợ giải nén tuple (token, expires_in)).
-    Subject là định danh người dùng (user id).
-    Payload chứa sub, iat, exp, iss, type="access".
+    Hỗ trợ linh hoạt:
+    - subject: int, str hoặc dict payload.
+    - data: alias tương thích với các test w3, w4, w5.
+    - Trả về TokenResult hỗ trợ cả unpacking tuple (token, expires_in) lẫn dùng trực tiếp như str.
     """
     if subject is None and data is not None:
         subject = data
@@ -119,13 +132,18 @@ def create_access_token(
     algorithm = settings.JWT_ALGORITHM
 
     claims = dict(extra_claims or {})
-    if isinstance(subject, dict):
-        sub_val = str(subject.get("sub") or subject.get("id") or subject.get("user_id") or "1")
-        for k, v in subject.items():
+
+    actual_subject = data if subject is None and data is not None else subject
+    if actual_subject is None:
+        actual_subject = "1"
+
+    if isinstance(actual_subject, dict):
+        sub_val = str(actual_subject.get("sub") or actual_subject.get("id") or actual_subject.get("user_id") or "1")
+        for k, v in actual_subject.items():
             if k not in ("sub", "exp", "iat", "iss", "type") and k not in claims:
                 claims[k] = v
     else:
-        sub_val = str(subject if subject is not None else "1")
+        sub_val = str(actual_subject)
 
     payload = {
         "sub": sub_val,
@@ -138,7 +156,6 @@ def create_access_token(
 
     token = jwt.encode(payload, secret_key, algorithm=algorithm)
     return TokenResult(token, int(expires_delta.total_seconds()))
-
 
 
 def decode_access_token(token: str) -> dict[str, Any]:

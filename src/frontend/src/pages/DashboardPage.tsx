@@ -1,188 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { Camera, Flame, Plus, CheckCircle2 } from 'lucide-react';
-import { DisclaimerBadge } from '../components/DisclaimerBadge';
+import { useEffect, useRef, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { ArrowUpRight, Bot, Camera, CirclePlus, RefreshCw, Utensils } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import type { AppShellContext } from '../layouts/AppShell';
 import { apiClient } from '../api/client';
-import { DailyDashboardData } from '../types/api';
+import type { DailyDashboardData } from '../types/api';
+import { DisclaimerBadge } from '../components/DisclaimerBadge';
+import { DashboardCard, CalorieProgressCard, MacroProgressCard } from '../components/dashboard/DashboardCards';
+import { MealCaptureFlow } from '../components/MealCaptureFlow';
+import { liveAPI } from '../components/api';
 
-export const DashboardPage: React.FC = () => {
+const actionStyle = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-nutri-primary px-4 py-3 text-sm font-semibold text-white hover:bg-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';
+
+function DashboardWelcome({ username, date, goalTarget }: { username?: string; date?: string; goalTarget?: number }) {
+  return (
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-widest text-nutri-primary">DINH DƯỠNG HÔM NAY</p>
+        <h1 className="mt-2 break-words text-2xl font-bold tracking-tight sm:text-3xl">Chào {username || 'bạn'}</h1>
+        <p className="mt-2 text-sm leading-6 text-nutri-muted">Theo dõi bữa ăn theo nhịp của bạn. Mỗi lần ghi nhận giúp bạn hiểu mình hơn.</p>
+        {Number.isFinite(goalTarget) && <p className="mt-2 text-sm font-medium text-nutri-dark">Kế hoạch đã lưu · {goalTarget!.toLocaleString('vi-VN')} kcal/ngày</p>}
+      </div>
+      {date && <time dateTime={date} className="shrink-0 text-sm text-nutri-muted">Ngày {date.split('-').reverse().join('/')}</time>}
+    </header>
+  );
+}
+
+function QuickActionCard({ active, onOpen }: { active: boolean; onOpen: (mode: 'photo' | 'manual') => void }) {
+  return (
+    <DashboardCard className="h-full border-t-4 border-t-nutri-primary">
+      <div className="flex items-center gap-2"><Utensils className="h-5 w-5 text-nutri-primary" aria-hidden="true" /><h2 className="text-base font-semibold">Ghi nhận bữa ăn</h2></div>
+      <p className="mt-2 text-sm leading-6 text-nutri-muted">Chọn cách phù hợp để bắt đầu nhật ký ăn uống của bạn.</p>
+      <div className="mt-5 grid gap-3">
+        {[{ label: 'Chụp ảnh món ăn', mode: 'photo' as const, Icon: Camera, hint: 'Camera hoặc tải ảnh' }, { label: 'Thêm thủ công', mode: 'manual' as const, Icon: CirclePlus, hint: 'Tìm món và nhập số gam' }].map(({ label, mode, Icon, hint }) => (
+          <button key={label} type="button" disabled={active} onClick={() => onOpen(mode)} className="flex min-h-14 flex-wrap items-center gap-3 rounded-xl border border-nutri-primary/30 bg-nutri-selected/50 p-4 text-left hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+            <Icon className="h-5 w-5 shrink-0 text-nutri-primary" aria-hidden="true" /><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{label}</span><span className="mt-1 block text-xs text-nutri-muted">{hint}</span></span><ArrowUpRight size={18} aria-hidden="true" />
+          </button>
+        ))}
+      </div>
+      <p className="mt-4 text-sm leading-6 text-nutri-muted">{active ? 'Bản nháp đang mở ở phía trên. Hoàn tất hoặc đóng trước khi bắt đầu bữa ăn khác.' : 'Kiểm tra món và khẩu phần trước khi xác nhận lưu. Nếu nhận diện ảnh chưa khả dụng, bạn vẫn có thể chọn món thủ công.'}</p>
+    </DashboardCard>
+  );
+}
+
+function AICoachCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <DashboardCard className="border-nutri-primary/20 bg-nutri-selected/50">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="rounded-xl bg-nutri-panel p-3 text-nutri-primary"><Bot className="h-6 w-6" aria-hidden="true" /></span>
+          <div><h2 className="text-lg font-semibold">Đồng hành cùng trợ lý AI</h2><p className="mt-1 max-w-xl text-sm leading-6 text-nutri-muted">Mở cuộc trò chuyện để đặt câu hỏi về dinh dưỡng. Bạn quyết định nội dung gửi và mọi thao tác lưu.</p></div>
+        </div>
+        <button type="button" onClick={onOpen} className={`${actionStyle} shrink-0`}>Mở trợ lý AI <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></button>
+      </div>
+    </DashboardCard>
+  );
+}
+
+export function DashboardPage() {
+  const { user, hasGoal } = useAuth();
+  const { openChat, mealRevision = 0 } = useOutletContext<AppShellContext>();
   const [data, setData] = useState<DailyDashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
+  const [attempt, setAttempt] = useState(0);
+  const [mealMode, setMealMode] = useState<'photo' | 'manual' | null>(null);
+  const mealPanel = useRef<HTMLElement>(null);
+  const actions = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (mealMode) {
+      mealPanel.current?.scrollIntoView?.({ block: 'start' });
+      mealPanel.current?.focus({ preventScroll: true });
+    }
+  }, [mealMode]);
 
   useEffect(() => {
-    // Gọi API lấy dữ liệu Dashboard theo chuẩn API Contract
-    apiClient
-      .get<DailyDashboardData>('/dashboard/daily')
-      .then((res) => {
-        setData(res.data);
+    let active = true;
+    setData(null);
+    setStatus('loading');
+    apiClient.get<DailyDashboardData>('/dashboard/daily')
+      .then(({ data: response }) => {
+        // A missing total is unavailable data, never an invitation to invent a value.
+        if (!response || !Number.isFinite(response.target_calories) || !Number.isFinite(response.consumed_calories) || !Number.isFinite(response.remaining_calories) || !response.macros || !Array.isArray(response.meals_summary)) {
+          throw new Error('Dashboard data unavailable');
+        }
+        if (active) { setData(response); setStatus('ready'); }
       })
-      .catch((err) => {
-        console.error('Lỗi tải dữ liệu dashboard:', err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-slate-500 text-sm">Đang tải dữ liệu dinh dưỡng hôm nay...</div>
-      </div>
-    );
-  }
-
-  const targetCalo = data?.target_calories || 1800;
-  const consumedCalo = data?.consumed_calories || 0;
-  const remainingCalo = data?.remaining_calories ?? Math.max(0, targetCalo - consumedCalo);
-  const percent = data?.calories_progress_percent ?? Math.min(Math.round((consumedCalo / (targetCalo || 1)) * 100), 100);
-
-  const protein = data?.macros?.protein || { consumed: 0, target: 120, unit: 'g' };
-  const carbs = data?.macros?.carbs || { consumed: 0, target: 200, unit: 'g' };
-  const fat = data?.macros?.fat || { consumed: 0, target: 55, unit: 'g' };
+      .catch(() => { if (active) { setData(null); setStatus('error'); } });
+    return () => { active = false; };
+  }, [attempt, mealRevision]);
 
   return (
-    <div className="space-y-6">
-      {/* Banner / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Tổng quan Dinh dưỡng Hôm nay
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Ghi chép món ăn và theo dõi hạn mức năng lượng khoa học, không phán xét.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#107C41] hover:bg-[#0B522B] text-white font-medium text-sm transition-all shadow-sm active:scale-95">
-            <Camera className="w-4 h-4" />
-            <span>Chụp ảnh món ăn</span>
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-sm transition-all">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Thêm thủ công</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Grid: Calorie Ring & Macro Bars */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Card Calorie Progress */}
-        <div className="md:col-span-1 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col items-center justify-center text-center">
-          <div className="relative w-44 h-44 flex items-center justify-center">
-            {/* SVG Donut / Ring */}
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                className="text-slate-100"
-                strokeWidth="10"
-                stroke="currentColor"
-                fill="transparent"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                className="text-[#107C41] transition-all duration-1000 ease-out"
-                strokeWidth="10"
-                strokeDasharray={`${2 * Math.PI * 40}`}
-                strokeDashoffset={`${2 * Math.PI * 40 * (1 - percent / 100)}`}
-                strokeLinecap="round"
-                stroke="currentColor"
-                fill="transparent"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center">
-              <Flame className="w-6 h-6 text-orange-500 mb-1" />
-              <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                {remainingCalo}
-              </span>
-              <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                kcal còn lại
-              </span>
-            </div>
+    <div className="space-y-6 text-nutri-ink sm:space-y-8">
+      <DashboardWelcome username={user?.username} date={data?.date} goalTarget={hasGoal ? data?.target_calories : undefined} />
+      {mealMode && <section ref={mealPanel} tabIndex={-1} aria-label="Ghi nhận bữa ăn đang mở" className="scroll-mt-36 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus sm:scroll-mt-20">
+        <MealCaptureFlow key={mealMode} api={liveAPI} demo={false} initialMode={mealMode} onClose={() => { setMealMode(null); actions.current?.focus(); }} onSaved={() => { setData(null); setStatus('loading'); setAttempt(value => value + 1); }} />
+      </section>}
+      {status === 'loading' && (
+        <section aria-busy="true" aria-label="Đang tải tổng quan dinh dưỡng">
+          <p role="status" className="mb-4 text-sm text-nutri-muted">Đang tải dữ liệu dinh dưỡng hôm nay…</p>
+          <div aria-hidden="true" className="grid gap-5 md:grid-cols-2">
+            {[0, 1].map(key => <DashboardCard key={key}><div className="h-72 animate-pulse rounded-xl bg-nutri-surface motion-reduce:animate-none" /></DashboardCard>)}
           </div>
-
-          <div className="w-full mt-4 pt-4 border-t border-slate-100 flex justify-around text-center text-sm">
-            <div>
-              <span className="block text-xs text-slate-400">Đã nạp</span>
-              <span className="font-semibold text-slate-800">{consumedCalo} kcal</span>
-            </div>
-            <div className="h-8 w-px bg-slate-200"></div>
-            <div>
-              <span className="block text-xs text-slate-400">Hạn mức</span>
-              <span className="font-semibold text-slate-800">{targetCalo} kcal</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Card Macro Progress (Protein, Carbs, Fat) */}
-        <div className="md:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 mb-4">
-              Chất đa lượng (Macronutrients)
-            </h2>
-            <div className="space-y-4">
-              {/* Protein */}
-              <div>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium text-slate-700">Đạm (Protein)</span>
-                  <span className="text-slate-500">
-                    <strong className="text-blue-600">{protein.consumed}</strong> / {protein.target} {protein.unit}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-blue-500 h-3 rounded-full transition-all duration-700"
-                    style={{ width: `${Math.min((protein.consumed / protein.target) * 100, 100)}%` }}
-                  />
-                </div>
+        </section>
+      )}
+      {status === 'error' && (
+        <DashboardCard>
+          <div role="alert"><h2 className="font-semibold">Chưa tải được dữ liệu dinh dưỡng</h2><p className="mt-2 text-sm leading-6 text-nutri-muted">Không có số liệu để hiển thị lúc này. Hãy kiểm tra kết nối rồi thử lại.</p></div>
+          <button type="button" className={`${actionStyle} mt-4`} onClick={() => { setStatus('loading'); setAttempt(value => value + 1); }}><RefreshCw className="h-4 w-4" aria-hidden="true" />Thử lại</button>
+        </DashboardCard>
+      )}
+      {status === 'ready' && data && (
+        <>
+          {!hasGoal && <p className="text-sm leading-6 text-nutri-muted">Mục tiêu dinh dưỡng bên dưới là mức mặc định từ hệ thống, chưa phải mục tiêu cá nhân.</p>}
+          {data.meals_summary.length === 0 && <p role="status" className="rounded-xl border border-nutri-primary/20 bg-nutri-selected p-4 text-sm leading-6 text-nutri-dark">Chưa ghi nhận bữa ăn hôm nay. Số liệu bên dưới phản ánh dữ liệu hiện có.</p>}
+          <div className="grid items-start gap-5 md:grid-cols-2">
+            <div className="min-w-0"><CalorieProgressCard data={data} /></div>
+            <div ref={actions} tabIndex={-1} className="min-w-0 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"><QuickActionCard active={mealMode !== null} onOpen={setMealMode} /></div>
+            <section aria-labelledby="macro-heading" className="min-w-0 md:col-span-2">
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2"><h2 id="macro-heading" className="text-lg font-semibold">Dinh dưỡng đa lượng</h2><p className="text-sm text-nutri-muted">Đã nạp / mục tiêu · Ước tính</p></div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <MacroProgressCard label="Đạm" kind="protein" macro={data.macros.protein} />
+                <MacroProgressCard label="Tinh bột" kind="carbs" macro={data.macros.carbs} />
+                <MacroProgressCard label="Chất béo" kind="fat" macro={data.macros.fat} />
               </div>
-
-              {/* Carbs */}
-              <div>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium text-slate-700">Tinh bột (Carbohydrates)</span>
-                  <span className="text-slate-500">
-                    <strong className="text-amber-600">{carbs.consumed}</strong> / {carbs.target} {carbs.unit}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-amber-500 h-3 rounded-full transition-all duration-700"
-                    style={{ width: `${Math.min((carbs.consumed / carbs.target) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Fat */}
-              <div>
-                <div className="flex justify-between text-sm mb-1.5">
-                  <span className="font-medium text-slate-700">Chất béo (Lipid / Fat)</span>
-                  <span className="text-slate-500">
-                    <strong className="text-purple-600">{fat.consumed}</strong> / {fat.target} {fat.unit}
-                  </span>
-                </div>
-                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="bg-purple-500 h-3 rounded-full transition-all duration-700"
-                    style={{ width: `${Math.min((fat.consumed / fat.target) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+            </section>
           </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50/60 p-2.5 rounded-xl">
-            <CheckCircle2 className="w-4 h-4 shrink-0 text-[#107C41]" />
-            <span>Bạn đang duy trì lượng đạm rất tốt để bảo vệ cơ bắp trong quá trình giảm mỡ!</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Responsible Nutrition Disclaimer */}
-      <DisclaimerBadge />
+        </>
+      )}
+      <AICoachCard onOpen={openChat} />
+      <DisclaimerBadge text={data?.disclaimer || undefined} />
     </div>
   );
-};
+}

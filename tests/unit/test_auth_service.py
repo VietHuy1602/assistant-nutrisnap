@@ -106,9 +106,9 @@ def test_decode_access_token_expired_raises_token_expired_error(monkeypatch):
     """Kiểm tra token đã hết hạn ném ra TokenExpiredError."""
     # Tạo token với exp đã trôi qua trong quá khứ
     past_time = datetime.now(timezone.utc) - timedelta(minutes=5)
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
 
     payload = {
         "sub": "user_expired",
@@ -133,7 +133,7 @@ def test_decode_access_token_invalid_signature():
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-        "iss": settings.JWT_ISSUER if settings else "nutriscan-api",
+        "iss": settings.JWT_ISSUER,
         "type": "access",
     }
     tampered_token = jwt.encode(payload, fake_secret, algorithm="HS256")
@@ -155,7 +155,7 @@ def test_decode_access_token_alg_none_rejected():
                     "sub": "user_hacker",
                     "iat": int(datetime.now(timezone.utc).timestamp()),
                     "exp": int((datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()),
-                    "iss": settings.JWT_ISSUER if settings else "nutriscan-api",
+                    "iss": settings.JWT_ISSUER,
                     "type": "access",
                 }
             ).encode()
@@ -171,8 +171,8 @@ def test_decode_access_token_alg_none_rejected():
 
 def test_decode_access_token_wrong_issuer_rejected():
     """Kiểm tra token có iss sai bị từ chối với InvalidTokenError."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
     payload = {
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
@@ -188,9 +188,9 @@ def test_decode_access_token_wrong_issuer_rejected():
 
 def test_decode_access_token_wrong_type_rejected():
     """Kiểm tra token có type không phải 'access' (ví dụ refresh) bị từ chối."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
     payload = {
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
@@ -206,9 +206,9 @@ def test_decode_access_token_wrong_type_rejected():
 
 def test_decode_access_token_missing_sub_rejected():
     """Kiểm tra token thiếu trường 'sub' bị từ chối với InvalidTokenError."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
     payload = {
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
