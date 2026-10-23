@@ -26,10 +26,22 @@ class User(SQLModel, table=True):
     __tablename__ = "users"
 
     id: int | None = Field(default=None, primary_key=True)
-    username: str = Field(index=True, unique=True, nullable=False)
+    username: str = Field(default="", index=True, nullable=False)
     email: str = Field(unique=True, index=True, nullable=False)
     password_hash: str = Field(nullable=False)
+    full_name: str | None = Field(default=None, max_length=100, nullable=True)
+    is_active: bool = Field(default=True, nullable=False)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+    @property
+    def hashed_password(self) -> str:
+        """Alias tương thích ngược cho password_hash."""
+        return self.password_hash
+
+    @hashed_password.setter
+    def hashed_password(self, value: str) -> None:
+        self.password_hash = value
+
 
 
 # 2. Bảng Mục tiêu cá nhân (Khóa ngoại -> users.id, ON DELETE CASCADE)
