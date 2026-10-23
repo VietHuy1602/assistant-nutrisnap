@@ -34,3 +34,87 @@ assistant-nutrisnap/
 │   ├── backend/            # FastAPI, Database models, Authentication, Caloric engine
 │   └── frontend/           # Giao diện người dùng React, Camera WebRTC, Dashboard
 └── tests/                  # Kiểm thử tự động pytest (unit/ & integration/)
+```
+
+---
+
+## 🔐 4. Cấu hình Bảo mật & Môi trường (Security Configuration)
+
+Hệ thống quản lý cấu hình tập trung qua `pydantic-settings` với cơ chế **Fail-fast**: ứng dụng sẽ từ chối khởi động nếu thiếu `SECRET_KEY` hoặc độ dài nhỏ hơn 32 ký tự.
+
+### 4.1. Khởi tạo tệp `.env`
+Sao chép từ tệp mẫu:
+```bash
+cp .env.example .env   # Linux/macOS
+copy .env.example .env # Windows PowerShell
+```
+
+### 4.2. Sinh khóa bí mật `SECRET_KEY`
+Sinh chuỗi ngẫu nhiên 32 bytes (64 hex characters):
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+# hoặc dùng openssl: openssl rand -hex 32
+```
+
+Điền vào `.env`:
+```env
+SECRET_KEY=your_generated_32_bytes_random_secret_hex
+JWT_ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+JWT_ISSUER=nutriscan-api
+BCRYPT_ROUNDS=12
+```
+
+---
+
+## 🚪 5. Phân hệ Xác thực (Authentication API)
+
+Module Auth bảo mật cung cấp API đăng ký, đăng nhập và middleware bảo vệ route bằng Bearer JWT Access Token (và hỗ trợ song song HttpOnly Cookie cho trình duyệt Web).
+
+### 5.1. Ví dụ cURL tương tác API:
+
+**1. Đăng ký tài khoản mới (`POST /api/v1/auth/register`):**
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"Passw0rd!","full_name":"Nguyen Van A"}'
+```
+
+**2. Đăng nhập nhận JWT Token (`POST /api/v1/auth/login`):**
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"Passw0rd!"}'
+```
+
+*Phản hồi mẫu:*
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1Ni...",
+  "token_type": "bearer",
+  "expires_in": 1800
+}
+```
+
+**3. Truy cập route được bảo vệ (`GET /api/v1/auth/me`):**
+```bash
+curl http://localhost:8000/api/v1/auth/me \
+  -H "Authorization: Bearer <access_token>"
+```
+
+### 5.2. Hướng dẫn các thành viên bảo vệ Route mới
+Để bảo vệ bất kỳ route nào trong hệ thống, sử dụng dependency `get_current_active_user`:
+
+```python
+from fastapi import APIRouter, Depends
+from src.backend.api.deps import get_current_active_user
+from src.backend.models.schema import User
+
+router = APIRouter()
+
+@router.post("/scan")
+def scan_food(current_user: User = Depends(get_current_active_user)):
+    # current_user đã được xác thực an toàn và có is_active = True
+    return {"message": f"Hello {current_user.email}, scanning food..."}
+```
+

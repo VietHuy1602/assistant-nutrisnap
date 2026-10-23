@@ -11,24 +11,20 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, Query, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
+from src.backend.api.v1.router import api_router
+from src.backend.models.database import init_db
 from src.backend.models.database import get_session, init_db
+from src.backend.routers.analytics_router import router as analytics_router
+from src.backend.routers.assistant_router import router as assistant_router
 from src.backend.routers.auth_goal_router import router as auth_goal_router
 from src.backend.routers.meal_router import router as meal_router
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
-    ActionCard,
-    ActionCardConfirmRequest,
-    ActionCardConfirmResponse,
-    ActionCardData,
-    ActionCardItemData,
     BaseResponse,
-    ChatHistoryResponse,
-    ChatMessageRequest,
-    ChatMessageResponse,
     MealPreviewItem,
     MealPreviewRequest,
     MealPreviewResponse,
@@ -87,9 +83,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Nối toàn bộ router Auth + Goal + Weight + Food references
+# Nối API Router chuẩn vị (Auth register, login, me endpoints)
+app.include_router(api_router, prefix="/api/v1")
+
+# Nối API Router chuẩn vị (Auth register, login, me endpoints)
+app.include_router(api_router, prefix="/api/v1")
+
+# Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics
 app.include_router(auth_goal_router)
 app.include_router(meal_router)
+app.include_router(assistant_router)
+app.include_router(analytics_router)
+
 
 
 # ==============================================================================
@@ -276,81 +281,3 @@ async def recognize_food_endpoint(request: Request):
         # Cơ chế Mock Fallback bắt buộc: Đảm bảo không bao giờ crash 500 làm gián đoạn Demo
         return get_fallback_recognition_response(meal_type=meal_type)
 
-
-# ==============================================================================
-# PHÂN HỆ 7: TRỢ LÝ ẢO AI (ASSISTANT CHAT & ACTION CARDS)
-# ==============================================================================
-
-@app.post(
-    "/api/v1/assistant/chat",
-    response_model=ChatMessageResponse,
-    tags=["Assistant Chat"],
-    dependencies=[Depends(verify_csrf_protection)],
-)
-def chat_with_assistant(
-    req: ChatMessageRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Trò chuyện cùng Trợ lý ảo AI NutriSnap.
-
-    Hỗ trợ sinh Thẻ Xác nhận Thao tác (Action Confirmation Cards) khi phát hiện ý định ghi bữa ăn.
-    """
-    card = ActionCard(
-        type="confirm_log_meal",
-        status="pending_user_action",
-        data=ActionCardData(
-            meal_type="lunch",
-            items=[
-                ActionCardItemData(
-                    food_id=1,
-                    food_name="Phở bò tái",
-                    estimated_gram=400.0,
-                    calories=460.0,
-                    protein_g=34.0,
-                    carbs_g=56.8,
-                    fat_g=11.2,
-                )
-            ],
-            total_calories=460.0,
-        ),
-    )
-    return ChatMessageResponse(
-        session_id=req.session_id or 1,
-        reply_text="Mình đã ước tính xong bữa ăn của bạn! Vui lòng kiểm tra lại số liệu bên dưới và nhấn Xác nhận để lưu nhé.",
-        action_card=card,
-        disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
-    )
-
-
-@app.post(
-    "/api/v1/assistant/action-card/confirm",
-    response_model=ActionCardConfirmResponse,
-    tags=["Assistant Chat"],
-    dependencies=[Depends(verify_csrf_protection)],
-)
-def confirm_action_card(
-    req: ActionCardConfirmRequest,
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Xác nhận thực thi thẻ hành động (Action Confirmation Card) từ Chatbot."""
-    return ActionCardConfirmResponse(
-        success=True,
-        message=f"Đã thực thi thẻ hành động '{req.action_type}' thành công.",
-        result={"status": "confirmed", "executed_for_user": current_user.id},
-    )
-
-
-@app.get(
-    "/api/v1/assistant/history",
-    response_model=ChatHistoryResponse,
-    tags=["Assistant Chat"],
-)
-def get_chat_history(
-    session_id: int = Query(1),
-    current_user: AuthenticatedUser = Depends(get_current_user),
-):
-    """Lấy danh sách tin nhắn trong phiên trò chuyện."""
-    return ChatHistoryResponse(
-        session_id=session_id,
-        messages=[],
-    )
