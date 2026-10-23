@@ -1,9 +1,9 @@
 """
 scripts/seed_demo_accounts.py
-Nạp dữ liệu mẫu 7 ngày cho 3 tài khoản Demo phục vụ Báo cáo PoC Tuần 3:
-1. student_user (Sinh viên duy trì cân nặng)
-2. office_user (Nhân viên văn phòng giảm mỡ)
-3. gym_user (Gymer tăng cơ)
+Nạp dữ liệu mẫu 30 ngày toàn diện cho 3 tài khoản Demo phục vụ Báo cáo Tháng & Thói quen Tuần 6:
+1. student_user (Sinh viên duy trì cân nặng - 30 ngày kỷ lục streak, ăn sáng đều đặn, cân nặng ổn định)
+2. office_user (Nhân viên văn phòng giảm mỡ - cân nặng giảm 70kg -> 68kg với xu hướng EMA decreasing, thói quen lành mạnh)
+3. gym_user (Gymer tăng cơ - giàu đạm > 120g/ngày, cân nặng tăng 71kg -> 72kg, chế độ Back-on-track kích hoạt để test)
 
 Tính lũy đẳng (Idempotent): Xóa sạch dữ liệu cũ của 3 tài khoản này trước khi nạp lại.
 Đảm bảo ngày hôm nay có sẵn bữa Sáng + Trưa để Dashboard hiển thị tiến trình ngay lập tức.
@@ -42,6 +42,10 @@ from src.backend.services.nutrition_service import (
 
 COMMON_PASSWORD = "NutriSnap123"
 
+# ==============================================================================
+# HỒ SƠ 3 TÀI KHOẢN DEMO TOÀN DIỆN (30 NGÀY DỮ LIỆU)
+# ==============================================================================
+
 DEMO_PROFILES = [
     {
         "username": "student_user",
@@ -55,7 +59,9 @@ DEMO_PROFILES = [
         "weekly_pace_kg": 0.0,
         "activity_level": "light",
         "daily_budget_vnd": 50000,
-        "weight_history": [55.2, 55.1, 55.0, 55.1, 54.9, 55.0, 55.0],
+        "skip_days": [],  # 30/30 ngày đều ghi -> Chuỗi 30 ngày hoàn hảo
+        "start_weight": 55.4,
+        "end_weight": 55.0,
         "meals_pattern": {
             "Sáng": [
                 {"food_name": "Bánh mì trứng ốp la", "estimated_gram": 150.0},
@@ -81,7 +87,9 @@ DEMO_PROFILES = [
         "weekly_pace_kg": 0.5,
         "activity_level": "sedentary",
         "daily_budget_vnd": 80000,
-        "weight_history": [68.6, 68.5, 68.4, 68.3, 68.2, 68.1, 68.0],
+        "skip_days": [14, 15, 22, 23],  # Bỏ lỡ 2 cuối tuần trước đó -> Streak hiện tại = 14 ngày
+        "start_weight": 70.0,
+        "end_weight": 68.0,  # Giảm 2kg rõ rệt -> Xu hướng EMA decreasing
         "meals_pattern": {
             "Sáng": [
                 {"food_name": "Phở gà xé", "estimated_gram": 250.0},
@@ -112,7 +120,9 @@ DEMO_PROFILES = [
         "weekly_pace_kg": 0.35,
         "activity_level": "active",
         "daily_budget_vnd": 100000,
-        "weight_history": [71.4, 71.5, 71.6, 71.7, 71.8, 71.9, 72.0],
+        "skip_days": [3, 8, 16, 17, 25],  # Bỏ lỡ rải rác -> 5/7 ngày gần nhất
+        "start_weight": 71.0,
+        "end_weight": 72.0,  # Tăng cơ 1kg -> Xu hướng EMA increasing
         "meals_pattern": {
             "Sáng": [
                 {"food_name": "Phở bò tái", "estimated_gram": 350.0},
@@ -166,9 +176,10 @@ def clean_existing_demo_accounts(session: Session) -> None:
 
 
 def seed_demo_data() -> dict[str, int]:
-    """Hàm chính thực hiện nạp 3 tài khoản Demo chuẩn và 7 ngày dữ liệu mẫu."""
+    """Hàm chính thực hiện nạp 3 tài khoản Demo chuẩn và 30 ngày dữ liệu mẫu."""
     created_user_ids: dict[str, int] = {}
     today = get_vn_today()
+    total_days = 30
 
     with Session(engine) as session:
         ensure_prerequisites(session)
@@ -179,7 +190,7 @@ def seed_demo_data() -> dict[str, int]:
         for profile in DEMO_PROFILES:
             username = profile["username"]
             email = profile["email"]
-            print(f"--- Đang nạp tài khoản demo: {username} ({email}) ---")
+            print(f"--- Đang nạp tài khoản demo: {username} ({email}) [30 ngày] ---")
 
             # 1. Tạo tài khoản User
             user = User(
@@ -211,20 +222,34 @@ def seed_demo_data() -> dict[str, int]:
                 plan_input=plan_input,
             )
 
-            # 3. Nạp 7 ngày lịch sử cân nặng và bữa ăn (day_offset từ 6 về 0)
-            weights = profile["weight_history"]
-            for offset in range(6, -1, -1):
-                idx = 6 - offset
-                log_date = today - timedelta(days=offset)
-                weight_val = weights[idx] if idx < len(weights) else profile["current_weight_kg"]
+            # 3. Nạp 30 ngày lịch sử cân nặng và bữa ăn (day_offset từ 29 về 0)
+            start_w = profile["start_weight"]
+            end_w = profile["end_weight"]
+            skip_days = set(profile.get("skip_days", []))
 
-                # Ghi nhận nhật ký cân nặng
+            for offset in range(total_days - 1, -1, -1):
+                log_date = today - timedelta(days=offset)
+
+                # Tuyến tính nội suy cân nặng từ start_w đến end_w kèm rung nhẹ +/- 0.1kg
+                progress = (total_days - 1 - offset) / float(total_days - 1)
+                base_w = start_w + progress * (end_w - start_w)
+                jitter = 0.05 if (offset % 2 == 0) else -0.05
+                weight_val = round(base_w + jitter, 1)
+
+                # Ghi nhận nhật ký cân nặng hàng ngày (hoặc cách 2-3 ngày)
                 w_log = WeightLog(
                     user_id=user_id,
                     weight_kg=weight_val,
                     logged_date=log_date,
                 )
                 session.add(w_log)
+
+                # Kiểm tra nếu ngày này nằm trong danh sách skip_days (không ghi bữa ăn)
+                if offset in skip_days:
+                    continue
+
+                # Riêng gym_user: hôm qua (offset == 1) nạp bữa tiệc thịnh soạn (ăn vượt TDEE) để test Back-on-track!
+                is_yesterday_gym_feast = (username == "gym_user" and offset == 1)
 
                 # Nạp các bữa ăn mẫu trong ngày
                 for meal_type, items_spec in profile["meals_pattern"].items():
@@ -235,10 +260,13 @@ def seed_demo_data() -> dict[str, int]:
                     meal_time = MEAL_TIMES.get(meal_type, time(12, 0))
                     logged_dt = datetime.combine(log_date, meal_time, tzinfo=UTC)
 
+                    # Tăng khẩu phần ngày hôm qua của gym_user để calo > 3000 kcal
+                    multiplier = 2.0 if is_yesterday_gym_feast else 1.0
+
                     items_input = [
                         MealItemInput(
                             food_name=item["food_name"],
-                            estimated_gram=item["estimated_gram"],
+                            estimated_gram=item["estimated_gram"] * multiplier,
                             eaten_ratio=1.0,
                         )
                         for item in items_spec
@@ -253,14 +281,14 @@ def seed_demo_data() -> dict[str, int]:
                     log_user_meal(session=session, authenticated_user_id=user_id, req=req)  # type: ignore
 
             session.commit()
-            print(f"✅ Đã nạp thành công tài khoản {username} (ID={user_id})")
+            print(f"✅ Đã nạp thành công tài khoản {username} (ID={user_id}) với 30 ngày dữ liệu!")
 
     return created_user_ids
 
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("Bắt đầu nạp 3 tài khoản demo phục vụ PoC Tuần 3...")
+    print("Bắt đầu nạp 3 tài khoản demo phục vụ Báo cáo Tháng & Streak Tuần 6...")
     print("=" * 60)
     result = seed_demo_data()
     print("=" * 60)

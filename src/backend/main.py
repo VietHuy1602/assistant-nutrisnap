@@ -20,6 +20,7 @@ from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
 from src.backend.routers.auth_goal_router import router as auth_goal_router
 from src.backend.routers.meal_router import router as meal_router
+from src.backend.routers.report_router import router as report_router
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
     BaseResponse,
@@ -81,11 +82,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics
+# Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics + Reports
 app.include_router(auth_goal_router)
 app.include_router(meal_router)
 app.include_router(assistant_router)
 app.include_router(analytics_router)
+app.include_router(report_router)
 
 
 
