@@ -35,47 +35,52 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 text-nutri-ink">
       <div>
-        <h2 className="text-lg font-bold text-slate-900">Thông số cơ thể cơ bản</h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Các chỉ số nhân trắc học giúp xác định chính xác nhu cầu năng lượng và tỷ lệ trao đổi chất.
+        <h2 className="text-xl font-semibold tracking-tight text-nutri-ink">Thông số cơ thể cơ bản</h2>
+        <p className="mt-2 text-sm leading-6 text-nutri-muted">
+          Nhập thông tin hiện tại để ước tính nhu cầu năng lượng của bạn.
         </p>
       </div>
 
       {/* Giới tính */}
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-          Giới tính sinh học <span className="text-red-500">*</span>
-        </label>
-        <div className="grid grid-cols-3 gap-3">
+      <fieldset className="min-w-0 space-y-3" aria-describedby={errors.gender ? 'gender-error' : undefined}>
+        <legend className="text-sm font-semibold text-nutri-ink">
+          Giới tính sinh học <span className="text-nutri-error" aria-hidden="true">*</span>
+        </legend>
+        <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-3">
           {genders.map((item) => {
             const isSelected = currentGender === item.value;
             return (
-              <button
+              <label
                 key={item.value}
-                type="button"
-                onClick={() => setValue('gender', item.value, { shouldValidate: true })}
-                className={`py-3 px-4 rounded-xl border text-sm font-semibold transition-all text-center ${
-                  isSelected
-                    ? 'border-nutri-primary bg-emerald-50 text-nutri-primary ring-2 ring-nutri-primary/20 shadow-xs'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                }`}
+                className="nutri-choice"
+                data-selected={isSelected}
               >
-                {item.label}
-              </button>
+                <input
+                  type="radio"
+                  name="gender"
+                  value={item.value}
+                  checked={isSelected}
+                  onChange={() => setValue('gender', item.value, { shouldValidate: true })}
+                  aria-invalid={!!errors.gender}
+                  aria-describedby={errors.gender ? 'gender-error' : undefined}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-nutri-primary"
+                />
+                <span className="text-sm font-semibold">{item.label}</span>
+              </label>
             );
           })}
         </div>
         {errors.gender?.message && (
-          <p role="alert" className="text-xs text-red-600 font-medium">
+          <p id="gender-error" role="alert" className="text-sm text-nutri-error">
             {errors.gender.message}
           </p>
         )}
-      </div>
+      </fieldset>
 
       {/* Tuổi, Chiều cao, Cân nặng */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 [&>*:last-child]:sm:col-span-2">
         <FormField
           id="age"
           label="Tuổi (năm)"
@@ -89,14 +94,11 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
             max={120}
             placeholder="Ví dụ: 25"
             aria-invalid={!!errors.age}
+            aria-describedby={errors.age ? 'age-error' : undefined}
             {...register('age', {
               setValueAs: (v) => (v === '' || isNaN(Number(v)) ? undefined : Number(v)),
             })}
-            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-              errors.age
-                ? 'border-red-300 focus:ring-red-400 bg-red-50/20'
-                : 'border-slate-200 focus:ring-nutri-primary'
-            }`}
+            className="nutri-input"
           />
         </FormField>
 
@@ -114,14 +116,11 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
             max={250}
             placeholder="Ví dụ: 172"
             aria-invalid={!!errors.height_cm}
+            aria-describedby={errors.height_cm ? 'height_cm-error' : undefined}
             {...register('height_cm', {
               setValueAs: (v) => (v === '' || isNaN(Number(v)) ? undefined : Number(v)),
             })}
-            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-              errors.height_cm
-                ? 'border-red-300 focus:ring-red-400 bg-red-50/20'
-                : 'border-slate-200 focus:ring-nutri-primary'
-            }`}
+            className="nutri-input"
           />
         </FormField>
 
@@ -139,35 +138,28 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
             max={300}
             placeholder="Ví dụ: 68.5"
             aria-invalid={!!errors.current_weight_kg}
+            aria-describedby={errors.current_weight_kg ? 'current_weight_kg-error' : undefined}
             {...register('current_weight_kg', {
               setValueAs: (v) => (v === '' || isNaN(Number(v)) ? undefined : Number(v)),
             })}
-            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
-              errors.current_weight_kg
-                ? 'border-red-300 focus:ring-red-400 bg-red-50/20'
-                : 'border-slate-200 focus:ring-nutri-primary'
-            }`}
+            className="nutri-input"
           />
         </FormField>
       </div>
 
       {/* Mức độ vận động */}
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
-          Mức độ vận động hàng ngày <span className="text-red-500">*</span>
-        </label>
+      <fieldset className="min-w-0 space-y-3" aria-describedby={errors.activity_level ? 'activity_level-error' : undefined}>
+        <legend className="text-sm font-semibold text-nutri-ink">
+          Mức độ vận động hàng ngày <span className="text-nutri-error" aria-hidden="true">*</span>
+        </legend>
         <div className="space-y-2.5">
           {activityOptions.map((opt) => {
             const isSelected = currentActivity === opt.value;
             return (
               <label
                 key={opt.value}
-                onClick={() => setValue('activity_level', opt.value, { shouldValidate: true })}
-                className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
-                  isSelected
-                    ? 'border-nutri-primary bg-emerald-50/50 ring-2 ring-nutri-primary/20 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
-                }`}
+                className="nutri-choice"
+                data-selected={isSelected}
               >
                 <input
                   type="radio"
@@ -175,24 +167,27 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
                   value={opt.value}
                   checked={isSelected}
                   onChange={() => setValue('activity_level', opt.value, { shouldValidate: true })}
-                  className="mt-0.5 text-nutri-primary focus:ring-nutri-primary"
+                  aria-labelledby={`activity-${opt.value}-label`}
+                  aria-describedby={`activity-${opt.value}-description${errors.activity_level ? ' activity_level-error' : ''}`}
+                  aria-invalid={!!errors.activity_level}
+                  className="mt-1 h-4 w-4 shrink-0 accent-nutri-primary"
                 />
-                <div className="flex-1">
-                  <p className={`text-sm font-semibold ${isSelected ? 'text-nutri-primary' : 'text-slate-800'}`}>
+                <span className="min-w-0 flex-1">
+                  <span id={`activity-${opt.value}-label`} className="block text-sm font-semibold">
                     {opt.label}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
-                </div>
+                  </span>
+                  <span id={`activity-${opt.value}-description`} className="mt-1 block text-sm leading-5 text-nutri-muted">{opt.desc}</span>
+                </span>
               </label>
             );
           })}
         </div>
         {errors.activity_level?.message && (
-          <p role="alert" className="text-xs text-red-600 font-medium">
+          <p id="activity_level-error" role="alert" className="text-sm text-nutri-error">
             {errors.activity_level.message}
           </p>
         )}
-      </div>
+      </fieldset>
     </div>
   );
 };

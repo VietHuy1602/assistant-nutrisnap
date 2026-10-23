@@ -15,6 +15,14 @@ export default {
           primary: '#107C41', // Màu xanh chủ đạo thương hiệu NutriSnap
           dark: '#0B522B',
           surface: '#F8FAFC',
+          // Semantic aliases keep the existing brand and Slate conventions.
+          panel: '#FFFFFF',
+          ink: '#0F172A',
+          muted: '#475569',
+          border: '#CBD5E1',
+          selected: '#F0FDF4',
+          focus: '#107C41',
+          error: '#B91C1C',
         },
       },
       fontFamily: {

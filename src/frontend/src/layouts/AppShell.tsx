@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Bot, Send, X, Check, Sparkles } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
@@ -6,10 +6,42 @@ import { useAuth } from '../context/AuthContext';
 import { apiClient } from '../api/client';
 import { ChatMessageResponse, ActionCard } from '../types/api';
 
+export interface AppShellContext {
+  openChat: () => void;
+}
+
 export const AppShell: React.FC = () => {
   const { user, hasGoal } = useAuth();
   const location = useLocation();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const pageRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isChatOpen) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    const page = pageRef.current;
+    page?.setAttribute('inert', '');
+    document.body.style.overflow = 'hidden';
+    closeRef.current?.focus();
+    return () => {
+      page?.removeAttribute('inert');
+      document.body.style.overflow = previousOverflow;
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [isChatOpen]);
+
+  const handleDialogKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') { event.preventDefault(); setIsChatOpen(false); }
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex="0"]') || []);
+    const first = controls[0];
+    const last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  };
 
   // Assistant Chat State
   const [inputMsg, setInputMsg] = useState('');
@@ -76,7 +108,7 @@ export const AppShell: React.FC = () => {
         ...prev,
         {
           sender: 'assistant',
-          text: `✅ Đã lưu ${card.data.items.length} món (${card.data.total_calories} kcal) vào nhật ký thành công! Dashboard đã được cập nhật.`,
+          text: `✅ Đã lưu ${card.data.items.length} món (${card.data.total_calories} kcal) vào nhật ký thành công! Bạn có thể tải lại Dashboard để xem số liệu mới.`,
         },
       ]);
     } catch (err) {
@@ -86,6 +118,7 @@ export const AppShell: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-nutri-surface flex flex-col">
+      <div ref={pageRef} className="flex flex-1 flex-col">
       <Navbar onOpenChat={() => setIsChatOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -101,20 +134,21 @@ export const AppShell: React.FC = () => {
             </div>
             <Link
               to="/goal-setup"
-              className="px-4 py-2 rounded-xl bg-nutri-primary text-white font-semibold text-center hover:bg-nutri-dark transition-all shrink-0 shadow-xs active:scale-98"
+              className="inline-flex min-h-11 items-center justify-center px-4 py-2 rounded-xl bg-nutri-primary text-white font-semibold text-center hover:bg-nutri-dark shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
             >
               Thiết lập ngay
             </Link>
           </div>
         )}
 
-        <Outlet />
+        <Outlet context={{ openChat: () => setIsChatOpen(true) } satisfies AppShellContext} />
       </main>
+      </div>
 
       {/* Assistant Chat Drawer */}
       {isChatOpen && (
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30 backdrop-blur-xs transition-opacity">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="assistant-title" onKeyDown={handleDialogKey} className="w-full max-w-md bg-nutri-panel h-[100dvh] min-h-0 shadow-2xl flex flex-col text-nutri-ink">
             {/* Drawer Header */}
             <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
               <div className="flex items-center gap-2.5">
@@ -122,56 +156,55 @@ export const AppShell: React.FC = () => {
                   <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-slate-900">Trợ lý AI NutriSnap</h3>
-                  <span className="text-xs text-emerald-600 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Sẵn sàng hỗ trợ
-                  </span>
+                  <h3 id="assistant-title" className="font-semibold text-sm text-nutri-ink">Trợ lý AI NutriSnap</h3>
+                  <span className="text-xs text-nutri-muted">Dinh dưỡng · Thông tin tham khảo</span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsChatOpen(false)}
                 aria-label="Đóng trợ lý"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60"
+                ref={closeRef}
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-nutri-muted hover:bg-nutri-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Quick Prompts */}
-            <div className="px-4 py-2 bg-slate-50/50 border-b border-slate-100 flex gap-2 overflow-x-auto text-xs whitespace-nowrap scrollbar-none">
+            <div className="min-w-0 shrink-0 px-4 py-3 bg-nutri-surface border-b border-nutri-border/60 flex gap-2 overflow-x-auto text-xs whitespace-nowrap">
               <button
                 type="button"
                 onClick={() => handleSendChat('Hôm nay tôi còn bao nhiêu calo?')}
-                className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-nutri-primary"
+                disabled={chatLoading} className="min-h-11 shrink-0 px-3 py-2 rounded-full bg-nutri-panel border border-nutri-border text-nutri-muted hover:border-nutri-primary hover:text-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutri-focus disabled:opacity-50"
               >
                 💡 Calo còn lại?
               </button>
               <button
                 type="button"
                 onClick={() => handleSendChat('Trưa nay tôi ăn 1 tô phở bò tái')}
-                className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-nutri-primary"
+                disabled={chatLoading} className="min-h-11 shrink-0 px-3 py-2 rounded-full bg-nutri-panel border border-nutri-border text-nutri-muted hover:border-nutri-primary hover:text-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutri-focus disabled:opacity-50"
               >
                 🍲 Ghi nhận phở bò
               </button>
               <button
                 type="button"
                 onClick={() => handleSendChat('Gợi ý bữa tối 40k đủ đạm')}
-                className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-nutri-primary"
+                disabled={chatLoading} className="min-h-11 shrink-0 px-3 py-2 rounded-full bg-nutri-panel border border-nutri-border text-nutri-muted hover:border-nutri-primary hover:text-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nutri-focus disabled:opacity-50"
               >
                 🥗 Gợi ý món 40k
               </button>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div role="log" aria-label="Hội thoại với trợ lý" aria-live="polite" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 space-y-4">
               {chatMessages.map((msg, idx) => (
                 <div
                   key={idx}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                    className={`max-w-[90%] break-words rounded-2xl px-4 py-2.5 text-sm ${
                       msg.sender === 'user'
                         ? 'bg-nutri-primary text-white rounded-br-xs'
                         : 'bg-slate-100 text-slate-800 rounded-bl-xs'
@@ -184,13 +217,13 @@ export const AppShell: React.FC = () => {
                   {msg.actionCard && (
                     <div className="mt-3 w-full bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 space-y-3">
                       <div className="flex items-center justify-between text-xs font-semibold text-emerald-800">
-                        <span>📋 XÁC NHẬN BỮA ĂN (TWO-STEP FLOW)</span>
+                        <span>Kiểm tra trước khi lưu</span>
                         <span className="capitalize">{msg.actionCard.data.meal_type}</span>
                       </div>
 
                       <div className="space-y-1.5 text-xs">
                         {msg.actionCard.data.items.map((it, i) => (
-                          <div key={i} className="flex justify-between items-center bg-white p-2 rounded-lg border border-slate-100">
+                          <div key={i} className="flex flex-wrap justify-between items-center gap-2 break-words bg-white p-2 rounded-lg border border-slate-100">
                             <span className="font-medium text-slate-700">{it.food_name}</span>
                             <span className="text-slate-500">{it.estimated_gram}g (~{it.calories} kcal)</span>
                           </div>
@@ -207,7 +240,7 @@ export const AppShell: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleConfirmActionCard(msg.actionCard!)}
-                            className="flex-1 py-1.5 bg-nutri-primary hover:bg-nutri-dark text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1 shadow-xs"
+                            className="min-h-11 flex-1 py-2 bg-nutri-primary hover:bg-nutri-dark text-white rounded-xl text-sm font-medium flex items-center justify-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
                           >
                             <Check className="w-3.5 h-3.5" /> Xác nhận lưu
                           </button>
@@ -217,14 +250,14 @@ export const AppShell: React.FC = () => {
                               msg.actionCard!.status = 'cancelled';
                               setChatMessages([...chatMessages]);
                             }}
-                            className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-medium"
+                            className="min-h-11 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
                           >
                             Hủy
                           </button>
                         </div>
                       ) : (
-                        <div className="text-xs text-emerald-700 font-medium flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" /> Đã xác nhận lưu vào CSDL
+                        <div className={`text-xs font-medium flex items-center gap-1 ${msg.actionCard.status === 'cancelled' ? 'text-nutri-muted' : 'text-nutri-dark'}`}>
+                          {msg.actionCard.status === 'cancelled' ? 'Đã hủy · Bữa ăn chưa được lưu' : 'Đã xác nhận lưu vào nhật ký'}
                         </div>
                       )}
                     </div>
@@ -234,8 +267,8 @@ export const AppShell: React.FC = () => {
 
               {chatLoading && (
                 <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></span>
-                  Trợ lý đang suy nghĩ và tính toán calo...
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce motion-reduce:animate-none"></span>
+                  Đang chờ phản hồi từ trợ lý…
                 </div>
               )}
             </div>
@@ -248,17 +281,20 @@ export const AppShell: React.FC = () => {
               }}
               className="p-3 border-t border-slate-200 bg-white flex items-center gap-2"
             >
+              <label htmlFor="assistant-message" className="sr-only">Tin nhắn cho trợ lý</label>
               <input
+                id="assistant-message"
                 type="text"
                 value={inputMsg}
                 onChange={(e) => setInputMsg(e.target.value)}
                 placeholder="Nhập câu hỏi hoặc món ăn..."
-                className="flex-1 px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-nutri-primary"
+                className="min-w-0 min-h-11 flex-1 px-3.5 py-2 text-base rounded-xl border border-nutri-border focus:outline-none focus:ring-2 focus:ring-nutri-focus"
               />
               <button
                 type="submit"
+                aria-label="Gửi tin nhắn"
                 disabled={!inputMsg.trim() || chatLoading}
-                className="p-2 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white disabled:opacity-40 transition-all shadow-xs"
+                className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
               >
                 <Send className="w-4 h-4" />
               </button>
