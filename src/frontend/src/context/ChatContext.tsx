@@ -32,7 +32,11 @@ export interface ChatContextValue {
   closeChat: () => void;
 }
 
-const ChatContext = createContext<ChatContextValue | undefined>(undefined);
+export const ChatContext = createContext<ChatContextValue | undefined>(undefined);
+
+export function useOptionalChat(): ChatContextValue | undefined {
+  return useContext(ChatContext);
+}
 
 export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, status } = useAuth();
