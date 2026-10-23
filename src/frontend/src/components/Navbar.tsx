@@ -22,9 +22,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
   return (
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-wrap items-center justify-between gap-3 py-3 sm:flex-nowrap sm:py-0">
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex min-h-11 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-nutri-primary">
             <Salad className="w-6 h-6" />
           </div>
@@ -39,12 +39,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
         </Link>
 
         {/* Navigation Tabs */}
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav aria-label="Điều hướng chính" className="flex w-full items-center justify-between gap-1 sm:w-auto sm:gap-2">
           <NavLink
             to="/"
+            aria-label="Tổng quan"
             end
             className={({ isActive }) =>
-              `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
                 isActive
                   ? 'bg-emerald-50 text-nutri-primary font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -57,8 +58,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
           <NavLink
             to="/goal-setup"
+            aria-label="Mục tiêu"
             className={({ isActive }) =>
-              `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
                 isActive
                   ? 'bg-emerald-50 text-nutri-primary font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -73,7 +75,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           <button
             type="button"
             onClick={onOpenChat}
-            className="flex items-center gap-1.5 px-3.5 py-2 ml-1 sm:ml-2 rounded-lg text-sm font-medium bg-nutri-primary hover:bg-nutri-dark text-white transition-all shadow-xs active:scale-95"
+            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap px-3 py-2 sm:ml-2 rounded-lg text-sm font-medium bg-nutri-primary hover:bg-nutri-dark text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none"
           >
             <MessageSquareText className="w-4 h-4" />
             <span>Trợ lý AI</span>
@@ -95,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
               onClick={handleLogout}
               title="Đăng xuất"
               aria-label="Đăng xuất"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-nutri-muted hover:text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
             >
               <LogOut className="w-4 h-4" />
             </button>

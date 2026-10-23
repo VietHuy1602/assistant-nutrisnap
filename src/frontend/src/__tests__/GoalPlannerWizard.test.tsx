@@ -58,8 +58,37 @@ describe('GoalPlannerWizard', () => {
       expect(screen.getByText('Tuổi tối thiểu là 10')).toBeInTheDocument();
     });
 
+    expect(ageInput).toHaveAttribute('aria-invalid', 'true');
+    expect(ageInput).toHaveAccessibleDescription('Tuổi tối thiểu là 10');
+
     // Vẫn ở bước 1, không thấy tiêu đề bước 2
     expect(screen.queryByText('Mục tiêu vóc dáng & Sức khỏe')).not.toBeInTheDocument();
+  });
+
+  it('supports keyboard selection in the body-step radio groups and retains choices on return', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <GoalPlannerWizard />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('group', { name: /Giới tính sinh học/i })).toBeInTheDocument();
+    screen.getByRole('radio', { name: 'Nam' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Nữ' })).toBeChecked();
+
+    expect(screen.getByRole('group', { name: /Mức độ vận động hàng ngày/i })).toBeInTheDocument();
+    const moderate = screen.getByRole('radio', { name: 'Vận động vừa phải' });
+    expect(moderate).toHaveAccessibleDescription('Tập thể dục đều đặn 3–5 ngày/tuần');
+    moderate.focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('radio', { name: 'Vận động nhiều' })).toBeChecked();
+
+    await user.click(screen.getByRole('button', { name: /Tiếp tục/i }));
+    await user.click(screen.getByRole('button', { name: /Quay lại/i }));
+    expect(screen.getByRole('radio', { name: 'Nữ' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Vận động nhiều' })).toBeChecked();
   });
 
   it('2. Bước 2: Chọn maintain ẩn ô nhập cân nặng mục tiêu', async () => {
