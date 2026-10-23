@@ -72,6 +72,18 @@ class UserProfileContext(BaseModel):
     target_carbs_g: float = 200.0
     target_fat_g: float = 50.0
     daily_budget_vnd: int = 60000
+    behavioral_patterns: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Danh sách mẫu thói quen ăn uống nhận diện từ CSDL 7-14 ngày",
+    )
+    behavioral_summary: Optional[dict[str, Any]] = Field(
+        default=None,
+        description="Chỉ số thống kê hành vi (tỷ lệ bữa sáng, ăn khuya, đạm trung bình)",
+    )
+    has_pattern_insights: bool = Field(
+        default=False,
+        description="True nếu người dùng có ít nhất một mẫu thói quen hành vi được nhận diện",
+    )
 
     model_config = ConfigDict(extra="ignore")
 
@@ -88,6 +100,12 @@ class OrchestratorResponse(BaseModel):
     action_card: Optional[dict[str, Any]] = Field(default=None, description="Thẻ hành động preview bữa ăn")
     clarification_needed: bool = Field(default=False, description="Đang yêu cầu người dùng làm rõ thông tin")
     is_fallback: bool = Field(default=False, description="Chạy qua chế độ dự phòng thông minh (Offline/Fallback)")
+    voice_modifier_result: Optional[dict[str, Any]] = Field(
+        default=None, description="Kết quả phân tích điều chỉnh món ăn từ giọng nói"
+    )
+    applied_modifications: list[str] = Field(
+        default_factory=list, description="Danh sách tóm tắt các điều chỉnh từ voice modifier"
+    )
     disclaimer: str = Field(default=DISCLAIMER_TEXT, description="Tuyên bố miễn trừ trách nhiệm y tế")
 
     model_config = ConfigDict(extra="ignore")
@@ -98,9 +116,15 @@ class OrchestratorResponse(BaseModel):
 # ==============================================================================
 
 
-def fetch_user_profile_context(session: Session, user_id: int) -> UserProfileContext:
+def fetch_user_profile_context(
+    session: Session,
+    user_id: int,
+    include_patterns: bool = True,
+    days_range: int = 14,
+) -> UserProfileContext:
     """Truy vấn hồ sơ cá nhân và mục tiêu hiện tại từ CSDL SQLite.
 
+    Nạp thêm các mẫu thói quen hành vi 7-14 ngày từ analyze_user_patterns nếu có.
     Nếu người dùng chưa thiết lập Goal, trả về hồ sơ mặc định an toàn y khoa.
     """
     user = session.get(User, user_id)
@@ -108,10 +132,33 @@ def fetch_user_profile_context(session: Session, user_id: int) -> UserProfileCon
 
     goal = session.exec(select(Goal).where(Goal.user_id == user_id)).first()
 
+    # Nạp mẫu hành vi ăn uống từ tầng Analytics nếu có
+    b_patterns: list[dict[str, Any]] = []
+    b_summary: Optional[dict[str, Any]] = None
+    if include_patterns:
+        try:
+            from src.backend.services.analytics_service import analyze_user_patterns
+
+            p_data = analyze_user_patterns(
+                session=session,
+                authenticated_user_id=user_id,
+                days_range=days_range,
+            )
+            if p_data.get("status") == "analyzed":
+                b_patterns = p_data.get("patterns", [])
+                b_summary = p_data.get("summary_metrics")
+        except Exception as exc:
+            logger.debug("Không thể phân tích mẫu hành vi người dùng: %s", exc)
+
+    has_patterns = len(b_patterns) > 0
+
     if not goal:
         return UserProfileContext(
             user_id=user_id,
             username=username,
+            behavioral_patterns=b_patterns,
+            behavioral_summary=b_summary,
+            has_pattern_insights=has_patterns,
         )
 
     target_w = getattr(goal, "target_weight", getattr(goal, "target_weight_kg", 65.0))
@@ -134,6 +181,9 @@ def fetch_user_profile_context(session: Session, user_id: int) -> UserProfileCon
         target_carbs_g=float(goal.target_carbs_g or 200.0),
         target_fat_g=float(goal.target_fat_g or 50.0),
         daily_budget_vnd=int(goal.daily_budget_vnd or 60000),
+        behavioral_patterns=b_patterns,
+        behavioral_summary=b_summary,
+        has_pattern_insights=has_patterns,
     )
 
 
@@ -148,6 +198,23 @@ def build_system_instruction(profile: UserProfileContext) -> str:
         "maintain": "Duy trì cân nặng ổn định",
     }.get(profile.goal_type, profile.goal_type)
 
+    patterns_section = ""
+    if profile.behavioral_patterns:
+        patterns_section = "\n\nMẪU HÀNH VI ĂN UỐNG 7-14 NGÀY (BEHAVIORAL PATTERN INSIGHTS):\n"
+        for p in profile.behavioral_patterns:
+            p_code = p.get("pattern_code", "")
+            p_title = p.get("title", "")
+            p_rec = p.get("recommendation", "")
+            patterns_section += f"- [{p_code.upper()}] {p_title}: {p_rec}\n"
+        patterns_section += (
+            "\nHƯỚNG DẪN SMART COMPENSATION & TƯ VẤN CÁ NHÂN HÓA:\n"
+            "- Chủ động lồng ghép khéo léo và ân cần các nhận xét dựa trên mẫu hành vi thực tế của người dùng.\n"
+            "- Nếu người dùng hay bỏ bữa sáng: Nhắc nhẹ nhàng một bữa sáng đủ đạm giúp năng lượng bền vững.\n"
+            "- Nếu người dùng thiếu hụt protein: Khuyến khích bổ sung ức gà, cá, đậu hũ, trứng vào thực đơn.\n"
+            "- Nếu người dùng hay ăn khuya sau 21h: Gợi ý các món thanh nhẹ, ít dầu mỡ để ngủ ngon hơn.\n"
+            "- Luôn giữ thái độ đồng cảm, mang tính xây dựng cao và tuyệt đối không phán xét.\n"
+        )
+
     return f"""Bạn là NutriSnap Assistant – Huấn luyện viên dinh dưỡng ảo (Constructive Nutrition Coach).
 Phong cách giao tiếp của bạn: Thân thiện, ấm áp, tích cực, mang tính xây dựng cao và tuyệt đối KHÔNG phán xét hay chỉ trích người dùng dù họ ăn vượt calo mục tiêu.
 
@@ -159,7 +226,7 @@ HỒ SƠ NGƯỜI DÙNG HIỆN TẠI (Authenticated Context):
 - TDEE ước tính: {profile.tdee_calories:.0f} kcal/ngày
 - Hạn mức Calo mục tiêu: {profile.target_calories:.0f} kcal/ngày
 - Hạn mức Macro: Protein {profile.target_protein_g:.0f}g | Carbs {profile.target_carbs_g:.0f}g | Fat {profile.target_fat_g:.0f}g
-- Ngân sách ăn uống khuyến nghị: {profile.daily_budget_vnd:,} VNĐ/ngày
+- Ngân sách ăn uống khuyến nghị: {profile.daily_budget_vnd:,} VNĐ/ngày{patterns_section}
 
 CÁC NGUYÊN TẮC BẮT BUỘC (STRICT POLICIES):
 1. BẢO MẬT ZERO-TRUST:
@@ -260,7 +327,6 @@ def check_clarification_needed(
             )
 
     # Trường hợp 3: Nêu tên món nhưng còn quá chung chung, thiếu loại cụ thể hoặc khẩu phần
-    # Ví dụ: "Ghi giúp tôi món phở", "tôi ăn phở", "ăn cơm", "vừa ăn bún"
     if any(k in clean_msg for k in ["ghi", "lưu", "ăn", "note"]):
         # Phở chung chung
         if re.search(r"\bphở\b", clean_msg) and not any(
@@ -285,8 +351,6 @@ def check_clarification_needed(
                 "Bạn vừa ăn bún gì nhỉ (ví dụ: bún bò Huế, bún chả, bún riêu cua...) "
                 "và khẩu phần khoảng 1 tô vừa (~400g) hay tô lớn?"
             )
-
-
 
     return False, None
 
@@ -382,11 +446,22 @@ def synthesize_tool_output(
         budget = int(tool_result.get("budget_vnd", profile.daily_budget_vnd))
         gentle_note = tool_result.get("gentle_note")
 
+        pattern_note = ""
+        if profile.behavioral_patterns:
+            p_codes = [p.get("pattern_code") for p in profile.behavioral_patterns]
+            if "low_protein" in p_codes:
+                pattern_note = "\n\n*💡 Gợi ý bù trừ đạm (Smart Compensation): Hệ thống nhận thấy bạn có xu hướng thiếu đạm gần đây. Hãy ưu tiên các món giàu protein như ức gà, cá, đậu hũ hoặc trứng để bảo vệ cơ bắp nhé!*"
+            elif "skipping_breakfast" in p_codes:
+                pattern_note = "\n\n*💡 Nhắn nhủ nhẹ nhàng: Bạn hay bỏ bữa sáng vài ngày gần đây. Một bữa ăn đủ chất sẽ giúp bạn duy trì năng lượng bền bỉ suốt ngày!*"
+            elif "late_night_eating" in p_codes:
+                pattern_note = "\n\n*💡 Gợi ý ăn tối nhẹ nhàng: Hệ thống nhận thấy bạn có thói quen ăn sau 21:00. Bạn nên chọn các món thanh nhẹ, ít dầu mỡ để ngủ ngon hơn.*"
+
         if not recs:
             return (
                 f"Dựa trên hạn mức còn lại ({rem_cal:.0f} kcal) và ngân sách ({budget:,} VNĐ), "
                 "mình chưa tìm thấy món ăn hoàn toàn khớp trong CSDL. "
                 "Bạn có thể nạp các món thanh đạm như canh rau củ thịt bằm, ức gà áp chảo hoặc trứng luộc nhé!"
+                f"{pattern_note}"
             )
 
         lines = []
@@ -406,7 +481,7 @@ def synthesize_tool_output(
         return (
             f"Dưới đây là một số gợi ý món ăn phù hợp với hạn mức năng lượng (~{rem_cal:.0f} kcal) "
             f"và ngân sách ({budget:,} VNĐ) của bạn:\n\n"
-            f"{recs_text}{note_text}\n\n"
+            f"{recs_text}{note_text}{pattern_note}\n\n"
             "Bạn thích món nào nhất? Sau khi ăn xong hãy nhắn để mình giúp bạn ghi nhận nhé!"
         )
 
@@ -429,7 +504,6 @@ def synthesize_tool_output(
                 f"- **Cân nặng:** Hiện tại **{latest_w:.1f} kg**{start_str} (Thay đổi: {sign}{change_w:.2f} kg so với đầu kỳ)"
                 f"{ema_str}\n"
             )
-
 
         coach_encouragement = (
             f"Bạn đã duy trì ghi chép **{streak}/{days} ngày** với tổng cộng **{total_meals} bữa ăn**! "
@@ -503,9 +577,20 @@ class AIOrchestrator:
             logger.warning(f"Không thể khởi tạo Gemini GenerativeModel: {exc}. Chuyển sang Fallback.")
             return None
 
-    def get_user_context(self, session: Session, user_id: int) -> UserProfileContext:
-        """Nạp ngữ cảnh hồ sơ người dùng từ CSDL."""
-        return fetch_user_profile_context(session=session, user_id=user_id)
+    def get_user_context(
+        self,
+        session: Session,
+        user_id: int,
+        include_patterns: bool = True,
+        days_range: int = 14,
+    ) -> UserProfileContext:
+        """Nạp ngữ cảnh hồ sơ người dùng từ CSDL kèm phân tích mẫu hành vi 7-14 ngày."""
+        return fetch_user_profile_context(
+            session=session,
+            user_id=user_id,
+            include_patterns=include_patterns,
+            days_range=days_range,
+        )
 
     def process_message(
         self,
@@ -514,6 +599,7 @@ class AIOrchestrator:
         message: str,
         explicit_tool_call: Optional[dict[str, Any]] = None,
         chat_history: Optional[list[dict[str, str]]] = None,
+        voice_transcript: Optional[str] = None,
     ) -> OrchestratorResponse:
         """Hàm xử lý chính (Main Entrypoint) của AI Orchestrator:
 
@@ -533,7 +619,6 @@ class AIOrchestrator:
             t_args = explicit_tool_call.get("tool_args") or explicit_tool_call.get("args") or {}
 
             if t_name:
-                # Kiểm tra clarification cho explicit call
                 needs_clarify, clarify_msg = check_clarification_needed(
                     message=message,
                     tool_name=str(t_name),
@@ -602,6 +687,7 @@ class AIOrchestrator:
             user_id=user_id,
             message=message,
             profile=profile,
+            voice_transcript=voice_transcript,
         )
 
     def _run_gemini_pipeline(
@@ -637,7 +723,6 @@ class AIOrchestrator:
                 function_calls.append(fn)
 
         if not function_calls:
-            # Không gọi tool, LLM trả lời trực tiếp
             raw_reply = response.text or ""
             return OrchestratorResponse(
                 reply=raw_reply,
@@ -693,6 +778,7 @@ class AIOrchestrator:
         user_id: int,
         message: str,
         profile: UserProfileContext,
+        voice_transcript: Optional[str] = None,
     ) -> OrchestratorResponse:
         """Động cơ NLU dự phòng tất định (Deterministic Fallback Engine):
 
@@ -765,16 +851,27 @@ class AIOrchestrator:
                 "thực đơn",
             ]
         ):
-            # Trích xuất ngân sách nếu người dùng nêu (ví dụ: 40k, 50000)
+            # Trích xuất ngân sách nếu người dùng nêu (ví dụ: 50.000đ, 80.000 VNĐ, 50k, 60000)
             budget: Optional[int] = None
-            budget_match = re.search(r"(\d+)\s*(k|nghìn|ngàn|vnd|vnđ)", msg_lower)
-            if budget_match:
-                val = int(budget_match.group(1))
-                budget = val * 1000 if budget_match.group(2) in ("k", "nghìn", "ngàn") else val
+            b_dot_match = re.search(r"(\d{1,3}(?:[.,]\d{3})+)\s*(?:đ|vnd|vnđ)?", msg_lower)
+            if b_dot_match:
+                budget = int(re.sub(r"[.,]", "", b_dot_match.group(1)))
+            else:
+                budget_match = re.search(r"(\d+)\s*(k|nghìn|ngàn|vnd|vnđ|đ)", msg_lower)
+                if budget_match:
+                    val = int(budget_match.group(1))
+                    budget = val * 1000 if budget_match.group(2) in ("k", "nghìn", "ngàn") else val
+
+            # Trích xuất hạn mức calo còn lại nếu có
+            rem_cal: Optional[float] = None
+            cal_match = re.search(r"(\d+)\s*(?:calo|kcal|calorie)", msg_lower)
+            if cal_match:
+                rem_cal = float(cal_match.group(1))
 
             result = exec_recommend_meals(
                 session=session,
                 authenticated_user_id=user_id,
+                remaining_calories=rem_cal,
                 budget_vnd=budget,
             )
             reply = synthesize_tool_output("recommend_meals", result, profile)
@@ -782,7 +879,7 @@ class AIOrchestrator:
                 reply=reply,
                 reply_text=reply,
                 tool_called="recommend_meals",
-                tool_args={"budget_vnd": budget},
+                tool_args={"remaining_calories": rem_cal, "budget_vnd": budget},
                 tool_result=result,
                 is_fallback=True,
             )
@@ -801,7 +898,6 @@ class AIOrchestrator:
                 "lịch sử",
             ]
         ):
-            # Trích xuất số ngày (ví dụ: 14 ngày, 30 ngày)
             days_range = 7
             days_match = re.search(r"(\d+)\s*ngày", msg_lower)
             if days_match:
@@ -824,7 +920,6 @@ class AIOrchestrator:
 
         # Ý định 4: Ghi nhận bữa ăn cụ thể / log_meal
         if any(k in msg_lower for k in ["ghi", "lưu", "note", "vừa ăn", "mới ăn"]):
-            # Nhận diện món ăn rõ ràng và khẩu phần
             dish_name = "Cơm tấm sườn nướng"
             dish_gram = 300.0
             meal_type = "lunch"
@@ -851,7 +946,6 @@ class AIOrchestrator:
                 dish_name = "Trứng gà ốp la (1 quả)"
                 dish_gram = 60.0
 
-            # Xác định loại bữa ăn
             if "sáng" in msg_lower:
                 meal_type = "breakfast"
             elif "tối" in msg_lower:
@@ -859,14 +953,35 @@ class AIOrchestrator:
             elif "phụ" in msg_lower or "vặt" in msg_lower:
                 meal_type = "snack"
 
-            # Kiểm tra xem người dùng có chỉ định số gram cụ thể không
             gram_match = re.search(r"(\d+)\s*(g|gram|gam)", msg_lower)
             if gram_match:
                 dish_gram = float(gram_match.group(1))
 
+            from src.ai.voice_modifier import parse_voice_modifier
+
+            # Xử lý ghi chú giọng nói bổ sung nếu có (dầu ăn, nước sốt ẩn, ăn thừa)
+            v_transcript = voice_transcript if voice_transcript else message
+            has_mod_clues = any(
+                w in v_transcript.lower()
+                for w in ["dầu", "sốt", "bơ", "mỡ hành", "nửa", "bỏ lại", "chừa", "thìa", "muỗng", "áp chảo", "không húp"]
+            )
+
+            applied_mods: list[str] = []
+            vm_dict: Optional[dict[str, Any]] = None
+            if has_mod_clues or voice_transcript:
+                vm_res = parse_voice_modifier(
+                    dishes=[{"dish_name": dish_name, "estimated_weight_gram": dish_gram}],
+                    transcript=v_transcript,
+                )
+                items_list = vm_res.to_meal_items()
+                applied_mods = vm_res.applied_modifications
+                vm_dict = vm_res.model_dump()
+            else:
+                items_list = [{"food_name": dish_name, "estimated_gram": dish_gram}]
+
             tool_args = {
                 "meal_type": meal_type,
-                "items": [{"food_name": dish_name, "estimated_gram": dish_gram}],
+                "items": items_list,
                 "is_confirmed": False,
             }
 
@@ -874,10 +989,13 @@ class AIOrchestrator:
                 session=session,
                 authenticated_user_id=user_id,
                 meal_type=meal_type,
-                items_list=[{"food_name": dish_name, "estimated_gram": dish_gram}],
+                items_list=items_list,
                 is_confirmed=False,
             )
             reply = synthesize_tool_output("log_meal", result, profile)
+
+            if applied_mods:
+                reply += "\n\n*📝 Ghi chú khẩu phần đã áp dụng: " + "; ".join(applied_mods) + "*"
 
             return OrchestratorResponse(
                 reply=reply,
@@ -888,13 +1006,51 @@ class AIOrchestrator:
                 pending_confirmation=True,
                 action_card=result.get("action_card"),
                 is_fallback=True,
+                voice_modifier_result=vm_dict,
+                applied_modifications=applied_mods,
             )
+
+        # Ý định 5: Tư vấn thói quen & lời khuyên cá nhân hóa (Behavioral Insights)
+        if any(
+            k in msg_lower
+            for k in [
+                "lời khuyên",
+                "thói quen",
+                "tư vấn",
+                "hành vi",
+                "nhận xét",
+                "ăn uống ra sao",
+                "gần đây thế nào",
+                "bù trừ",
+                "compensation",
+                "pattern",
+            ]
+        ):
+            if profile.behavioral_patterns:
+                lines = [
+                    f"Chào {profile.username}! Dựa trên phân tích nhật ký ăn uống gần đây từ CSDL, mình có vài quan sát và lời khuyên mang tính xây dựng dành cho bạn:\n"
+                ]
+                for p in profile.behavioral_patterns:
+                    lines.append(f"• **{p.get('title')}**: {p.get('recommendation')}")
+                lines.append(
+                    "\nBạn muốn tìm kiếm thực đơn phù hợp hay kiểm tra calo hôm nay không?"
+                )
+                habit_reply = "\n".join(lines)
+                return OrchestratorResponse(
+                    reply=habit_reply,
+                    reply_text=habit_reply,
+                    is_fallback=True,
+                )
 
         # Chào hỏi hoặc hội thoại mở thông thường
         greetings_reply = (
             f"Chào {profile.username}! Mình là NutriSnap Coach – Trợ lý dinh dưỡng cá nhân của bạn. "
             f"Hôm nay bạn muốn kiểm tra dinh dưỡng trong ngày, ghi nhận bữa ăn, tìm gợi ý món ăn ngon hay xem tiến độ cân nặng?"
         )
+        if profile.behavioral_patterns:
+            top_pattern = profile.behavioral_patterns[0]
+            greetings_reply += f"\n\n*(Nhắn nhủ nhẹ nhàng: {top_pattern.get('recommendation')})*"
+
         return OrchestratorResponse(
             reply=greetings_reply,
             reply_text=greetings_reply,
@@ -931,12 +1087,14 @@ def orchestrate_chat(
     message: str,
     explicit_tool_call: Optional[dict[str, Any]] = None,
     chat_history: Optional[list[dict[str, str]]] = None,
+    voice_transcript: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> OrchestratorResponse:
     """Hàm tiện ích (Convenience Function) điều phối toàn diện cho Router hoặc API handler:
 
     - Khởi tạo Orchestrator.
     - Xử lý tin nhắn và điều phối Tool Calling.
+    - Hỗ trợ phân tích ghi chú giọng nói voice_transcript.
     - Trả về OrchestratorResponse an toàn, chuẩn xác và không ảo giác.
     """
     orchestrator = get_ai_orchestrator(api_key=api_key)
@@ -946,4 +1104,5 @@ def orchestrate_chat(
         message=message,
         explicit_tool_call=explicit_tool_call,
         chat_history=chat_history,
+        voice_transcript=voice_transcript,
     )

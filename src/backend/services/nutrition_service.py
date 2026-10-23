@@ -117,6 +117,18 @@ class MealLogResponse(BaseModel):
 # ==============================================================================
 
 
+COMMON_CONDIMENT_REFERENCES: dict[str, dict[str, Any]] = {
+    "dầu ô-liu": {"food_name": "Dầu ô-liu", "calories_per_100g": 884.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 100.0, "avg_price_vnd": 15000},
+    "dầu ăn": {"food_name": "Dầu ăn", "calories_per_100g": 884.0, "protein_per_100g": 0.0, "carbs_per_100g": 0.0, "fat_per_100g": 100.0, "avg_price_vnd": 10000},
+    "bơ": {"food_name": "Bơ", "calories_per_100g": 717.0, "protein_per_100g": 0.9, "carbs_per_100g": 0.1, "fat_per_100g": 81.0, "avg_price_vnd": 20000},
+    "sốt mè rang": {"food_name": "Sốt mè rang", "calories_per_100g": 387.0, "protein_per_100g": 5.3, "carbs_per_100g": 8.0, "fat_per_100g": 36.0, "avg_price_vnd": 15000},
+    "sốt mayonnaise": {"food_name": "Sốt mayonnaise", "calories_per_100g": 680.0, "protein_per_100g": 1.0, "carbs_per_100g": 1.0, "fat_per_100g": 75.0, "avg_price_vnd": 15000},
+    "mỡ hành": {"food_name": "Mỡ hành", "calories_per_100g": 650.0, "protein_per_100g": 1.5, "carbs_per_100g": 3.0, "fat_per_100g": 70.0, "avg_price_vnd": 10000},
+    "sữa đặc": {"food_name": "Sữa đặc", "calories_per_100g": 320.0, "protein_per_100g": 8.0, "carbs_per_100g": 55.0, "fat_per_100g": 8.0, "avg_price_vnd": 15000},
+    "đường cát": {"food_name": "Đường cát", "calories_per_100g": 387.0, "protein_per_100g": 0.0, "carbs_per_100g": 100.0, "fat_per_100g": 0.0, "avg_price_vnd": 5000},
+}
+
+
 def resolve_food_reference(
     session: Session,
     food_id: int | None = None,
@@ -172,6 +184,23 @@ def resolve_food_reference(
             matched_ref = session.exec(statement_match).first()
             if matched_ref:
                 return matched_ref
+
+        # 2d: Hỗ trợ tự động các gia vị ẩn và dầu sốt từ voice_modifier
+        name_lower = name_clean.lower()
+        for c_key, c_val in COMMON_CONDIMENT_REFERENCES.items():
+            if c_key in name_lower or name_lower in c_key:
+                new_ref = FoodReference(
+                    food_name=c_val["food_name"],
+                    calories_per_100g=c_val["calories_per_100g"],
+                    protein_per_100g=c_val["protein_per_100g"],
+                    carbs_per_100g=c_val["carbs_per_100g"],
+                    fat_per_100g=c_val["fat_per_100g"],
+                    avg_price_vnd=c_val["avg_price_vnd"],
+                )
+                session.add(new_ref)
+                session.flush()
+                session.refresh(new_ref)
+                return new_ref
 
     raise ValueError(f"Không tìm thấy món ăn trong CSDL tham chiếu: {food_name or food_id}")
 
