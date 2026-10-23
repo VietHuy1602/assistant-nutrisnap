@@ -4,16 +4,21 @@ import type { Food, MealType, NutritionAPI, Portion } from './types';
 import { errorText } from './api';
 import { ApiError } from '../utils/apiError';
 import { Field, Notice } from './UI';
+import { FoodSwapModal } from './FoodSwapModal';
 
-export function PortionEditor({ api, initial, meal, image, demo, onBack, onSaved, onBusyChange }: {
+export function PortionEditor({ api, initial, meal, image, demo, onBack, onSaved, onBusyChange, draftNote, onDraftNoteChange }: {
   api: NutritionAPI; initial: Portion[]; meal: MealType; image: string; demo: boolean;
+  draftNote?: string; onDraftNoteChange?: (note: string) => void;
   onBack: () => void; onSaved: (calories: number) => void; onBusyChange?: (busy: boolean) => void;
 }) {
   const [items, setItems] = useState(initial);
   const [query, setQuery] = useState('');
   const [foods, setFoods] = useState<Food[]>([]);
   const [replace, setReplace] = useState<string | null>(null);
-  const [notes, setNotes] = useState('');
+  const [localNotes, setLocalNotes] = useState('');
+  const notes = draftNote ?? localNotes;
+  const setNotes = onDraftNoteChange ?? setLocalNotes;
+  const [swap, setSwap] = useState<Portion | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -64,6 +69,7 @@ export function PortionEditor({ api, initial, meal, image, demo, onBack, onSaved
   };
 
   return <div className="meal-layout">
+    {swap && <FoodSwapModal foodName={swap.food_name} onClose={() => setSwap(null)} onConfirm={food => { setItems(previous => previous.map(item => item.key === swap.key ? { ...item, food_id: null, food_name: food.name, grams: String(food.grams), per100: [food.calories, food.protein, food.carbs, food.fat].map(n => n * 100 / food.grams) as Portion["per100"] } : item)); setSwap(null); }} />}
     <section className="card editor-card">
       <div className="section-top"><div><span className="status-pill">BẢN NHÁP · CHƯA LƯU</span><h2>Kiểm tra khẩu phần</h2></div>
         <button type="button" className="secondary" disabled={busy} onClick={() => setConfirmBack(true)}><ArrowLeft size={16} aria-hidden="true" />Chọn lại</button></div>
@@ -77,6 +83,7 @@ export function PortionEditor({ api, initial, meal, image, demo, onBack, onSaved
         const gramsValid = Number.isFinite(Number(item.grams)) && Number(item.grams) >= 1 && Number(item.grams) <= 3000;
         return <div className="portion-row" key={item.key}>
           <div className="portion-title"><strong>{item.food_name}</strong><button type="button" className="text-button" disabled={busy} onClick={() => { setReplace(item.key); searchRef.current?.focus(); }}>Đổi tên / chọn món khác</button>
+            <button type="button" className="text-button" disabled={busy || !gramsValid || item.food_id === null} onClick={() => setSwap(item)}>Mô phỏng đổi món {item.food_name}</button>
             {item.food_id === null && <small className="error">Chọn món tham chiếu để tiếp tục.</small>}</div>
           <Field label={`Khối lượng ${item.food_name} (g)`}><input type="number" min={1} max={3000} step="0.1" required disabled={busy} value={item.grams} aria-invalid={!gramsValid} aria-describedby={!gramsValid ? `grams-${item.key}` : undefined} onChange={event => setItems(previous => previous.map(p => p.key === item.key ? { ...p, grams: event.target.value } : p))} /></Field>
           <button type="button" className="icon-button" disabled={busy} aria-label={`Xóa ${item.food_name}`} onClick={() => { setItems(previous => previous.filter(p => p.key !== item.key)); if (replace === item.key) setReplace(null); }}><Trash2 size={18} aria-hidden="true" /></button>

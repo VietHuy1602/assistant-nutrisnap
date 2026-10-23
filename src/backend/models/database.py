@@ -61,6 +61,20 @@ def init_db(target_engine: Engine | None = None) -> None:
 
     SQLModel.metadata.create_all(eng)
 
+    # Tự động đồng bộ các cột mới nếu bảng users đã tồn tại từ trước (SQLite migration)
+    with eng.connect() as conn:
+        try:
+            result = conn.exec_driver_sql("PRAGMA table_info(users)")
+            existing_cols = {row[1] for row in result.fetchall()}
+            if existing_cols:
+                if "full_name" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
+                if "is_active" not in existing_cols:
+                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
+            conn.commit()
+        except Exception:
+            pass
+
 
 def get_session() -> Generator[Session, None, None]:
     """Dependency cung cấp Session CSDL cho FastAPI endpoints."""
