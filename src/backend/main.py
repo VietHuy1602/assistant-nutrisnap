@@ -86,6 +86,9 @@ app.add_middleware(
 # Nối API Router chuẩn vị (Auth register, login, me endpoints)
 app.include_router(api_router, prefix="/api/v1")
 
+# Nối API Router chuẩn vị (Auth register, login, me endpoints)
+app.include_router(api_router, prefix="/api/v1")
+
 # Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics
 app.include_router(auth_goal_router)
 app.include_router(meal_router)
