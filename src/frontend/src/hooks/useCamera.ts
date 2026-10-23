@@ -25,73 +25,88 @@ export function useCamera(): UseCameraReturn {
   const [error, setError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const isMountedRef = useRef(true);
-  const tokenRef = useRef(0);
+  const statusRef = useRef<CameraStatus>('idle');
 
-  const stopTracks = useCallback((streamToStop: MediaStream | null) => {
-    if (!streamToStop) return;
-    try {
-      const tracks = streamToStop.getTracks ? streamToStop.getTracks() : [];
-      tracks.forEach((track) => {
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
+
+  const stop = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
         try {
           track.stop();
         } catch {
           // ignore
         }
       });
-    } catch {
-      // ignore
+      streamRef.current = null;
     }
-  }, []);
-
-  const stop = useCallback(() => {
-    tokenRef.current++;
-    setStream((currentStream) => {
-      stopTracks(currentStream);
-      return null;
-    });
+    setStream(null);
     if (isMountedRef.current) {
+      statusRef.current = 'idle';
       setStatus('idle');
       setError(null);
     }
-  }, [stopTracks]);
+  }, []);
 
   // Đảm bảo dọn dẹp camera ngay khi component unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      tokenRef.current++;
-      setStream((currentStream) => {
-        stopTracks(currentStream);
-        return null;
-      });
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
+        streamRef.current = null;
+      }
     };
-  }, [stopTracks]);
+  }, []);
 
   // Gắn stream vào video element khi stream có giá trị
   useEffect(() => {
     const video = videoRef.current;
     if (video && stream) {
-      video.srcObject = stream;
-      void video.play().catch(() => {
-        // Trình duyệt có thể chặn autoplay nếu chưa tương tác
-      });
+      try {
+        video.srcObject = stream;
+      } catch {
+        // JSDOM does not support srcObject
+      }
+      if (typeof video.play === 'function') {
+        try {
+          const playPromise = video.play();
+          if (playPromise && typeof playPromise.catch === 'function') {
+            playPromise.catch(() => {
+              // Trình duyệt có thể chặn autoplay nếu chưa tương tác
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
   }, [stream]);
 
   const start = useCallback(async (): Promise<boolean> => {
-    if (status === 'requesting' || status === 'live') {
+    if (statusRef.current === 'requesting' || statusRef.current === 'live') {
       return true;
     }
 
-    const currentToken = ++tokenRef.current;
+    statusRef.current = 'requesting';
     setStatus('requesting');
     setError(null);
 
     // Kiểm tra hỗ trợ mediaDevices trong môi trường hiện tại
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      if (currentToken === tokenRef.current && isMountedRef.current) {
+      if (isMountedRef.current) {
+        statusRef.current = 'unavailable';
         setStatus('unavailable');
         setError('Thiết bị hoặc trình duyệt không hỗ trợ truy cập camera trực tiếp.');
       }
@@ -110,22 +125,31 @@ export function useCamera(): UseCameraReturn {
 
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-      // Nếu component đã unmount hoặc có request mới trong khi chờ quyền
-      if (currentToken !== tokenRef.current || !isMountedRef.current) {
-        stopTracks(mediaStream);
+      // Nếu component đã unmount trong khi chờ camera kịp mở
+      if (!isMountedRef.current) {
+        mediaStream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {
+            // ignore
+          }
+        });
         return false;
       }
 
+      streamRef.current = mediaStream;
       setStream(mediaStream);
+      statusRef.current = 'live';
       setStatus('live');
       return true;
     } catch (err: unknown) {
-      if (currentToken !== tokenRef.current || !isMountedRef.current) {
+      if (!isMountedRef.current) {
         return false;
       }
 
       const domError = err as DOMException;
       if (domError.name === 'NotAllowedError' || domError.name === 'PermissionDeniedError') {
+        statusRef.current = 'denied';
         setStatus('denied');
         setError('Quyền truy cập camera bị từ chối. Bạn có thể cấp quyền lại hoặc tải ảnh từ máy.');
       } else if (
@@ -133,15 +157,17 @@ export function useCamera(): UseCameraReturn {
         domError.name === 'DevicesNotFoundError' ||
         domError.name === 'OverconstrainedError'
       ) {
+        statusRef.current = 'unavailable';
         setStatus('unavailable');
         setError('Không tìm thấy camera khả dụng trên thiết bị này.');
       } else {
+        statusRef.current = 'error';
         setStatus('error');
         setError('Không thể mở camera. Vui lòng thử tải ảnh từ thiết bị.');
       }
       return false;
     }
-  }, [status, stopTracks]);
+  }, []);
 
   const capture = useCallback(async (): Promise<{ blob: Blob; sizeBytes: number } | null> => {
     const video = videoRef.current;

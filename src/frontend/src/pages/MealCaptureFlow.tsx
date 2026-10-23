@@ -5,7 +5,7 @@
  * ADR-W3-05 (Image privacy & no storage leakage), và PSC-1..PSC-9.
  */
 
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useRef, useState } from 'react';
 import { Camera, Edit3, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useCamera } from '../hooks/useCamera';
 import { useRecognizeFood } from '../hooks/useRecognizeFood';
@@ -34,19 +34,21 @@ export type CaptureMode =
   | 'saved';
 
 export interface MealCaptureFlowProps {
-  initialMode?: 'photo' | 'manual';
+  initialMode?: 'idle' | 'photo' | 'cameraLive' | 'filePicker' | 'manual' | 'manualEntry';
   onSaved?: () => void;
   onClose?: () => void;
 }
 
 export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
-  initialMode = 'photo',
+  initialMode = 'idle',
   onSaved,
   onClose,
 }) => {
-  const [mode, setMode] = useState<CaptureMode>(
-    initialMode === 'manual' ? 'manualEntry' : 'idle',
-  );
+  const [mode, setMode] = useState<CaptureMode>(() => {
+    if (initialMode === 'manual' || initialMode === 'manualEntry') return 'manualEntry';
+    if (initialMode === 'photo' || initialMode === 'cameraLive') return 'cameraLive';
+    return 'idle';
+  });
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
   const [selectedMealType, setSelectedMealType] = useState<string>(getDefaultMealTypeByHour());
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -69,25 +71,22 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
 
   // Tự động bật camera nếu bắt đầu ở chế độ chụp ảnh
   useEffect(() => {
-    if (initialMode === 'photo') {
+    if (initialMode === 'photo' || initialMode === 'cameraLive') {
       void startCamera().then((ok) => {
-        if (ok) {
-          setMode('cameraLive');
-        } else {
+        if (!ok) {
           setMode('filePicker');
         }
       });
     }
-    return () => {
-      stopCamera();
-    };
-  }, [initialMode, startCamera, stopCamera]);
+  }, [initialMode, startCamera]);
 
   // Dọn dẹp máy ảnh khi chuyển khỏi màn hình cameraLive
+  const prevModeRef = useRef<CaptureMode>(mode);
   useEffect(() => {
-    if (mode !== 'cameraLive') {
+    if (prevModeRef.current === 'cameraLive' && mode !== 'cameraLive') {
       stopCamera();
     }
+    prevModeRef.current = mode;
   }, [mode, stopCamera]);
 
   const handleStartCamera = async () => {
@@ -118,11 +117,9 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
 
     const result = await runRecognition(capturedBlob, selectedMealType);
     if (!result) {
-      // Có lỗi nhận diện hoặc bị hủy
-      if (recStatus === 'error') {
-        setManualReason('Không thể hoàn tất nhận diện AI do kết nối. Bạn có thể chọn món thủ công.');
-        setMode('manualEntry');
-      }
+      // Có lỗi nhận diện hoặc kết nối AI: nếu không bị hủy giữa chừng thì chuyển sang nhập thủ công
+      setManualReason('Không thể hoàn tất nhận diện AI do kết nối. Bạn có thể chọn món thủ công.');
+      setMode((curr) => (curr === 'recognizing' ? 'manualEntry' : curr));
       return;
     }
 
@@ -211,8 +208,8 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
         />
       )}
 
-      {/* Trạng thái 2: Tải ảnh từ thiết bị (Fallback khi không có camera hoặc chạy HTTP) */}
-      {mode === 'filePicker' && (
+      {/* Trạng thái 2: Tải ảnh từ thiết bị (hoặc idle ban đầu) */}
+      {(mode === 'filePicker' || mode === 'idle') && (
         <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div>
@@ -225,7 +222,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
               className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition-colors"
             >
               <Camera className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Mở máy ảnh</span>
+              <span>Bật Camera</span>
             </button>
           </div>
 

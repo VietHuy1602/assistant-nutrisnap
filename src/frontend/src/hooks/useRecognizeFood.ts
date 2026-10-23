@@ -92,6 +92,7 @@ export function useRecognizeFood(): UseRecognizeFoodReturn {
       try {
         const data = await aiApi.recognizeFood(blob, mealType, controller.signal);
         clearTimer();
+        setSlow(false);
 
         if (!isMountedRef.current || abortControllerRef.current !== controller) {
           return null;
@@ -106,6 +107,7 @@ export function useRecognizeFood(): UseRecognizeFoodReturn {
         return data;
       } catch (err: unknown) {
         clearTimer();
+        setSlow(false);
         if (!isMountedRef.current || abortControllerRef.current !== controller) {
           return null;
         }

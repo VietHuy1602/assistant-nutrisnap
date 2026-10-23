@@ -6,6 +6,7 @@ export const DashboardSkeleton: React.FC = () => {
       className="w-full max-w-5xl mx-auto flex flex-col gap-6 animate-pulse"
       aria-busy="true"
       aria-label="Đang tải dữ liệu Dashboard..."
+      role="status"
     >
       {/* Skeleton Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
