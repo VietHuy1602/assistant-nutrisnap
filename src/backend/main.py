@@ -11,12 +11,11 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import Depends, FastAPI, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from src.backend.api.v1.router import api_router
-from src.backend.models.database import init_db
 from src.backend.models.database import get_session, init_db
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
@@ -82,9 +81,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Nối API Router chuẩn vị (Auth register, login, me endpoints)
-app.include_router(api_router, prefix="/api/v1")
 
 # Nối API Router chuẩn vị (Auth register, login, me endpoints)
 app.include_router(api_router, prefix="/api/v1")

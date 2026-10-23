@@ -73,6 +73,12 @@ async def register_endpoint(
         clean_email = str(body.get("email", "")).strip().lower()
         pwd = str(body.get("password", ""))
 
+        if len(clean_username) < 3:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Tên đăng nhập phải có ít nhất 3 ký tự.",
+            )
+
         is_valid_pwd, pwd_msg = validate_password(pwd)
         if not is_valid_pwd:
             raise HTTPException(
@@ -82,7 +88,7 @@ async def register_endpoint(
 
         if not validate_email(clean_email):
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Định dạng email không hợp lệ.",
             )
 
@@ -160,8 +166,13 @@ async def login_endpoint(
 
     # Nhánh tương thích ngược cho test_api_contract gửi username_or_email
     if "username_or_email" in body:
+        if "password" not in body or not body.get("password"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Mật khẩu là bắt buộc.",
+            )
         ident = str(body["username_or_email"]).strip()
-        pwd = str(body.get("password", ""))
+        pwd = str(body["password"])
 
         if ident == "thanhdat" and pwd == "Password123":
             user = db.exec(select(User).where(User.username == "thanhdat")).first()
