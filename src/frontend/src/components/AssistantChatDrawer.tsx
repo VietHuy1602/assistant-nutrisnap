@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 
 import { Bot, Check, X } from 'lucide-react';
 import type { ActionCard } from '../types/api';
 import { isApiError } from '../utils/apiError';
-import { isMealCard, saveAssistantMeal } from '../api/assistantApi';
+import { isMealCard, saveAssistantMeal, sendAssistantMessage } from '../api/assistantApi';
 import { useOptionalChat, type ChatContextValue } from '../context/ChatContext';
 import { useChatScroll } from '../chat/useChatScroll';
 import { ChatComposer } from '../chat/components/ChatComposer';
@@ -176,31 +176,26 @@ function AssistantChatDrawerView({
     ]);
 
     try {
-      if (chatContext) {
-        await chatContext.send(text);
-      } else {
-        const { sendAssistantMessage } = await import('../api/assistantApi');
-        const reply = await sendAssistantMessage(text);
-        const card = isMealCard(reply.card)
-          ? {
-              id: localId(),
-              source: reply.card,
-              phase: reply.card.status === 'cancelled' ? ('cancelled' as const) : ('pending' as const),
-            }
-          : undefined;
-        if (mounted.current) {
-          setLegacyMessages((previous) => [
-            ...previous,
-            {
-              id: localId(),
-              sender: 'assistant',
-              text: reply.text,
-              card,
-              unsupported: reply.card != null && !card,
-              disclaimer: reply.disclaimer,
-            },
-          ]);
-        }
+      const reply = await sendAssistantMessage(text);
+      const card = isMealCard(reply.card)
+        ? {
+            id: localId(),
+            source: reply.card,
+            phase: reply.card.status === 'cancelled' ? ('cancelled' as const) : ('pending' as const),
+          }
+        : undefined;
+      if (mounted.current) {
+        setLegacyMessages((previous) => [
+          ...previous,
+          {
+            id: localId(),
+            sender: 'assistant',
+            text: reply.text,
+            card,
+            unsupported: reply.card != null && !card,
+            disclaimer: reply.disclaimer,
+          },
+        ]);
       }
     } catch {
       if (mounted.current) {
