@@ -181,6 +181,44 @@ def resolve_food_reference(
 # ==============================================================================
 
 
+def calculate_item_nutrition(
+    session: Session,
+    food_id: int,
+    estimated_gram: float,
+    eaten_ratio: float = 1.0,
+) -> dict[str, Any]:
+    """Tính toán dinh dưỡng tất định cho một món ăn dựa trên food_id và hệ số trừ hao thức ăn thừa:
+
+    Effective Gram = estimated_gram * eaten_ratio
+    Nutrient = round((Effective Gram / 100.0) * Nutrient_per_100g, 2)
+    """
+    effective_gram = round(estimated_gram * eaten_ratio, 2)
+    is_valid, msg = validate_portion_gram(effective_gram)
+    if not is_valid:
+        raise ValueError(msg)
+
+    ref = resolve_food_reference(session, food_id=food_id)
+
+    cal = round((effective_gram / 100.0) * ref.calories_per_100g, 2)
+    protein = round((effective_gram / 100.0) * ref.protein_per_100g, 2)
+    carbs = round((effective_gram / 100.0) * ref.carbs_per_100g, 2)
+    fat = round((effective_gram / 100.0) * ref.fat_per_100g, 2)
+    price = round((effective_gram / 100.0) * ref.avg_price_vnd)
+
+    return {
+        "food_id": ref.id,
+        "food_name": ref.food_name,
+        "estimated_gram": estimated_gram,
+        "eaten_ratio": eaten_ratio,
+        "effective_gram": effective_gram,
+        "calories": cal,
+        "protein_g": protein,
+        "carbs_g": carbs,
+        "fat_g": fat,
+        "estimated_price_vnd": price,
+    }
+
+
 def calculate_meal_nutrition(
     session: Session,
     items: list[MealItemInput],
@@ -267,13 +305,41 @@ def normalize_meal_type(meal_type_raw: str) -> str:
 def log_user_meal(
     session: Session,
     authenticated_user_id: int,
-    req: MealLogRequest,
+    meal_type_or_req: MealLogRequest | str | None = None,
+    items: list[MealItemInput | dict[str, Any]] | None = None,
+    is_confirmed: bool = False,
+    image_path: str | None = None,
+    notes: str | None = None,
+    logged_at: datetime | None = None,
+    req: MealLogRequest | None = None,
+    **kwargs: Any,
 ) -> MealLogResponse:
     """Xử lý yêu cầu ghi nhận bữa ăn có kiểm tra xác nhận 2 bước:
 
     - Nếu is_confirmed = False: Chỉ tính toán xem trước, không ghi CSDL, trả về pending_confirmation.
     - Nếu is_confirmed = True: Ghi nguyên tử vào bảng meals và meal_items, trả về status logged.
     """
+    actual_req = req or (meal_type_or_req if isinstance(meal_type_or_req, MealLogRequest) else None)
+    if actual_req is not None:
+        effective_req = actual_req
+    else:
+        meal_type_str = str(meal_type_or_req) if meal_type_or_req is not None else kwargs.get("meal_type", "Sáng")
+        req_items = items or kwargs.get("items_list") or []
+        parsed_items: list[MealItemInput] = []
+        for it in req_items:
+            if isinstance(it, MealItemInput):
+                parsed_items.append(it)
+            elif isinstance(it, dict):
+                parsed_items.append(MealItemInput(**it))
+        effective_req = MealLogRequest(
+            meal_type=meal_type_str,
+            items=parsed_items,
+            is_confirmed=is_confirmed or kwargs.get("is_confirmed", False),
+            image_path=image_path or kwargs.get("image_path"),
+            notes=notes or kwargs.get("notes"),
+            logged_at=logged_at or kwargs.get("logged_at"),
+        )
+    req = effective_req
     meal_type = normalize_meal_type(req.meal_type)
     nutrition_res = calculate_meal_nutrition(session, req.items)
     logged_time = req.logged_at or utc_now()
@@ -535,3 +601,6 @@ def get_daily_dashboard_data(
         "meals_summary": meals_detail_list,
         "disclaimer": DISCLAIMER_TEXT,
     }
+
+
+get_daily_dashboard_summary = get_daily_dashboard_data
