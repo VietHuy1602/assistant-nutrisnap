@@ -15,7 +15,7 @@ vi.mock('../pages/LoginPage', () => ({ LoginPage: () => <h1>Đăng nhập kiểm
 vi.mock('../pages/BasicDashboard', () => ({ BasicDashboard: () => <h1>Dashboard kiểm thử</h1> }));
 
 // Transform the chart module before timing route assertions in a parallel suite.
-beforeAll(async () => { await import('../pages/MonthlyReportView'); });
+beforeAll(async () => { await import('../pages/MonthlyReportView'); }, 30000);
 beforeEach(() => { mockStatus = 'authenticated'; });
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 

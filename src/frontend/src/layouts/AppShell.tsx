@@ -1,4 +1,4 @@
-import React, { Suspense, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
