@@ -40,7 +40,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   const prefetchDestinations = () => {
     import('./GoalPlannerWizard');
-    import('./DashboardPage');
+    import('./BasicDashboard');
+    import('./MealCaptureFlow');
   };
 
   const onSubmit = async (values: LoginFormValues) => {
