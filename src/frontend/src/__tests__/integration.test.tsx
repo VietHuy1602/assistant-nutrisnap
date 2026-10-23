@@ -631,7 +631,8 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     const setupLink = await screen.findByRole('link', { name: 'Thiết lập ngay' });
     expect(setupLink).toHaveAttribute('href', '/goal-setup');
     // Exercise the real tab order instead of focusing the link programmatically.
-    for (let index = 0; index < 6 && document.activeElement !== setupLink; index++) await user.tab();
+    const tabStops = screen.getAllByRole('link').length + screen.getAllByRole('button').length;
+    for (let index = 0; index < tabStops && document.activeElement !== setupLink; index++) await user.tab();
     expect(setupLink).toHaveFocus();
     await user.keyboard('{Enter}');
     expect(await screen.findByRole('heading', { name: 'Trang mục tiêu kiểm thử' })).toBeInTheDocument();
