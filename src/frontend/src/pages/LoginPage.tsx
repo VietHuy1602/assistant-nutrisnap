@@ -34,8 +34,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     },
   });
 
+  const prefetchRegister = () => {
+    import('./RegisterPage');
+  };
+
+  const prefetchDestinations = () => {
+    import('./GoalPlannerWizard');
+    import('./DashboardPage');
+  };
+
   const onSubmit = async (values: LoginFormValues) => {
     setFormError(null);
+    prefetchDestinations();
     try {
       const userHasGoal = await login(values);
       onLoginSuccess?.(userHasGoal);
@@ -154,6 +164,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           Chưa có tài khoản?{' '}
           <Link
             to="/register"
+            onMouseEnter={prefetchRegister}
+            onFocus={prefetchRegister}
             className="text-nutri-primary font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-nutri-primary rounded"
           >
             Đăng ký ngay

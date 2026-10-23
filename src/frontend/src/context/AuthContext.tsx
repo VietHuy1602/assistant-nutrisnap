@@ -8,9 +8,10 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authApi } from '../api/authApi';
 import { UNAUTHORIZED_EVENT } from '../api/client';
-import { LoginRequest, RegisterRequest, UserPublic } from '../types/api';
+import { AuthResponse, LoginRequest, RegisterRequest, UserPublic } from '../types/api';
+import { isApiError } from '../utils/apiError';
 
-export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unreachable';
 
 export interface AuthContextType {
   status: AuthStatus;
@@ -21,11 +22,30 @@ export interface AuthContextType {
   register: (payload: RegisterRequest) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
+  retryBootstrap: () => Promise<void>;
   setHasGoal: (v: boolean) => void;
   clearSessionExpired: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// In-flight request deduplication: Gộp các lời gọi GET /auth/me đồng thời thành 1 Promise (SAC-5)
+let inFlightMePromise: Promise<AuthResponse> | null = null;
+
+export function fetchMeDeduped(): Promise<AuthResponse> {
+  if (!inFlightMePromise) {
+    inFlightMePromise = authApi.me().finally(() => {
+      inFlightMePromise = null;
+    });
+  }
+  return inFlightMePromise;
+}
+
+function isUnauthorizedError(err: unknown): boolean {
+  if (isApiError(err) && err.status === 401) return true;
+  if (err instanceof Error && /401|unauthorized/i.test(err.message)) return true;
+  return false;
+}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -33,12 +53,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasGoal, setHasGoal] = useState<boolean>(false);
   const [sessionExpired, setSessionExpired] = useState<boolean>(false);
 
+  const retryBootstrap = useCallback(async () => {
+    setStatus('loading');
+    try {
+      const res = await fetchMeDeduped();
+      setUser(res.user);
+      setHasGoal(res.has_goal);
+      setStatus('authenticated');
+      setSessionExpired(false);
+    } catch (err: unknown) {
+      setUser(null);
+      setHasGoal(false);
+      if (isUnauthorizedError(err)) {
+        setStatus('unauthenticated');
+      } else {
+        // Lỗi mạng / timeout / 5xx -> unreachable (SAC-3: không chuyển /login)
+        setStatus('unreachable');
+      }
+    }
+  }, []);
+
   // Bootstrap xác thực khi ứng dụng khởi chạy
   useEffect(() => {
     let ignore = false;
 
-    authApi
-      .me()
+    fetchMeDeduped()
       .then((res) => {
         if (!ignore) {
           setUser(res.user);
@@ -46,11 +85,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setStatus('authenticated');
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (!ignore) {
           setUser(null);
           setHasGoal(false);
-          setStatus('unauthenticated');
+          if (isUnauthorizedError(err)) {
+            setStatus('unauthenticated');
+          } else {
+            // Lỗi mạng / timeout / 5xx -> unreachable
+            setStatus('unreachable');
+          }
         }
       });
 
@@ -58,6 +102,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ignore = true;
     };
   }, []);
+
+  // Lắng nghe sự kiện online của trình duyệt khi đang unreachable để tự động thử lại (SAC-4)
+  useEffect(() => {
+    const handleOnline = () => {
+      if (status === 'unreachable') {
+        retryBootstrap();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [status, retryBootstrap]);
 
   // Lắng nghe sự kiện 401 toàn cục từ Axios response interceptor
   useEffect(() => {
@@ -77,16 +135,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = useCallback(async (credentials: LoginRequest): Promise<boolean> => {
     await authApi.login(credentials);
     try {
-      const meRes = await authApi.me();
+      const meRes = await fetchMeDeduped();
       setUser(meRes.user);
       setHasGoal(meRes.has_goal);
       setStatus('authenticated');
       setSessionExpired(false);
       return meRes.has_goal;
-    } catch {
+    } catch (err: unknown) {
       setUser(null);
       setHasGoal(false);
-      setStatus('unauthenticated');
+      if (isUnauthorizedError(err)) {
+        setStatus('unauthenticated');
+      } else {
+        setStatus('unreachable');
+      }
       throw new Error('Không thể thiết lập phiên đăng nhập. Hãy kiểm tra cookie của trình duyệt.');
     }
   }, []);
@@ -119,14 +181,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refresh = useCallback(async () => {
     try {
-      const res = await authApi.me();
+      const res = await fetchMeDeduped();
       setUser(res.user);
       setHasGoal(res.has_goal);
       setStatus('authenticated');
-    } catch {
+    } catch (err: unknown) {
       setUser(null);
       setHasGoal(false);
-      setStatus('unauthenticated');
+      if (isUnauthorizedError(err)) {
+        setStatus('unauthenticated');
+      } else {
+        setStatus('unreachable');
+      }
     }
   }, []);
 
@@ -143,6 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     register,
     logout,
     refresh,
+    retryBootstrap,
     setHasGoal,
     clearSessionExpired,
   };
