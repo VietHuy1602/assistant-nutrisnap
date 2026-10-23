@@ -291,8 +291,8 @@ def get_me_endpoint(
     # Fallback cho HttpOnly Cookie
     cookie_token = request.cookies.get("access_token")
     auth_user = get_cookie_user(request=request, access_token=cookie_token, session=db)
-    existing_goal = db.exec(select(Goal).where(Goal.user_id == auth_user.id)).first()
-    has_goal = existing_goal is not None or auth_user.id == 1
+    return UserPublic.model_validate(auth_user)
+
 
     return AuthResponse(
         success=True,
@@ -303,3 +303,4 @@ def get_me_endpoint(
 
 
 __all__ = ["router"]
+
