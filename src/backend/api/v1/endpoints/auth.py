@@ -294,5 +294,13 @@ def get_me_endpoint(
     return UserPublic.model_validate(auth_user)
 
 
+    return AuthResponse(
+        success=True,
+        message="Phiên đăng nhập hợp lệ.",
+        has_goal=has_goal,
+        user=UserPublicResponse.model_validate(auth_user),
+    )
+
+
 __all__ = ["router"]
 

@@ -106,15 +106,17 @@ def run_benchmarks():
     resp = client.post("/api/v1/auth/login", json=login_payload)
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
-    records.append({
-        "run_id": "warmup_login",
-        "stage": "login",
-        "duration_ms": warmup_ms,
-        "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
-        "environment": ENV_NAME,
-        "image_size_bytes": 0,
-        "notes": "warmup_excluded_from_stats",
-    })
+    records.append(
+        {
+            "run_id": "warmup_login",
+            "stage": "login",
+            "duration_ms": warmup_ms,
+            "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
+            "environment": ENV_NAME,
+            "image_size_bytes": 0,
+            "notes": "warmup_excluded_from_stats",
+        }
+    )
 
     login_latencies = []
     for _i in range(1, N_RUNS + 1):
@@ -124,15 +126,17 @@ def run_benchmarks():
         t1 = time.perf_counter()
         dur_ms = round((t1 - t0) * 1000, 2)
         status_str = "success" if resp.status_code == 200 else f"failed_{resp.status_code}"
-        records.append({
-            "run_id": f"run_{run_counter:03d}",
-            "stage": "login",
-            "duration_ms": dur_ms,
-            "status": status_str,
-            "environment": ENV_NAME,
-            "image_size_bytes": 0,
-            "notes": "bcrypt_auth_httponly_cookie",
-        })
+        records.append(
+            {
+                "run_id": f"run_{run_counter:03d}",
+                "stage": "login",
+                "duration_ms": dur_ms,
+                "status": status_str,
+                "environment": ENV_NAME,
+                "image_size_bytes": 0,
+                "notes": "bcrypt_auth_httponly_cookie",
+            }
+        )
         if resp.status_code == 200:
             login_latencies.append(dur_ms)
 
@@ -147,15 +151,17 @@ def run_benchmarks():
     resp = client.post("/api/v1/ai/recognize-food", json=rec_payload)
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
-    records.append({
-        "run_id": "warmup_recognition",
-        "stage": "food_recognition",
-        "duration_ms": warmup_ms,
-        "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
-        "environment": ENV_NAME,
-        "image_size_bytes": IMAGE_SIZE_BYTES,
-        "notes": "warmup_excluded_from_stats",
-    })
+    records.append(
+        {
+            "run_id": "warmup_recognition",
+            "stage": "food_recognition",
+            "duration_ms": warmup_ms,
+            "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
+            "environment": ENV_NAME,
+            "image_size_bytes": IMAGE_SIZE_BYTES,
+            "notes": "warmup_excluded_from_stats",
+        }
+    )
 
     recognition_latencies = []
     for _i in range(1, N_RUNS + 1):
@@ -165,15 +171,17 @@ def run_benchmarks():
         t1 = time.perf_counter()
         dur_ms = round((t1 - t0) * 1000, 2)
         status_str = "success" if resp.status_code == 200 else f"failed_{resp.status_code}"
-        records.append({
-            "run_id": f"run_{run_counter:03d}",
-            "stage": "food_recognition",
-            "duration_ms": dur_ms,
-            "status": status_str,
-            "environment": ENV_NAME,
-            "image_size_bytes": IMAGE_SIZE_BYTES,
-            "notes": "mock_fallback_zero_crash",
-        })
+        records.append(
+            {
+                "run_id": f"run_{run_counter:03d}",
+                "stage": "food_recognition",
+                "duration_ms": dur_ms,
+                "status": status_str,
+                "environment": ENV_NAME,
+                "image_size_bytes": IMAGE_SIZE_BYTES,
+                "notes": "mock_fallback_zero_crash",
+            }
+        )
         if resp.status_code == 200:
             recognition_latencies.append(dur_ms)
 
@@ -185,9 +193,7 @@ def run_benchmarks():
     client.post("/api/v1/auth/login", json=login_payload)
     meal_payload = {
         "meal_type": "Trưa",
-        "items": [
-            {"food_name": "Phở bò tái", "estimated_gram": 350.0, "eaten_ratio": 1.0}
-        ],
+        "items": [{"food_name": "Phở bò tái", "estimated_gram": 350.0, "eaten_ratio": 1.0}],
         "is_confirmed": True,
         "notes": "Benchmark test run",
     }
@@ -197,15 +203,17 @@ def run_benchmarks():
     resp = client.post("/api/v1/meals/log", json=meal_payload)
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
-    records.append({
-        "run_id": "warmup_save_meal",
-        "stage": "save_meal",
-        "duration_ms": warmup_ms,
-        "status": "success" if resp.status_code == 201 else f"failed_{resp.status_code}",
-        "environment": ENV_NAME,
-        "image_size_bytes": 0,
-        "notes": "warmup_excluded_from_stats",
-    })
+    records.append(
+        {
+            "run_id": "warmup_save_meal",
+            "stage": "save_meal",
+            "duration_ms": warmup_ms,
+            "status": "success" if resp.status_code == 201 else f"failed_{resp.status_code}",
+            "environment": ENV_NAME,
+            "image_size_bytes": 0,
+            "notes": "warmup_excluded_from_stats",
+        }
+    )
 
     save_meal_latencies = []
     for _i in range(1, N_RUNS + 1):
@@ -215,15 +223,17 @@ def run_benchmarks():
         t1 = time.perf_counter()
         dur_ms = round((t1 - t0) * 1000, 2)
         status_str = "success" if resp.status_code == 201 else f"failed_{resp.status_code}"
-        records.append({
-            "run_id": f"run_{run_counter:03d}",
-            "stage": "save_meal",
-            "duration_ms": dur_ms,
-            "status": status_str,
-            "environment": ENV_NAME,
-            "image_size_bytes": 0,
-            "notes": "atomic_sqlite_write_deterministic_math",
-        })
+        records.append(
+            {
+                "run_id": f"run_{run_counter:03d}",
+                "stage": "save_meal",
+                "duration_ms": dur_ms,
+                "status": status_str,
+                "environment": ENV_NAME,
+                "image_size_bytes": 0,
+                "notes": "atomic_sqlite_write_deterministic_math",
+            }
+        )
         if resp.status_code == 201:
             save_meal_latencies.append(dur_ms)
 
@@ -237,15 +247,17 @@ def run_benchmarks():
     resp = client.get("/api/v1/meals/daily-dashboard")
     t1 = time.perf_counter()
     warmup_ms = round((t1 - t0) * 1000, 2)
-    records.append({
-        "run_id": "warmup_dashboard",
-        "stage": "dashboard",
-        "duration_ms": warmup_ms,
-        "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
-        "environment": ENV_NAME,
-        "image_size_bytes": 0,
-        "notes": "warmup_excluded_from_stats",
-    })
+    records.append(
+        {
+            "run_id": "warmup_dashboard",
+            "stage": "dashboard",
+            "duration_ms": warmup_ms,
+            "status": "success" if resp.status_code == 200 else f"failed_{resp.status_code}",
+            "environment": ENV_NAME,
+            "image_size_bytes": 0,
+            "notes": "warmup_excluded_from_stats",
+        }
+    )
 
     dashboard_latencies = []
     for _i in range(1, N_RUNS + 1):
@@ -255,15 +267,17 @@ def run_benchmarks():
         t1 = time.perf_counter()
         dur_ms = round((t1 - t0) * 1000, 2)
         status_str = "success" if resp.status_code == 200 else f"failed_{resp.status_code}"
-        records.append({
-            "run_id": f"run_{run_counter:03d}",
-            "stage": "dashboard",
-            "duration_ms": dur_ms,
-            "status": status_str,
-            "environment": ENV_NAME,
-            "image_size_bytes": 0,
-            "notes": "daily_aggregation_calories_macros",
-        })
+        records.append(
+            {
+                "run_id": f"run_{run_counter:03d}",
+                "stage": "dashboard",
+                "duration_ms": dur_ms,
+                "status": status_str,
+                "environment": ENV_NAME,
+                "image_size_bytes": 0,
+                "notes": "daily_aggregation_calories_macros",
+            }
+        )
         if resp.status_code == 200:
             dashboard_latencies.append(dur_ms)
 
@@ -308,17 +322,19 @@ def run_benchmarks():
         r4 = pipe_client.get("/api/v1/meals/daily-dashboard")
         t1 = time.perf_counter()
         dur_ms = round((t1 - t0) * 1000, 2)
-        success = (r1.status_code == 200 and r2.status_code == 200 and r3.status_code == 201 and r4.status_code == 200)
+        success = r1.status_code == 200 and r2.status_code == 200 and r3.status_code == 201 and r4.status_code == 200
         status_str = "success" if success else "failed"
-        records.append({
-            "run_id": f"run_{run_counter:03d}",
-            "stage": "e2e_pipeline",
-            "duration_ms": dur_ms,
-            "status": status_str,
-            "environment": ENV_NAME,
-            "image_size_bytes": IMAGE_SIZE_BYTES,
-            "notes": "full_user_flow_machine_processing",
-        })
+        records.append(
+            {
+                "run_id": f"run_{run_counter:03d}",
+                "stage": "e2e_pipeline",
+                "duration_ms": dur_ms,
+                "status": status_str,
+                "environment": ENV_NAME,
+                "image_size_bytes": IMAGE_SIZE_BYTES,
+                "notes": "full_user_flow_machine_processing",
+            }
+        )
         if success:
             e2e_latencies.append(dur_ms)
 
@@ -345,7 +361,9 @@ def run_benchmarks():
     ]
 
     print("\n" + "=" * 95)
-    print(f"{'Chặng kiểm thử':<30} | {'N':<4} | {'Mean (ms)':<10} | {'P50 (ms)':<10} | {'P95 (ms)':<10} | {'Min (ms)':<9} | {'Max (ms)':<9} | {'Lỗi (%)':<8}")
+    print(
+        f"{'Chặng kiểm thử':<30} | {'N':<4} | {'Mean (ms)':<10} | {'P50 (ms)':<10} | {'P95 (ms)':<10} | {'Min (ms)':<9} | {'Max (ms)':<9} | {'Lỗi (%)':<8}"
+    )
     print("-" * 95)
 
     stats_summary = {}
@@ -372,8 +390,16 @@ def run_benchmarks():
             "max": max_val,
             "err_rate": err_rate,
         }
-        print(f"{name:<30} | {n:<4} | {mean_val:<10.2f} | {p50_val:<10.2f} | {p95_val:<10.2f} | {min_val:<9.2f} | {max_val:<9.2f} | {err_rate:<8.1f}%")
+        print(
+            f"{name:<30} | {n:<4} | {mean_val:<10.2f} | {p50_val:<10.2f} | {p95_val:<10.2f} | {min_val:<9.2f} | {max_val:<9.2f} | {err_rate:<8.1f}%"
+        )
     print("=" * 95)
+    print("\n[!] LƯU Ý LIÊM CHÍNH HỌC THUẬT & MINH BẠCH SỐ LIỆU:")
+    print(
+        "    - Số liệu chặng nhận diện (food_rec) được đo đạc trên cơ chế Mock Fallback nội bộ (môi trường không có GEMINI_API_KEY)."
+    )
+    print("    - Độ trễ và tỉ lệ nhận diện thật trên 30 ảnh benchmark chưa được đo đạc bằng mô hình Vision AI thật.")
+    print("    - Tuyệt đối không trình bày các số liệu này là kết quả của Vision AI thật (Google Gemini API).")
     return stats_summary
 
 
