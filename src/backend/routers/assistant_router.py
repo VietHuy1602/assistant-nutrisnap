@@ -132,92 +132,20 @@ def assistant_chat_endpoint(
         content=req.message,
     )
 
-    tool_result: dict[str, Any] | None = None
-    used_tool_name: str | None = None
+    from src.ai.orchestrator import orchestrate_chat
 
-    if req.tool_call:
-        t_name = req.tool_call.get("tool_name") or req.tool_call.get("name")
-        t_args = req.tool_call.get("tool_args") or req.tool_call.get("args") or {}
-        if t_name:
-            used_tool_name = str(t_name)
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args=t_args,
-            )
-    else:
-        # Nhận diện ý định cơ bản phục vụ hội thoại và kiểm thử
-        msg_lower = req.message.lower()
-        if any(k in msg_lower for k in ("hôm nay ăn", "calo hôm nay", "dinh dưỡng hôm nay", "đã ăn bao nhiêu")):
-            used_tool_name = "get_daily_nutrition"
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={"date_str": "today"},
-            )
-        elif any(k in msg_lower for k in ("gợi ý", "ăn gì", "recommend", "món ăn")):
-            used_tool_name = "recommend_meals"
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={},
-            )
-        elif any(k in msg_lower for k in ("tiến độ", "cân nặng", "progress", "tổng hợp")):
-            used_tool_name = "get_progress_summary"
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={"days_range": 7},
-            )
-        elif any(k in msg_lower for k in ("phở", "cơm", "bún", "vừa ăn", "ăn")):
-            used_tool_name = "log_meal"
-            dish_name = "Phở bò tái" if "phở" in msg_lower else "Cơm tấm sườn nướng"
-            dish_gram = 400.0 if "phở" in msg_lower else 300.0
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={
-                    "meal_type": "lunch",
-                    "items": [{"food_name": dish_name, "estimated_gram": dish_gram}],
-                    "is_confirmed": False,
-                },
-            )
+    orch_resp = orchestrate_chat(
+        session=session,
+        user_id=verified_user_id,
+        message=req.message,
+        explicit_tool_call=req.tool_call,
+    )
 
-    action_card: dict[str, Any] | None = None
-    pending_confirmation: bool = False
-
-    if tool_result is not None:
-        if used_tool_name == "log_meal":
-            if tool_result.get("requires_confirmation"):
-                pending_confirmation = True
-                action_card = tool_result.get("action_card")
-                reply = (
-                    "Mình đã ước tính xong bữa ăn của bạn! "
-                    "Vui lòng kiểm tra lại số liệu bên dưới và nhấn Xác nhận để lưu nhé."
-                )
-            else:
-                reply = f"Đã ghi nhận bữa ăn thành công! Mã bữa ăn: {tool_result.get('meal_id')}."
-        elif used_tool_name == "get_daily_nutrition":
-            consumed_c = tool_result.get("consumed", {}).get("calories", 0)
-            target_c = tool_result.get("targets", {}).get("calories", 0)
-            rem_c = tool_result.get("remaining", {}).get("calories", 0)
-            reply = f"Hôm nay bạn đã nạp {consumed_c} kcal / mục tiêu {target_c} kcal. Còn lại: {rem_c} kcal."
-        elif used_tool_name == "recommend_meals":
-            recs = tool_result.get("recommendations", [])
-            dishes = ", ".join(r["food_name"] for r in recs[:3])
-            reply = f"Dưới đây là một số món gợi ý phù hợp cho bạn: {dishes}."
-        elif used_tool_name == "get_progress_summary":
-            days = tool_result.get("logged_days_count", 0)
-            reply = f"Bạn đã ghi nhật ký dinh dưỡng {days} ngày trong khoảng thời gian vừa qua."
-        else:
-            reply = "Đã thực thi công cụ thành công."
-    else:
-        reply = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
+    reply = orch_resp.reply
+    used_tool_name = orch_resp.tool_called
+    tool_result = orch_resp.tool_result
+    pending_confirmation = orch_resp.pending_confirmation
+    action_card = orch_resp.action_card
 
     # Lưu phản hồi của trợ lý vào CSDL
     save_chat_message(
@@ -236,8 +164,9 @@ def assistant_chat_endpoint(
         tool_result=tool_result,
         pending_confirmation=pending_confirmation,
         action_card=action_card,
-        disclaimer=DISCLAIMER_TEXT,
+        disclaimer=orch_resp.disclaimer or DISCLAIMER_TEXT,
     )
+
 
 
 @router.post(
