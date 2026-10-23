@@ -145,7 +145,7 @@ def test_register_weak_password_or_invalid_email_returns_422(client: TestClient)
 
 
 def test_login_success_returns_token(client: TestClient, db_session: Session):
-    """Kiểm tra đăng nhập đúng thông tin trả về 200 kèm Bearer Access Token."""
+    """Kiểm tra đăng nhập đúng thông tin trả về 200 kèm HttpOnly Cookie, không có token trong body."""
     user = User(
         email="login.user@example.com",
         username="login_user",
@@ -164,9 +164,13 @@ def test_login_success_returns_token(client: TestClient, db_session: Session):
     assert login_res.status_code == 200
     data = login_res.json()
 
-    assert "access_token" in data
+    # Cấp phát HttpOnly Cookie
+    assert settings.AUTH_COOKIE_NAME in login_res.cookies
+    # BẮT BUỘC: Zero token in body
+    assert "access_token" not in data
     assert data["token_type"] == "bearer"
-    assert data["expires_in"] == (settings.ACCESS_TOKEN_EXPIRE_MINUTES if settings else 30) * 60
+    assert data["expires_in"] == settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
 
 
 def test_login_invalid_credentials_unified_error_message(client: TestClient, db_session: Session):
@@ -227,7 +231,7 @@ def test_login_inactive_user_returns_403(client: TestClient, db_session: Session
 
 
 def test_get_me_success_with_valid_token(client: TestClient, db_session: Session):
-    """Kiểm tra route /auth/me hoạt động thành công với Header Authorization: Bearer <token>."""
+    """Kiểm tra route /auth/me hoạt động thành công với HttpOnly Cookie access_token."""
     user = User(
         email="me.user@example.com",
         username="me_user",
@@ -244,10 +248,11 @@ def test_get_me_success_with_valid_token(client: TestClient, db_session: Session
 
     res = client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
+        cookies={settings.AUTH_COOKIE_NAME: token},
     )
     assert res.status_code == 200
     data = res.json()
+
 
     assert data["id"] == user.id
     assert data["email"] == "me.user@example.com"
@@ -270,14 +275,14 @@ def test_get_me_with_invalid_or_expired_token_returns_401(client: TestClient):
     # Token rác
     res_garbage = client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": "Bearer invalid.garbage.token"},
+        cookies={settings.AUTH_COOKIE_NAME: "invalid.garbage.token"},
     )
     assert res_garbage.status_code == 401
 
     # Token hết hạn
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
     past = datetime.now(timezone.utc) - timedelta(minutes=10)
 
     expired_payload = {
@@ -291,7 +296,7 @@ def test_get_me_with_invalid_or_expired_token_returns_401(client: TestClient):
 
     res_expired = client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {expired_token}"},
+        cookies={settings.AUTH_COOKIE_NAME: expired_token},
     )
     assert res_expired.status_code == 401
 
@@ -313,7 +318,7 @@ def test_get_me_inactive_user_returns_403(client: TestClient, db_session: Sessio
 
     res = client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
+        cookies={settings.AUTH_COOKIE_NAME: token},
     )
     assert res.status_code == 403
     assert "vô hiệu hóa" in res.json()["detail"]
@@ -327,6 +332,6 @@ def test_get_me_deleted_user_returns_401(client: TestClient, db_session: Session
 
     res = client.get(
         "/api/v1/auth/me",
-        headers={"Authorization": f"Bearer {token}"},
+        cookies={settings.AUTH_COOKIE_NAME: token},
     )
     assert res.status_code == 401

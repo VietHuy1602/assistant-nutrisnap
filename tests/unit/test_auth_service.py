@@ -106,9 +106,9 @@ def test_decode_access_token_expired_raises_token_expired_error(monkeypatch):
     """Kiểm tra token đã hết hạn ném ra TokenExpiredError."""
     # Tạo token với exp đã trôi qua trong quá khứ
     past_time = datetime.now(timezone.utc) - timedelta(minutes=5)
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
 
     payload = {
         "sub": "user_expired",
@@ -133,7 +133,7 @@ def test_decode_access_token_invalid_signature():
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
-        "iss": settings.JWT_ISSUER if settings else "nutriscan-api",
+        "iss": settings.JWT_ISSUER,
         "type": "access",
     }
     tampered_token = jwt.encode(payload, fake_secret, algorithm="HS256")
@@ -155,7 +155,7 @@ def test_decode_access_token_alg_none_rejected():
                     "sub": "user_hacker",
                     "iat": int(datetime.now(timezone.utc).timestamp()),
                     "exp": int((datetime.now(timezone.utc) + timedelta(minutes=15)).timestamp()),
-                    "iss": settings.JWT_ISSUER if settings else "nutriscan-api",
+                    "iss": settings.JWT_ISSUER,
                     "type": "access",
                 }
             ).encode()
@@ -171,8 +171,8 @@ def test_decode_access_token_alg_none_rejected():
 
 def test_decode_access_token_wrong_issuer_rejected():
     """Kiểm tra token có iss sai bị từ chối với InvalidTokenError."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
     payload = {
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
@@ -188,9 +188,9 @@ def test_decode_access_token_wrong_issuer_rejected():
 
 def test_decode_access_token_wrong_type_rejected():
     """Kiểm tra token có type không phải 'access' (ví dụ refresh) bị từ chối."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
     payload = {
         "sub": "user_1",
         "iat": datetime.now(timezone.utc),
@@ -206,9 +206,9 @@ def test_decode_access_token_wrong_type_rejected():
 
 def test_decode_access_token_missing_sub_rejected():
     """Kiểm tra token thiếu trường 'sub' bị từ chối với InvalidTokenError."""
-    secret_key = settings.SECRET_KEY if settings else "nutrisnap_super_secret_jwt_key_w2_secure_32bytes!"
-    algorithm = settings.JWT_ALGORITHM if settings else "HS256"
-    issuer = settings.JWT_ISSUER if settings else "nutriscan-api"
+    secret_key = settings.JWT_SECRET_KEY
+    algorithm = settings.JWT_ALGORITHM
+    issuer = settings.JWT_ISSUER
     payload = {
         "iat": datetime.now(timezone.utc),
         "exp": datetime.now(timezone.utc) + timedelta(minutes=15),
@@ -234,12 +234,33 @@ def test_decode_access_token_garbage_or_empty_rejected():
 
 
 def test_settings_fail_fast_on_short_or_empty_secret_key():
-    """Kiểm tra cấu hình Settings fail-fast khi thiếu SECRET_KEY hoặc < 32 ký tự."""
-    with pytest.raises(ValueError, match="32 ký tự"):
+    """Kiểm tra cấu hình Settings fail-fast khi thiếu JWT_SECRET_KEY hoặc < 32 ký tự, hỗ trợ AliasChoices."""
+    from pydantic import ValidationError
+
+    # Hợp lệ khi truyền JWT_SECRET_KEY >= 32 ký tự
+    s1 = Settings(JWT_SECRET_KEY="a" * 32)
+    assert s1.JWT_SECRET_KEY == "a" * 32
+    assert s1.SECRET_KEY == "a" * 32
+
+    # Hợp lệ khi truyền qua bí danh SECRET_KEY (AliasChoices)
+    s2 = Settings(SECRET_KEY="b" * 32)
+    assert s2.JWT_SECRET_KEY == "b" * 32
+    assert s2.SECRET_KEY == "b" * 32
+
+    # Ném pydantic ValidationError khi quá ngắn (< 32 ký tự)
+    with pytest.raises(ValidationError):
+        Settings(JWT_SECRET_KEY="too-short")
+
+    with pytest.raises(ValidationError):
         Settings(SECRET_KEY="too-short")
 
-    with pytest.raises(ValueError, match="32 ký tự"):
+    # Ném pydantic ValidationError khi rỗng
+    with pytest.raises(ValidationError):
+        Settings(JWT_SECRET_KEY="")
+
+    with pytest.raises(ValidationError):
         Settings(SECRET_KEY="")
+
 
 
 # ==============================================================================
@@ -404,37 +425,53 @@ def test_register_user_username_collision_and_integrity_error(unit_db, monkeypat
 
 
 def test_get_current_user_cookie_helper_branches(unit_db):
-    """Kiểm tra dependency get_current_user với các loại token khác nhau."""
+    """Kiểm tra dependency get_current_user: chỉ đọc cookie, từ chối mock token và header."""
     from unittest.mock import MagicMock
 
     from fastapi import HTTPException
 
-    from src.backend.services.auth_service import create_access_token, get_current_user
+    from src.backend.models.schema import User, utc_now
+    from src.backend.services.auth_guard import get_current_user
+    from src.backend.services.auth_service import create_access_token, hash_password
+
+    # Tạo user mẫu trong unit_db
+    test_user = User(
+        id=999,
+        username="cookie_authed_user",
+        email="cookie@test.com",
+        password_hash=hash_password("Pass123!"),
+        is_active=True,
+        created_at=utc_now(),
+    )
+    unit_db.add(test_user)
+    unit_db.commit()
 
     req = MagicMock()
     req.headers = {}
 
-    # 1. Thiếu token
+    # 1. Thiếu token -> 401
     with pytest.raises(HTTPException) as exc_info:
         get_current_user(request=req, access_token=None, session=unit_db)
     assert exc_info.value.status_code == 401
 
-    # 2. Mock token
-    mock_user = get_current_user(request=req, access_token="nutrisnap_jwt_mock_test", session=unit_db)
-    assert mock_user.username == "thanhdat"
+    # 2. Token thật qua cookie -> 200 OK
+    t, _ = create_access_token(subject="999", extra_claims={"username": "cookie_authed_user"})
+    user_ok = get_current_user(request=req, access_token=t, session=unit_db)
+    assert user_ok.id == 999
+    assert user_ok.username == "cookie_authed_user"
 
-    # 3. Fallback Header Authorization
-    t, _ = create_access_token(subject="999", extra_claims={"username": "fallback_user", "email": "fb@test.com"})
+    # 3. Không chấp nhận Header Authorization: Bearer (Zero-Trust chỉ nhận cookie)
     req.headers = {"Authorization": f"Bearer {t}"}
-    header_user = get_current_user(request=req, access_token=None, session=unit_db)
-    assert header_user.id == 999
-    assert header_user.username == "fallback_user"
+    with pytest.raises(HTTPException) as exc_header:
+        get_current_user(request=req, access_token=None, session=unit_db)
+    assert exc_header.value.status_code == 401
 
-    # 4. Token không chứa ID hợp lệ (non-integer)
+    # 4. Token không chứa ID hợp lệ (non-integer) -> 401
     bad_id_token, _ = create_access_token(subject="not_an_int")
     with pytest.raises(HTTPException) as exc_int:
         get_current_user(request=req, access_token=bad_id_token, session=unit_db)
     assert exc_int.value.status_code == 401
+
 
 
 def test_register_with_initial_goal_validations(unit_db):

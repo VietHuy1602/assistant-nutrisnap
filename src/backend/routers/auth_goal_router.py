@@ -10,6 +10,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from src.backend.exceptions.auth import (
+    EmailAlreadyExistsError,
+    InactiveUserError,
+    InvalidCredentialsError,
+)
 from src.backend.models.database import get_session
 from src.backend.models.schema import FoodReference, Goal, WeightLog, get_vn_today
 from src.backend.schemas.api_contract import (
@@ -27,13 +32,17 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
-from src.backend.services.auth_guard import verify_csrf_protection
-from src.backend.services.auth_service import (
+from src.backend.services.auth_guard import (
     AuthenticatedUser,
+    get_current_active_user,
+    get_current_user,
+    verify_csrf_protection,
+)
+from src.backend.services.auth_service import (
     authenticate_user,
     create_access_token,
     delete_auth_cookie,
-    get_current_user,
+    register_user as register_user_service,
     register_with_initial_goal,
     set_auth_cookie,
 )
@@ -98,7 +107,7 @@ def register_user_with_initial_goal(
         initial_goal=req.initial_goal,
     )
 
-    token = create_access_token({
+    token, expires_in = create_access_token({
         "sub": str(new_user.id),
         "username": new_user.username,
         "email": new_user.email,
@@ -126,13 +135,28 @@ def register_user(
     session: Session = Depends(get_session),
 ):
     """Đăng ký tài khoản mới. Trả về thông tin người dùng và gợi ý thiết lập mục tiêu."""
-    new_user, _ = register_with_initial_goal(
-        session=session,
-        username=req.username,
-        email=req.email,
-        password=req.password,
-        initial_goal=None,
-    )
+    try:
+        from src.backend.schemas.auth import RegisterRequest
+
+        clean_email = str(req.email).strip().lower()
+        new_user = register_user_service(
+            db=session,
+            data=RegisterRequest(
+                email=clean_email,
+                password=req.password,
+                full_name=req.full_name,
+            ),
+        )
+        if req.username and req.username.strip():
+            new_user.username = req.username.strip()
+            session.add(new_user)
+            session.commit()
+            session.refresh(new_user)
+    except EmailAlreadyExistsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email đã tồn tại trong hệ thống",
+        ) from exc
 
     return AuthResponse(
         success=True,
@@ -140,7 +164,6 @@ def register_user(
         has_goal=False,
         user=UserPublicResponse.model_validate(new_user),
     )
-
 
 
 @router.post(
@@ -154,29 +177,39 @@ def login_user(
     response: Response,
     session: Session = Depends(get_session),
 ):
-    """Đăng nhập hệ thống, kiểm tra mật khẩu bcrypt và cấp phát HttpOnly Cookie SameSite=Lax."""
-    user = authenticate_user(session, req.username_or_email, req.password)
+    """Đăng nhập hệ thống, kiểm tra mật khẩu bcrypt và cấp phát HttpOnly Cookie SameSite=Lax.
 
-    if user:
-        token = create_access_token({
-            "sub": str(user.id),
-            "username": user.username,
-            "email": user.email,
-        })
-        set_auth_cookie(response, token)
+    Response trả về AuthResponse chứa user và expires_in, TUYỆT ĐỐI KHÔNG chứa access_token trong body.
+    """
+    ident = req.username_or_email or (str(req.email) if req.email else "")
+    try:
+        user = authenticate_user(session, ident, req.password)
+    except InactiveUserError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản đã bị vô hiệu hóa",
+        ) from exc
+    except (InvalidCredentialsError, Exception) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email hoặc mật khẩu không chính xác",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 
-        existing_goal = session.exec(select(Goal).where(Goal.user_id == user.id)).first()
-        return AuthResponse(
-            success=True,
-            message="Đăng nhập thành công qua HttpOnly Cookie.",
-            has_goal=existing_goal is not None,
-            user=UserPublicResponse.model_validate(user),
-        )
+    token, expires_in = create_access_token(
+        subject=str(user.id),
+        extra_claims={"username": user.username, "email": user.email},
+    )
+    set_auth_cookie(response, token)
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Tên đăng nhập hoặc mật khẩu không chính xác.",
-        headers={"WWW-Authenticate": "Bearer"},
+    existing_goal = session.exec(select(Goal).where(Goal.user_id == user.id)).first()
+    return AuthResponse(
+        success=True,
+        message="Đăng nhập thành công qua HttpOnly Cookie.",
+        has_goal=existing_goal is not None,
+        user=UserPublicResponse.model_validate(user),
+        token_type="bearer",
+        expires_in=expires_in,
     )
 
 
@@ -186,7 +219,7 @@ def login_user(
     summary="Lấy thông tin tài khoản hiện tại từ HttpOnly Cookie",
 )
 def get_current_user_profile(
-    current_user: AuthenticatedUser = Depends(get_current_user),
+    current_user: AuthenticatedUser = Depends(get_current_active_user),
     session: Session = Depends(get_session),
 ):
     """Xác thực người dùng từ Cookie JWT và trả về thông tin hồ sơ."""

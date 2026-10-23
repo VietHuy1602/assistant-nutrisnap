@@ -8,12 +8,13 @@ Tuân thủ tiêu chuẩn:
 - Responsible UX: Luôn kèm trường disclaimer ước tính dinh dưỡng.
 """
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
-from src.backend.services.validators import validate_goal_pace, validate_password
+from src.backend.services.validators import validate_goal_pace
 
 # ==============================================================================
 # 0. HẰNG SỐ & PHẢN HỒI CHUNG (COMMON & BASE SCHEMAS)
@@ -39,24 +40,46 @@ class BaseResponse(BaseModel):
 # ==============================================================================
 
 class UserRegisterRequest(BaseModel):
-    """Dữ liệu người dùng gửi lên khi đăng ký tài khoản."""
-    username: str = Field(..., min_length=3, max_length=50, description="Tên đăng nhập")
+    """Dữ liệu người dùng gửi lên khi đăng ký tài khoản (hỗ trợ cả chuẩn email và username)."""
     email: EmailStr = Field(..., description="Địa chỉ email hợp lệ")
     password: str = Field(..., min_length=8, description="Mật khẩu tối thiểu 8 ký tự, có chữ và số")
+    username: str | None = Field(default=None, min_length=3, max_length=50, description="Tên đăng nhập (tùy chọn)")
+    full_name: str | None = Field(default=None, max_length=100, description="Họ và tên")
 
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:
-        ok, msg = validate_password(v)
-        if not ok:
-            raise ValueError(msg)
+        encoded = v.encode("utf-8")
+        if len(encoded) < 8 or len(encoded) > 72:
+            raise ValueError("Mật khẩu phải có độ dài từ 8 đến 72 bytes")
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Mật khẩu phải chứa ít nhất một chữ cái in hoa")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("Mật khẩu phải chứa ít nhất một chữ cái in thường")
+        if not re.search(r"\d", v):
+            raise ValueError("Mật khẩu phải chứa ít nhất một chữ số")
         return v
 
 
+
 class UserLoginRequest(BaseModel):
-    """Dữ liệu đăng nhập (hỗ trợ cả username hoặc email)."""
-    username_or_email: str = Field(..., description="Tên đăng nhập hoặc email")
+    """Dữ liệu đăng nhập (hỗ trợ cả username_or_email hoặc email chuẩn)."""
+    username_or_email: str | None = Field(default=None, description="Tên đăng nhập hoặc email")
+    email: EmailStr | None = Field(default=None, description="Địa chỉ email")
     password: str = Field(..., description="Mật khẩu đăng nhập")
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_identifier(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            ident = data.get("username_or_email") or data.get("email") or data.get("username")
+            if not ident or not str(ident).strip():
+                raise ValueError("Vui lòng cung cấp tên đăng nhập hoặc email")
+            if not data.get("username_or_email"):
+                data["username_or_email"] = str(ident).strip()
+            if "password" not in data or data.get("password") is None or not str(data.get("password", "")).strip():
+                raise ValueError("Mật khẩu không được để trống")
+        return data
 
 
 class UserPublicResponse(BaseModel):
@@ -64,17 +87,42 @@ class UserPublicResponse(BaseModel):
     id: int = Field(..., description="Mã định danh người dùng")
     username: str = Field(..., description="Tên đăng nhập")
     email: str = Field(..., description="Địa chỉ email")
+    full_name: str | None = Field(default=None, description="Họ và tên")
+    is_active: bool = Field(default=True, description="Trạng thái kích hoạt")
     created_at: datetime = Field(..., description="Thời điểm tạo tài khoản")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class AuthResponse(BaseModel):
-    """Phản hồi sau khi đăng nhập/đăng ký thành công."""
+    """Phản hồi sau khi đăng nhập/đăng ký thành công (tuân thủ bảo mật: KHÔNG trả token trong body)."""
     success: bool = True
-    message: str
+    message: str = ""
     has_goal: bool = Field(default=False, description="Người dùng đã thiết lập mục tiêu hay chưa")
     user: UserPublicResponse
+    token_type: str = Field(default="bearer", description="Loại token")
+    expires_in: int | None = Field(default=None, description="Thời gian sống token tính bằng giây")
+
+    # Trường phẳng tương thích ngược UserPublic theo README_02
+    id: int | None = None
+    email: str | None = None
+    username: str | None = None
+    full_name: str | None = None
+    is_active: bool = True
+    created_at: datetime | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="after")
+    def sync_user_fields(self) -> "AuthResponse":
+        if self.user:
+            self.id = self.user.id
+            self.email = self.user.email
+            self.username = self.user.username
+            self.full_name = self.user.full_name
+            self.is_active = self.user.is_active
+            self.created_at = self.user.created_at
+        return self
 
 
 # ==============================================================================

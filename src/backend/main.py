@@ -15,7 +15,6 @@ from fastapi import Depends, FastAPI, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
-from src.backend.api.v1.router import api_router
 from src.backend.models.database import get_session, init_db
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
@@ -81,9 +80,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Nối API Router chuẩn vị (Auth register, login, me endpoints)
-app.include_router(api_router, prefix="/api/v1")
 
 # Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics
 app.include_router(auth_goal_router)

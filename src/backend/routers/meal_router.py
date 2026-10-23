@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session
 
 from src.backend.models.database import get_session
-from src.backend.services.auth_service import AuthenticatedUser, get_current_user
+from src.backend.services.auth_guard import AuthenticatedUser, get_current_user
 from src.backend.services.nutrition_service import (
     MealLogRequest,
     MealLogResponse,
