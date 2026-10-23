@@ -59,7 +59,7 @@ function AICoachCard({ onOpen }: { onOpen: () => void }) {
 
 export function DashboardPage() {
   const { user, hasGoal } = useAuth();
-  const { openChat } = useOutletContext<AppShellContext>();
+  const { openChat, mealRevision = 0 } = useOutletContext<AppShellContext>();
   const [data, setData] = useState<DailyDashboardData | null>(null);
   const [status, setStatus] = useState<'loading' | 'error' | 'ready'>('loading');
   const [attempt, setAttempt] = useState(0);
@@ -75,6 +75,8 @@ export function DashboardPage() {
 
   useEffect(() => {
     let active = true;
+    setData(null);
+    setStatus('loading');
     apiClient.get<DailyDashboardData>('/dashboard/daily')
       .then(({ data: response }) => {
         // A missing total is unavailable data, never an invitation to invent a value.
@@ -85,7 +87,7 @@ export function DashboardPage() {
       })
       .catch(() => { if (active) { setData(null); setStatus('error'); } });
     return () => { active = false; };
-  }, [attempt]);
+  }, [attempt, mealRevision]);
 
   return (
     <div className="space-y-6 text-nutri-ink sm:space-y-8">
