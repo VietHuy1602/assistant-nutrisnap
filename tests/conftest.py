@@ -9,6 +9,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///nutrisnap.db")
 
 import pytest
 from sqlmodel import Session, select
+
 from src.backend.models.database import engine, init_db
 from src.backend.models.schema import FoodReference
 
@@ -23,7 +24,3 @@ def setup_test_database():
             from scripts.seed_food_references import seed_foods
 
             seed_foods()
-
-from src.backend.models.database import engine, init_db
-
-init_db(engine)

@@ -4,7 +4,6 @@ src/backend/api/v1/endpoints/auth.py
 Loại bỏ hoàn toàn xung đột handler trùng path.
 """
 
-from src.backend.routers.auth_goal_router import router
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -294,5 +293,13 @@ def get_me_endpoint(
     auth_user = get_cookie_user(request=request, access_token=cookie_token, session=db)
     existing_goal = db.exec(select(Goal).where(Goal.user_id == auth_user.id)).first()
     has_goal = existing_goal is not None or auth_user.id == 1
+
+    return AuthResponse(
+        success=True,
+        message="Phiên đăng nhập hợp lệ.",
+        has_goal=has_goal,
+        user=UserPublicResponse.model_validate(auth_user),
+    )
+
 
 __all__ = ["router"]
