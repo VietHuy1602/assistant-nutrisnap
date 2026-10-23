@@ -1105,4 +1105,4 @@ def orchestrate_chat(
         explicit_tool_call=explicit_tool_call,
         chat_history=chat_history,
         voice_transcript=voice_transcript,
-    )
+    )
