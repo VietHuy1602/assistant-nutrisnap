@@ -8,6 +8,7 @@ Quản lý kết nối Cơ sở dữ liệu SQLite tập trung cho toàn bộ �
 3. Cấu hình linh hoạt: echo=False mặc định để tránh spam terminal log.
 """
 
+import logging
 import os
 import sqlite3
 from collections.abc import Generator
@@ -16,7 +17,10 @@ from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, SQLModel, create_engine
+
+logger = logging.getLogger(__name__)
 
 # Đường dẫn gốc tuyệt đối của dự án (4 cấp thư mục: database.py -> models -> backend -> src -> ROOT)
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -69,11 +73,17 @@ def init_db(target_engine: Engine | None = None) -> None:
             if existing_cols:
                 if "full_name" not in existing_cols:
                     conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
+                    logger.warning("Đã tự động bổ sung cột 'full_name' vào bảng 'users'.")
                 if "is_active" not in existing_cols:
                     conn.exec_driver_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
+                    logger.warning("Đã tự động bổ sung cột 'is_active' vào bảng 'users'.")
             conn.commit()
-        except Exception:
-            pass
+        except SQLAlchemyError as exc:
+            logger.warning("Không thể tự động cập nhật schema bảng users: %s", exc)
+
+
+# Tự động đồng bộ schema CSDL khi module được nạp
+init_db(engine)
 
 
 def get_session() -> Generator[Session, None, None]:

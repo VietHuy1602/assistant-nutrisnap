@@ -11,8 +11,11 @@ import { useDelayedFlag } from './hooks/useDelayedFlag';
 const RegisterPage = React.lazy(() =>
   import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })),
 );
-const DashboardPage = React.lazy(() =>
-  import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+const BasicDashboard = React.lazy(() =>
+  import('./pages/BasicDashboard').then((m) => ({ default: m.BasicDashboard })),
+);
+const MealCaptureFlow = React.lazy(() =>
+  import('./pages/MealCaptureFlow').then((m) => ({ default: m.MealCaptureFlow })),
 );
 const GoalPlannerWizard = React.lazy(() =>
   import('./pages/GoalPlannerWizard').then((m) => ({ default: m.GoalPlannerWizard })),
@@ -56,7 +59,8 @@ export const App: React.FC = () => {
           {/* Tuyến đường được bảo vệ (Protected Routes) nằm trong AppShell */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/" element={<BasicDashboard />} />
+              <Route path="/capture" element={<MealCaptureFlow />} />
               <Route path="/goal-setup" element={<GoalPlannerWizard />} />
             </Route>
           </Route>

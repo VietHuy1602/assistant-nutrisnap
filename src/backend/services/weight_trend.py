@@ -25,6 +25,61 @@ WEIGHT_TREND_DISCLAIMER = "Số liệu cân nặng và xu hướng EMA chỉ man
 # ==============================================================================
 
 
+def calculate_ema_series(
+    weights: list[float],
+    alpha: float = DEFAULT_EMA_ALPHA,
+) -> list[float]:
+    """Tính toán chuỗi EMA thuần túy từ danh sách trọng số weights:
+
+    - EMA_0 = round(W_0, 2)
+    - EMA_t = round(alpha * W_t + (1 - alpha) * EMA_{t-1}, 2)
+    """
+    if not weights:
+        return []
+    if alpha <= 0.0 or alpha > 1.0:
+        raise ValueError("alpha phải nằm trong khoảng (0, 1.0]")
+
+    series: list[float] = [round(weights[0], 2)]
+    for w in weights[1:]:
+        val = round(alpha * float(w) + (1.0 - alpha) * series[-1], 2)
+        series.append(val)
+    return series
+
+
+def get_user_weight_trend(
+    session: Session,
+    authenticated_user_id: int,
+    days: int = 14,
+    alpha: float = DEFAULT_EMA_ALPHA,
+) -> dict[str, Any]:
+    """Truy vấn bảng weight_logs của authenticated_user_id, tính chuỗi EMA,
+
+    đánh giá xu hướng ('decreasing', 'increasing', 'stable', hoặc 'insufficient_data')
+    và giữ nguyên hạn mức calo mục tiêu (calorie_penalty_applied: False).
+    """
+    result = calculate_ema_weight_trend(
+        session=session,
+        authenticated_user_id=authenticated_user_id,
+        days_range=days,
+        alpha=alpha,
+    )
+    points_count = result.get("points_count", 0)
+    if points_count < 2:
+        trend = "insufficient_data"
+    else:
+        ema_change = result.get("ema_change_kg", 0.0)
+        if ema_change <= -0.15:
+            trend = "decreasing"
+        elif ema_change >= 0.15:
+            trend = "increasing"
+        else:
+            trend = "stable"
+
+    result["trend"] = trend
+    result["calorie_penalty_applied"] = False
+    return result
+
+
 def calculate_ema_weight_trend(
     session: Session,
     authenticated_user_id: int,

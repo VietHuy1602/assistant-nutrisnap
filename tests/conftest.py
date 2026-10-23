@@ -2,11 +2,8 @@
 
 import os
 
-# Đảm bảo môi trường kiểm thử có JWT_SECRET_KEY an toàn >= 32 ký tự
-os.environ.setdefault(
-    "JWT_SECRET_KEY",
-    "test_nutrisnap_secure_jwt_secret_key_minimum_32_characters_for_pytest_runner_suite!",
-)
+# Đảm bảo môi trường kiểm thử có JWT_SECRET_KEY an toàn >= 32 ký tự trước khi import bất kỳ module nào
+os.environ["JWT_SECRET_KEY"] = "test_nutrisnap_secure_jwt_secret_key_minimum_32_characters_for_pytest_runner_suite!"
 os.environ.setdefault("APP_ENV", "testing")
 os.environ.setdefault("DATABASE_URL", "sqlite:///nutrisnap.db")
 
@@ -26,3 +23,7 @@ def setup_test_database():
             from scripts.seed_food_references import seed_foods
 
             seed_foods()
+
+from src.backend.models.database import engine, init_db
+
+init_db(engine)

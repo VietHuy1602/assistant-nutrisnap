@@ -7,6 +7,8 @@ import re
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from src.backend.schemas.user import UserPublic
+
 
 class RegisterRequest(BaseModel):
     """Yêu cầu đăng ký tài khoản người dùng mới."""
@@ -34,19 +36,24 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Yêu cầu đăng nhập xác thực tài khoản."""
+    """Yêu cầu đăng nhập xác thực tài khoản (hỗ trợ cả email hoặc username_or_email)."""
 
-    email: EmailStr = Field(..., description="Email đã đăng ký")
+    email: EmailStr | None = Field(default=None, description="Email đã đăng ký")
+    username_or_email: str | None = Field(default=None, description="Tên đăng nhập hoặc email")
     password: str = Field(..., description="Mật khẩu người dùng")
 
     model_config = ConfigDict(extra="ignore")
 
 
-class TokenResponse(BaseModel):
-    """Phản hồi cấp phát JWT Access Token thành công."""
+class LoginResponse(BaseModel):
+    """Phản hồi sau khi đăng nhập thành công (tuân thủ bảo mật: KHÔNG chứa access_token trong body)."""
 
-    access_token: str = Field(..., description="JWT Access Token")
     token_type: str = Field(default="bearer", description="Loại token")
     expires_in: int = Field(..., description="Thời gian sống của token tính bằng giây")
+    user: UserPublic = Field(..., description="Thông tin công khai của người dùng")
 
     model_config = ConfigDict(extra="ignore")
+
+
+# Alias tương thích
+TokenResponse = LoginResponse

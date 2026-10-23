@@ -1,15 +1,10 @@
 """
 src/backend/api/v1/endpoints/auth.py
-Các REST API Endpoints phục vụ phân hệ Xác thực (Authentication):
-- POST /api/v1/auth/register: Đăng ký tài khoản người dùng mới (201 Created / 409 Conflict / 422).
-- POST /api/v1/auth/login: Đăng nhập xác thực và cấp phát JWT Access Token (200 OK / 401 / 403 / 422).
-- GET /api/v1/auth/me: Route mẫu được bảo vệ bằng Bearer Token JWT (200 OK / 401 / 403).
-
-Tương thích đồng thời:
-1. Chuẩn REST API Bearer Token trong docs/README_02_AUTH_API.md.
-2. Chuẩn HttpOnly Cookie trong hợp đồng NutriSnap hiện hữu.
+Điểm truy cập xác thực tập trung, thống nhất với src/backend/routers/auth_goal_router.py.
+Loại bỏ hoàn toàn xung đột handler trùng path.
 """
 
+from src.backend.routers.auth_goal_router import router
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -75,20 +70,20 @@ async def register_endpoint(
 
         if len(clean_username) < 3:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Tên đăng nhập phải có ít nhất 3 ký tự.",
             )
 
         is_valid_pwd, pwd_msg = validate_password(pwd)
         if not is_valid_pwd:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=pwd_msg,
             )
 
         if not validate_email(clean_email):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Định dạng email không hợp lệ.",
             )
 
@@ -168,7 +163,7 @@ async def login_endpoint(
     if "username_or_email" in body:
         if "password" not in body or not body.get("password"):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Mật khẩu là bắt buộc.",
             )
         ident = str(body["username_or_email"]).strip()
@@ -300,9 +295,4 @@ def get_me_endpoint(
     existing_goal = db.exec(select(Goal).where(Goal.user_id == auth_user.id)).first()
     has_goal = existing_goal is not None or auth_user.id == 1
 
-    return AuthResponse(
-        success=True,
-        message="Phiên đăng nhập hợp lệ.",
-        has_goal=has_goal,
-        user=UserPublicResponse.model_validate(auth_user),
-    )
+__all__ = ["router"]
