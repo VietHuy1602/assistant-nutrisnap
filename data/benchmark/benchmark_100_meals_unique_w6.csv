@@ -1,0 +1,101 @@
+﻿sample_id,image_filename,dish_name,food_item,measured_weight_g,ai_estimated_weight_g,absolute_error_g,ape_percent,confidence_score,image_quality,capture_angle,notes,collection_status
+IMG001,IMG001.png,Cơm trắng,Cơm trắng,150g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cơm trắng,pending
+IMG002,IMG002.png,Cơm tấm sườn nướng,Cơm tấm sườn nướng,420g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cơm tấm sườn nướng,pending
+IMG003,IMG003.png,Cơm tấm sườn bì chả,Cơm tấm sườn bì chả,520g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cơm tấm sườn bì chả,pending
+IMG004,IMG004.png,Phở bò tái,Phở bò tái,650g,,,,,,top_down,top_down,pending
+IMG005,IMG005.png,Phở gà xé,Phở gà xé,620g,,,,,,top_down,top_down,pending
+IMG006,IMG006.png,Bún bò Huế,Bún bò Huế,620g,,,,,,top_down,top_down,pending
+IMG007,IMG007.png,Bún chả Hà Nội,Bún chả Hà Nội,620g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Bún chả Hà Nội,pending
+IMG008,IMG008.png,Bún thịt nướng,Bún thịt nướng,520g,,,,,,45_degree,top_down,pending
+IMG009,IMG009.png,Bún riêu cua,Bún riêu cua,620g,,,,,,top_down,top_down,pending
+IMG010,IMG010.png,Bánh mì kẹp thịt pate,Bánh mì kẹp thịt pate,280g,,,,,,45_degree,Ổ bánh mì thịt xá xíu pate dưa leo,pending
+IMG011,IMG011.png,Bánh mì trứng ốp la,Bánh mì trứng ốp la,320g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Bánh mì trứng ốp la,pending
+IMG012,IMG012.png,Ức gà áp chảo,Ức gà áp chảo,420g,,,,,,45_degree,top_down,pending
+IMG013,IMG013.png,Thịt heo luộc,Thịt heo luộc,300g,,,,,,45_degree,top_down,pending
+IMG014,IMG014.png,Thịt kho tàu nước dừa,Thịt kho tàu nước dừa,350g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Thịt kho tàu nước dừa,pending
+IMG015,IMG015.png,Canh chua cá lóc,Canh chua cá lóc,520g,,,,,,45_degree,top_down,pending
+IMG016,IMG016.png,Rau muống xào tỏi,Rau muống xào tỏi,250g,,,,,,45_degree,top_down,pending
+IMG017,IMG017.png,Bông cải xanh hấp,Bông cải xanh hấp,200g,,,,,,45_degree,top_down,pending
+IMG018,IMG018.png,Đậu hũ rán,Đậu hũ rán,200g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Đậu hũ rán,pending
+IMG019,IMG019.png,Gỏi cuốn tôm thịt,Gỏi cuốn tôm thịt,210g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Gỏi cuốn tôm thịt,pending
+IMG020,IMG020.png,Chả giò rán,Chả giò rán,250g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Chả giò rán,pending
+IMG021,IMG021.png,Bánh xèo miền Tây,Bánh xèo miền Tây,320g,,,,,,45_degree,top_down,pending
+IMG022,IMG022.png,Cháo sườn,Cháo sườn,380g,,,,,,top_down,top_down,pending
+IMG023,IMG023.png,Hủ tiếu Nam Vang,Hủ tiếu Nam Vang,520g,,,,,,top_down,top_down,pending
+IMG024,IMG024.png,Cá nục kho cà chua,Cá nục kho cà chua,300g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cá nục kho cà chua,pending
+IMG025,IMG025.png,Bò xào hành tây,Bò xào hành tây,300g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Bò xào hành tây,pending
+IMG026,IMG026.png,Salad xà lách dầu giấm,Salad xà lách dầu giấm,250g,,,,,,45_degree,top_down,pending
+IMG027,IMG027.png,Cơm gà Hội An,Cơm gà Hội An,450g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cơm gà Hội An,pending
+IMG028,IMG028.png,Cơm chiên dương châu,Cơm chiên dương châu,380g,,,,,,45_degree,top_down,pending
+IMG029,IMG029.png,Cá kho tộ,Cá kho tộ,420g,,,,,,45_degree,Giữ lại mẫu món ăn hiện có: Cá kho tộ,pending
+IMG030,IMG030.png,Canh khổ qua dồn thịt,Canh khổ qua dồn thịt,380g,,,,,,45_degree,top_down,pending
+IMG031,IMG031.png,Bánh cuốn nhân thịt,Bánh cuốn nhân thịt,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG032,IMG032.png,Bánh ướt chả lụa,Bánh ướt chả lụa,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG033,IMG033.png,Bánh hỏi heo quay,Bánh hỏi heo quay,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG034,IMG034.png,Bánh canh cua,Bánh canh cua,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG035,IMG035.png,Bánh canh giò heo,Bánh canh giò heo,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG036,IMG036.png,Miến gà,Miến gà,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG037,IMG037.png,Miến lươn Nghệ An,Miến lươn Nghệ An,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG038,IMG038.png,Mì Quảng tôm thịt,Mì Quảng tôm thịt,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG039,IMG039.png,Cao lầu Hội An,Cao lầu Hội An,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG040,IMG040.png,Bún mắm miền Tây,Bún mắm miền Tây,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG041,IMG041.png,Bún cá Châu Đốc,Bún cá Châu Đốc,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG042,IMG042.png,Bún mọc sườn,Bún mọc sườn,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG043,IMG043.png,Bún đậu mắm tôm,Bún đậu mắm tôm,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG044,IMG044.png,Bún ốc Hà Nội,Bún ốc Hà Nội,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG045,IMG045.png,Bún cá rô đồng,Bún cá rô đồng,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG046,IMG046.png,Phở cuốn thịt bò,Phở cuốn thịt bò,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG047,IMG047.png,Nem nướng Nha Trang,Nem nướng Nha Trang,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG048,IMG048.png,Bò lúc lắc khoai tây,Bò lúc lắc khoai tây,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG049,IMG049.png,Bò né trứng ốp la,Bò né trứng ốp la,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG050,IMG050.png,Bò kho bánh mì,Bò kho bánh mì,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG051,IMG051.png,Gà kho gừng,Gà kho gừng,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG052,IMG052.png,Gà nướng sả,Gà nướng sả,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG053,IMG053.png,Cánh gà chiên nước mắm,Cánh gà chiên nước mắm,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG054,IMG054.png,Sườn non rim mặn ngọt,Sườn non rim mặn ngọt,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG055,IMG055.png,Sườn nướng mật ong,Sườn nướng mật ong,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG056,IMG056.png,Tôm rim thịt ba chỉ,Tôm rim thịt ba chỉ,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG057,IMG057.png,Tôm rang muối,Tôm rang muối,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG058,IMG058.png,Mực xào cần tây,Mực xào cần tây,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG059,IMG059.png,Mực nhồi thịt sốt cà,Mực nhồi thịt sốt cà,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG060,IMG060.png,Cá basa kho tiêu,Cá basa kho tiêu,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG061,IMG061.png,Cá hồi áp chảo,Cá hồi áp chảo,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG062,IMG062.png,Cá diêu hồng hấp gừng,Cá diêu hồng hấp gừng,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG063,IMG063.png,Trứng chiên thịt băm,Trứng chiên thịt băm,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG064,IMG064.png,Trứng hấp vân,Trứng hấp vân,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG065,IMG065.png,Đậu hũ sốt cà chua,Đậu hũ sốt cà chua,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG066,IMG066.png,Canh bí đỏ nấu tôm,Canh bí đỏ nấu tôm,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG067,IMG067.png,Canh rau ngót thịt băm,Canh rau ngót thịt băm,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG068,IMG068.png,Canh cải nấu thịt bằm,Canh cải nấu thịt bằm,,,,,,,top_down,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG069,IMG069.png,Gỏi ngó sen tôm thịt,Gỏi ngó sen tôm thịt,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG070,IMG070.png,Khoai lang luộc,Khoai lang luộc,,,,,,,45_degree,Mẫu mới; cần bổ sung ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG071,IMG071.png,Bánh bèo chén Huế,Bánh bèo chén Huế,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG072,IMG072.png,Bánh nậm Huế,Bánh nậm Huế,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG073,IMG073.png,Bánh bột lọc tôm thịt,Bánh bột lọc tôm thịt,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG074,IMG074.png,Bánh căn Đà Lạt,Bánh căn Đà Lạt,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG075,IMG075.png,Bánh khọt Vũng Tàu,Bánh khọt Vũng Tàu,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG076,IMG076.png,Bánh đúc nóng thịt băm,Bánh đúc nóng thịt băm,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG077,IMG077.png,Xôi gà xé,Xôi gà xé,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG078,IMG078.png,Xôi xéo đậu xanh,Xôi xéo đậu xanh,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG079,IMG079.png,Cơm niêu cá bống kho,Cơm niêu cá bống kho,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG080,IMG080.png,Cơm cháy kho quẹt,Cơm cháy kho quẹt,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG081,IMG081.png,Bún thang Hà Nội,Bún thang Hà Nội,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG082,IMG082.png,Bún sứa Nha Trang,Bún sứa Nha Trang,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG083,IMG083.png,Bún kèn Phú Quốc,Bún kèn Phú Quốc,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG084,IMG084.png,Bún nước lèo Sóc Trăng,Bún nước lèo Sóc Trăng,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG085,IMG085.png,Bánh đa cua Hải Phòng,Bánh đa cua Hải Phòng,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG086,IMG086.png,Chả cá Lã Vọng,Chả cá Lã Vọng,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG087,IMG087.png,Vịt om sấu,Vịt om sấu,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG088,IMG088.png,Vịt quay lá mắc mật,Vịt quay lá mắc mật,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG089,IMG089.png,Heo quay da giòn,Heo quay da giòn,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG090,IMG090.png,Thịt đông miền Bắc,Thịt đông miền Bắc,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG091,IMG091.png,Cá lóc nướng trui,Cá lóc nướng trui,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG092,IMG092.png,Cá thu sốt cà,Cá thu sốt cà,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG093,IMG093.png,Tôm hấp nước dừa,Tôm hấp nước dừa,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG094,IMG094.png,Ốc len xào dừa,Ốc len xào dừa,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG095,IMG095.png,Nghêu hấp sả,Nghêu hấp sả,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG096,IMG096.png,Lẩu riêu cua bắp bò,Lẩu riêu cua bắp bò,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG097,IMG097.png,Lẩu cá kèo lá giang,Lẩu cá kèo lá giang,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG098,IMG098.png,Canh chua tôm bạc hà,Canh chua tôm bạc hà,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG099,IMG099.png,Su su xào tỏi,Su su xào tỏi,,,,,,,45_degree,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
+IMG100,IMG100.png,Chè đậu xanh nước cốt dừa,Chè đậu xanh nước cốt dừa,,,,,,,top_down,Món mới bổ sung; cần ảnh thực tế và cân trực tiếp trước khi dùng benchmark.,pending_capture
