@@ -36,4 +36,14 @@ export const ENDPOINTS = {
   ASSISTANT_HISTORY: '/assistant/history',
   ASSISTANT_EXECUTE: '/assistant/tools/execute',
   ASSISTANT_CONFIRM: '/assistant/action-card/confirm',
+
+  // Progress Analytics, Food Swap & Weight (W5)
+  PROGRESS_WEIGHT_TREND: '/analytics/weight-trend',
+  PROGRESS_PATTERNS: '/analytics/patterns',
+  FOOD_SWAP: '/analytics/food-swap',
+  CALORIE_STABILITY: '/analytics/calorie-stability',
+  REPORTS_MONTHLY: '/reports/monthly',
+  WEIGHT_LOG: '/weight',
+  WEIGHT_HISTORY: '/weight/history',
+  MEAL_PREVIEW: '/meals/preview',
 } as const;
