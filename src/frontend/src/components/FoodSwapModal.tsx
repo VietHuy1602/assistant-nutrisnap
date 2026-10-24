@@ -74,6 +74,10 @@ export function FoodSwapModal({
     document.body.style.overflow = 'hidden';
     close.current?.focus();
 
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+      performance.mark('ns:swap:open');
+    }
+
     return () => {
       siblings.forEach((e) => e.removeAttribute('inert'));
       document.body.style.overflow = overflow;
