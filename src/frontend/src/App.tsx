@@ -21,6 +21,7 @@ const GoalPlannerWizard = React.lazy(() =>
   import('./pages/GoalPlannerWizard').then((m) => ({ default: m.GoalPlannerWizard })),
 );
 const MonthlyReportView = React.lazy(() => import('./pages/MonthlyReportView'));
+const ProgressAnalyticsPage = React.lazy(() => import('./pages/ProgressAnalyticsPage'));
 
 import { apiClient } from './api/client';
 
@@ -244,6 +245,7 @@ export const App: React.FC = () => {
             <Route element={<AppShell />}>
               <Route path="/" element={<BasicDashboard />} />
               <Route path="/capture" element={<MealCaptureFlow />} />
+              <Route path="/progress" element={<ProgressAnalyticsPage />} />
               <Route path="/goal-setup" element={<GoalPlannerWizard />} />
               <Route path="/monthly-report" element={<MonthlyReportRoute />} />
             </Route>
