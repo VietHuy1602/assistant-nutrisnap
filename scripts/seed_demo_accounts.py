@@ -139,6 +139,36 @@ DEMO_PROFILES = [
             ],
         },
     },
+    {
+        "username": "thanhdat",
+        "email": "dat@example.com",
+        "password": "Password123",
+        "gender": "male",
+        "age": 24,
+        "height_cm": 175.0,
+        "current_weight_kg": 70.0,
+        "target_weight_kg": 65.0,
+        "goal_type": "lose_weight",
+        "weekly_pace_kg": 0.5,
+        "activity_level": "moderate",
+        "daily_budget_vnd": 60000,
+        "skip_days": [],
+        "start_weight": 71.5,
+        "end_weight": 70.0,
+        "meals_pattern": {
+            "Sáng": [
+                {"food_name": "Phở bò tái", "estimated_gram": 350.0},
+            ],
+            "Trưa": [
+                {"food_name": "Cơm tấm sườn nướng", "estimated_gram": 250.0},
+                {"food_name": "Canh chua cá lóc", "estimated_gram": 150.0},
+            ],
+            "Tối": [
+                {"food_name": "Ức gà áp chảo", "estimated_gram": 200.0},
+                {"food_name": "Rau muống xào tỏi", "estimated_gram": 150.0},
+            ],
+        },
+    },
 ]
 
 MEAL_TIMES = {
@@ -161,7 +191,7 @@ def ensure_prerequisites(session: Session) -> None:
 
 
 def clean_existing_demo_accounts(session: Session) -> None:
-    """Xóa sạch dữ liệu cũ của 3 tài khoản demo để đảm bảo tính lũy đẳng (Idempotency)."""
+    """Xóa sạch dữ liệu cũ của các tài khoản demo để đảm bảo tính lũy đẳng (Idempotency)."""
     target_usernames = [p["username"] for p in DEMO_PROFILES]
     target_emails = [p["email"] for p in DEMO_PROFILES]
 
@@ -176,7 +206,7 @@ def clean_existing_demo_accounts(session: Session) -> None:
 
 
 def seed_demo_data() -> dict[str, int]:
-    """Hàm chính thực hiện nạp 3 tài khoản Demo chuẩn và 30 ngày dữ liệu mẫu."""
+    """Hàm chính thực hiện nạp các tài khoản Demo chuẩn và 30 ngày dữ liệu mẫu."""
     created_user_ids: dict[str, int] = {}
     today = get_vn_today()
     total_days = 30
@@ -185,11 +215,11 @@ def seed_demo_data() -> dict[str, int]:
         ensure_prerequisites(session)
         clean_existing_demo_accounts(session)
 
-        hashed_pwd = hash_password(COMMON_PASSWORD)
-
         for profile in DEMO_PROFILES:
             username = profile["username"]
             email = profile["email"]
+            pwd_to_hash = profile.get("password", COMMON_PASSWORD)
+            hashed_pwd = hash_password(pwd_to_hash)
             print(f"--- Đang nạp tài khoản demo: {username} ({email}) [30 ngày] ---")
 
             # 1. Tạo tài khoản User
@@ -202,7 +232,8 @@ def seed_demo_data() -> dict[str, int]:
             session.add(user)
             session.flush()
             user_id = user.id
-            created_user_ids[username] = user_id  # type: ignore
+            if username in {"student_user", "office_user", "gym_user"}:
+                created_user_ids[username] = user_id  # type: ignore
 
             # 2. Khởi tạo Mục tiêu dinh dưỡng (Goal)
             plan_input = GoalPlanInput(

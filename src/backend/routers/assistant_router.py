@@ -10,7 +10,6 @@ Router cung cấp các API endpoint cho phân hệ Trợ lý ảo AI NutriSnap:
 """
 
 import re
-import unicodedata
 from datetime import datetime
 from typing import Any
 
@@ -18,6 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
+from src.ai.intent_classifier import classify_user_intent
 from src.backend.models.database import get_session
 from src.backend.schemas.api_contract import (
     ActionCardConfirmRequest,
@@ -40,135 +40,6 @@ from src.backend.services.auth_guard import (
 from src.backend.services.nutrition_service import DISCLAIMER_TEXT
 
 router = APIRouter(prefix="/api/v1/assistant", tags=["Assistant Chat & Tools"])
-
-
-# ==============================================================================
-# INTENT CLASSIFICATION HELPERS
-# ==============================================================================
-
-
-def normalize_text_intent(text: str) -> tuple[str, str]:
-    """Chuẩn hóa chuỗi văn bản để so khớp ý định (hỗ trợ cả có dấu và không dấu)."""
-    s = text.strip().lower()
-    s_clean = " ".join(s.split())
-    s_no_d = s_clean.replace("đ", "d").replace("Đ", "D")
-    normalized = unicodedata.normalize("NFD", s_no_d)
-    no_marks = "".join(c for c in normalized if unicodedata.category(c) != "Mn")
-    s_ascii = " ".join(re.sub(r"[^\w\s]", " ", no_marks).split())
-    return s_clean, s_ascii
-
-
-def classify_user_intent(message: str) -> str | None:
-    """Nhận diện ý định gọi Tool từ câu hỏi người dùng dựa trên ngữ nghĩa và mẫu từ khóa chính xác.
-
-    Phân loại chính xác 4 nhóm nghiệp vụ:
-    - get_daily_nutrition: Tra cứu dinh dưỡng, calo còn lại, hạn mức calo, mục tiêu macro trong ngày.
-    - recommend_meals: Gợi ý, tư vấn món ăn phù hợp với calo/ngân sách.
-    - get_progress_summary: Xem tiến độ, xu hướng cân nặng EMA, báo cáo, chuỗi ngày liên tục.
-    - log_meal: Ghi nhận, lưu bữa ăn khi có ý định ghi chép hoặc định lượng món ăn.
-    - None: Chào hỏi (chitchat), hỏi kiến thức dinh dưỡng chung, thời tiết, hoặc ngoài phạm vi Tool.
-    """
-    s_clean, s_ascii = normalize_text_intent(message)
-
-    # 1. Chitchat / Kiến thức chung / Ngoài phạm vi -> Không gọi Tool
-    chitchat_patterns = (
-        r"\b(xin chao|chao ban|hello|hi|cam on|thank)\b",
-        r"\b(thoi tiet|weather)\b",
-        r"\b(bmr|tdee)\b",
-        r"chat beo (tot|xau)",
-        r"phan biet chat beo",
-        r"uong bao nhieu lit nuoc",
-        r"bao nhieu lit nuoc",
-    )
-    for pat in chitchat_patterns:
-        if re.search(pat, s_ascii):
-            return None
-
-    # 2. Nhóm B: Gợi ý bữa ăn (recommend_meals) - Ưu tiên khi có từ khóa gợi ý/tư vấn/hỏi món ăn
-    recommend_patterns = (
-        r"\b(goi y|recommend|tu van)\b",
-        r"\b(nen an|an gi)\b",
-        r"mon gi duoi",
-        r"co mon nao",
-        r"mon an phu hop",
-        r"mon an it calo",
-    )
-    for pat in recommend_patterns:
-        if re.search(pat, s_ascii):
-            return "recommend_meals"
-
-    # 3. Nhóm D: Theo dõi tiến độ (get_progress_summary)
-    progress_patterns = (
-        r"\b(tien do|progress|ema)\b",
-        r"can nang",
-        r"xu huong",
-        r"tong hop calo",
-        r"trung binh moi ngay",
-        r"bao cao",
-        r"giam can",
-        r"bao nhieu ngay roi",
-        r"duy tri",
-    )
-    for pat in progress_patterns:
-        if re.search(pat, s_ascii):
-            return "get_progress_summary"
-
-    # 4. Nhóm A: Tra cứu dinh dưỡng ngày (get_daily_nutrition)
-    nutrition_patterns = (
-        r"nap bao nhieu calo",
-        r"bao nhieu calo roi",
-        r"calo con lai",
-        r"con lai trong ngay",
-        r"han muc calo",
-        r"an them bao nhieu",
-        r"du chat dam",
-        r"du protein",
-        r"muc tieu chua",
-        r"dat muc tieu",
-        r"hom qua.*da an",
-        r"tong bao nhieu calo",
-        r"da an nhung gi",
-        r"nhat ky dinh duong",
-        r"dinh duong ngay",
-        r"dinh duong hom nay",
-        r"calo hom nay",
-        r"hom nay an",
-    )
-    for pat in nutrition_patterns:
-        if re.search(pat, s_ascii):
-            return "get_daily_nutrition"
-
-    # 5. Nhóm C: Ghi nhận bữa ăn (log_meal)
-    log_meal_patterns = (
-        r"ghi nhan",
-        r"ghi nhat ky bua",
-        r"ghi bua",
-        r"luu bua",
-        r"vua an",
-        r"toi vua an",
-        r"toi nay toi an",
-        r"trua nay toi an",
-        r"sang nay toi an",
-        r"bua sang toi an",
-        r"bua trua toi an",
-        r"bua toi toi an",
-        r"toi an \d+",
-        r"vua uong",
-        r"toi uong",
-        r"uong 1 ly",
-        r"bua phu chieu toi uong",
-    )
-    for pat in log_meal_patterns:
-        if re.search(pat, s_ascii):
-            return "log_meal"
-
-    # Kiểm tra bổ trợ cho log_meal: có định lượng (gam / ml / bát / tô / đĩa / ổ) kèm tên món hoặc động từ ăn/uống
-    if re.search(r"\b(an|uong|bat|to|dia|o|ly)\b", s_ascii) and re.search(
-        r"\b(\d+\s*(g|gam|ml)|pho|bun|com|banh mi|uc ga|sua)\b", s_ascii
-    ):
-        return "log_meal"
-
-    return None
 
 
 # ==============================================================================
@@ -263,138 +134,157 @@ def assistant_chat_endpoint(
         content=req.message,
     )
 
+    reply: str = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
     tool_result: dict[str, Any] | None = None
     used_tool_name: str | None = None
+    pending_confirmation: bool = False
+    action_card: dict[str, Any] | None = None
 
-    if req.tool_call:
-        t_name = req.tool_call.get("tool_name") or req.tool_call.get("name")
-        t_args = req.tool_call.get("tool_args") or req.tool_call.get("args") or {}
-        if t_name:
-            used_tool_name = str(t_name)
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args=t_args,
-            )
-    else:
-        # Nhận diện ý định gọi Tool từ nội dung tin nhắn (Intent Classification)
-        used_tool_name = classify_user_intent(req.message)
-        if used_tool_name == "get_daily_nutrition":
-            date_arg = "today"
-            s_msg = req.message.lower()
-            if "hôm qua" in s_msg or "hom qua" in s_msg or "yesterday" in s_msg:
-                date_arg = "yesterday"
-            else:
-                m_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", s_msg)
-                if m_date:
-                    date_arg = m_date.group(1)
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={"date_str": date_arg},
-            )
-        elif used_tool_name == "recommend_meals":
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={},
-            )
-        elif used_tool_name == "get_progress_summary":
-            days = 7
-            s_msg = req.message.lower()
-            if any(k in s_msg for k in ("30 ngày", "30 ngay", "tháng", "thang")):
-                days = 30
-            elif any(k in s_msg for k in ("14 ngày", "14 ngay", "2 tuần", "2 tuan")):
-                days = 14
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={"days_range": days},
-            )
-        elif used_tool_name == "log_meal":
-            s_msg = req.message.lower()
-            dish_name = "Phở bò tái"
-            dish_gram = 400.0
-            meal_type = "lunch"
+    try:
+        from src.ai.orchestrator import orchestrate_chat
 
-            if "phở" in s_msg or "pho" in s_msg:
+        orch_res = orchestrate_chat(
+            session=session,
+            user_id=verified_user_id,
+            message=req.message,
+            explicit_tool_call=req.tool_call,
+        )
+        reply = orch_res.reply or orch_res.reply_text
+        used_tool_name = orch_res.tool_called
+        tool_result = orch_res.tool_result
+        pending_confirmation = orch_res.pending_confirmation
+        action_card = orch_res.action_card
+        if not action_card and tool_result:
+            action_card = tool_result.get("action_card")
+        if not pending_confirmation and tool_result:
+            pending_confirmation = bool(tool_result.get("requires_confirmation", False))
+    except Exception:
+        # Fallback khi LLM / Orchestrator gặp sự cố: giữ từ khóa làm fallback an toàn
+        if req.tool_call:
+            t_name = req.tool_call.get("tool_name") or req.tool_call.get("name")
+            t_args = req.tool_call.get("tool_args") or req.tool_call.get("args") or {}
+            if t_name:
+                used_tool_name = str(t_name)
+                tool_result = dispatch_tool_call(
+                    session=session,
+                    authenticated_user_id=verified_user_id,
+                    tool_name=used_tool_name,
+                    tool_args=t_args,
+                )
+        else:
+            used_tool_name = classify_user_intent(req.message)
+            if used_tool_name == "get_daily_nutrition":
+                date_arg = "today"
+                s_msg = req.message.lower()
+                if "hôm qua" in s_msg or "hom qua" in s_msg or "yesterday" in s_msg:
+                    date_arg = "yesterday"
+                else:
+                    m_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", s_msg)
+                    if m_date:
+                        date_arg = m_date.group(1)
+                tool_result = dispatch_tool_call(
+                    session=session,
+                    authenticated_user_id=verified_user_id,
+                    tool_name=used_tool_name,
+                    tool_args={"date_str": date_arg},
+                )
+            elif used_tool_name == "recommend_meals":
+                tool_result = dispatch_tool_call(
+                    session=session,
+                    authenticated_user_id=verified_user_id,
+                    tool_name=used_tool_name,
+                    tool_args={},
+                )
+            elif used_tool_name == "get_progress_summary":
+                days = 7
+                s_msg = req.message.lower()
+                if any(k in s_msg for k in ("30 ngày", "30 ngay", "tháng", "thang")):
+                    days = 30
+                elif any(k in s_msg for k in ("14 ngày", "14 ngay", "2 tuần", "2 tuan")):
+                    days = 14
+                tool_result = dispatch_tool_call(
+                    session=session,
+                    authenticated_user_id=verified_user_id,
+                    tool_name=used_tool_name,
+                    tool_args={"days_range": days},
+                )
+            elif used_tool_name == "log_meal":
+                s_msg = req.message.lower()
                 dish_name = "Phở bò tái"
                 dish_gram = 400.0
-            elif "cơm" in s_msg or "com" in s_msg:
-                dish_name = "Cơm tấm sườn nướng"
-                dish_gram = 300.0
-            elif "bún" in s_msg or "bun" in s_msg:
-                dish_name = "Bún bò Huế"
-                dish_gram = 450.0
-            elif "bánh mì" in s_msg or "banh mi" in s_msg:
-                dish_name = "Bánh mì trứng ốp la"
-                dish_gram = 150.0
-            elif "ức gà" in s_msg or "uc ga" in s_msg or "gà" in s_msg or "ga" in s_msg:
-                dish_name = "Ức gà áp chảo"
-                dish_gram = 200.0
-            elif "sữa" in s_msg or "sua" in s_msg:
-                dish_name = "Phở bò tái"
-                dish_gram = 200.0
+                meal_type = "lunch"
 
-            m_gram = re.search(r"(\d+(?:\.\d+)?)\s*(?:g|gam|gram|ml)\b", s_msg)
-            if m_gram:
-                try:
-                    dish_gram = float(m_gram.group(1))
-                except ValueError:
-                    pass
+                if "phở" in s_msg or "pho" in s_msg:
+                    dish_name = "Phở bò tái"
+                    dish_gram = 400.0
+                elif "cơm" in s_msg or "com" in s_msg:
+                    dish_name = "Cơm tấm sườn nướng"
+                    dish_gram = 300.0
+                elif "bún" in s_msg or "bun" in s_msg:
+                    dish_name = "Bún bò Huế"
+                    dish_gram = 450.0
+                elif "bánh mì" in s_msg or "banh mi" in s_msg:
+                    dish_name = "Bánh mì trứng ốp la"
+                    dish_gram = 150.0
+                elif "ức gà" in s_msg or "uc ga" in s_msg or "gà" in s_msg or "ga" in s_msg:
+                    dish_name = "Ức gà áp chảo"
+                    dish_gram = 200.0
+                elif "sữa" in s_msg or "sua" in s_msg:
+                    dish_name = "Phở bò tái"
+                    dish_gram = 200.0
 
-            if any(k in s_msg for k in ("sáng", "sang", "bữa sáng", "bua sang")):
-                meal_type = "breakfast"
-            elif any(k in s_msg for k in ("tối", "toi", "bữa tối", "bua toi")):
-                meal_type = "dinner"
-            elif any(k in s_msg for k in ("phụ", "phu", "bữa phụ", "bua phu")):
-                meal_type = "snack"
+                m_gram = re.search(r"(\d+(?:\.\d+)?)\s*(?:g|gam|gram|ml)\b", s_msg)
+                if m_gram:
+                    try:
+                        dish_gram = float(m_gram.group(1))
+                    except ValueError:
+                        pass
 
-            tool_result = dispatch_tool_call(
-                session=session,
-                authenticated_user_id=verified_user_id,
-                tool_name=used_tool_name,
-                tool_args={
-                    "meal_type": meal_type,
-                    "items": [{"food_name": dish_name, "estimated_gram": dish_gram}],
-                    "is_confirmed": False,
-                },
-            )
+                if any(k in s_msg for k in ("sáng", "sang", "bữa sáng", "bua sang")):
+                    meal_type = "breakfast"
+                elif any(k in s_msg for k in ("tối", "toi", "bữa tối", "bua toi")):
+                    meal_type = "dinner"
+                elif any(k in s_msg for k in ("phụ", "phu", "bữa phụ", "bua phu")):
+                    meal_type = "snack"
 
-    action_card: dict[str, Any] | None = None
-    pending_confirmation: bool = False
-
-    if tool_result is not None:
-        if used_tool_name == "log_meal":
-            if tool_result.get("requires_confirmation"):
-                pending_confirmation = True
-                action_card = tool_result.get("action_card")
-                reply = (
-                    "Mình đã ước tính xong bữa ăn của bạn! "
-                    "Vui lòng kiểm tra lại số liệu bên dưới và nhấn Xác nhận để lưu nhé."
+                tool_result = dispatch_tool_call(
+                    session=session,
+                    authenticated_user_id=verified_user_id,
+                    tool_name=used_tool_name,
+                    tool_args={
+                        "meal_type": meal_type,
+                        "items": [{"food_name": dish_name, "estimated_gram": dish_gram}],
+                        "is_confirmed": False,
+                    },
                 )
+
+        if tool_result is not None:
+            if used_tool_name == "log_meal":
+                if tool_result.get("requires_confirmation"):
+                    pending_confirmation = True
+                    action_card = tool_result.get("action_card")
+                    reply = (
+                        "Mình đã ước tính xong bữa ăn của bạn! "
+                        "Vui lòng kiểm tra lại số liệu bên dưới và nhấn Xác nhận để lưu nhé."
+                    )
+                else:
+                    reply = f"Đã ghi nhận bữa ăn thành công! Mã bữa ăn: {tool_result.get('meal_id')}."
+            elif used_tool_name == "get_daily_nutrition":
+                consumed_c = tool_result.get("consumed", {}).get("calories", 0)
+                target_c = tool_result.get("targets", {}).get("calories", 0)
+                rem_c = tool_result.get("remaining", {}).get("calories", 0)
+                reply = f"Hôm nay bạn đã nạp {consumed_c} kcal / mục tiêu {target_c} kcal. Còn lại: {rem_c} kcal."
+            elif used_tool_name == "recommend_meals":
+                recs = tool_result.get("recommendations", [])
+                dishes = ", ".join(r["food_name"] for r in recs[:3])
+                reply = f"Dưới đây là một số món gợi ý phù hợp cho bạn: {dishes}."
+            elif used_tool_name == "get_progress_summary":
+                days = tool_result.get("logged_days_count", 0)
+                reply = f"Bạn đã ghi nhật ký dinh dưỡng {days} ngày trong khoảng thời gian vừa qua."
             else:
-                reply = f"Đã ghi nhận bữa ăn thành công! Mã bữa ăn: {tool_result.get('meal_id')}."
-        elif used_tool_name == "get_daily_nutrition":
-            consumed_c = tool_result.get("consumed", {}).get("calories", 0)
-            target_c = tool_result.get("targets", {}).get("calories", 0)
-            rem_c = tool_result.get("remaining", {}).get("calories", 0)
-            reply = f"Hôm nay bạn đã nạp {consumed_c} kcal / mục tiêu {target_c} kcal. Còn lại: {rem_c} kcal."
-        elif used_tool_name == "recommend_meals":
-            recs = tool_result.get("recommendations", [])
-            dishes = ", ".join(r["food_name"] for r in recs[:3])
-            reply = f"Dưới đây là một số món gợi ý phù hợp cho bạn: {dishes}."
-        elif used_tool_name == "get_progress_summary":
-            days = tool_result.get("logged_days_count", 0)
-            reply = f"Bạn đã ghi nhật ký dinh dưỡng {days} ngày trong khoảng thời gian vừa qua."
+                reply = "Đã thực thi công cụ thành công."
         else:
-            reply = "Đã thực thi công cụ thành công."
-    else:
-        reply = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
+            reply = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
 
     # Lưu phản hồi của trợ lý vào CSDL
     save_chat_message(

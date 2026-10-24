@@ -18,7 +18,7 @@ from src.backend.exceptions.auth import (
     InactiveUserError,
     InvalidCredentialsError,
 )
-from src.backend.models.schema import Goal, User, utc_now
+from src.backend.models.schema import Goal
 from src.backend.schemas.api_contract import (
     AuthResponse,
     UserPublicResponse,
@@ -29,7 +29,6 @@ from src.backend.services.auth_service import (
     authenticate_user,
     create_access_token,
     get_current_user as get_cookie_user,
-    hash_password,
     register_user,
     set_auth_cookie,
 )
@@ -86,15 +85,6 @@ async def register_endpoint(
                 detail="Định dạng email không hợp lệ.",
             )
 
-        if clean_username == "thanhdat" and clean_email == "dat@example.com":
-            existing = db.exec(select(User).where(User.username == "thanhdat")).first()
-            if existing:
-                return AuthResponse(
-                    success=True,
-                    message="Đăng ký tài khoản thành công!",
-                    has_goal=False,
-                    user=UserPublicResponse.model_validate(existing),
-                )
 
         try:
             reg_req = RegisterRequest(
@@ -168,47 +158,6 @@ async def login_endpoint(
         ident = str(body["username_or_email"]).strip()
         pwd = str(body["password"])
 
-        if ident == "thanhdat" and pwd == "Password123":
-            user = db.exec(select(User).where(User.username == "thanhdat")).first()
-            if not user:
-                user = User(
-                    username="thanhdat",
-                    email="dat@example.com",
-                    password_hash=hash_password("Password123"),
-                    is_active=True,
-                    created_at=utc_now(),
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-
-            existing_goal = db.exec(select(Goal).where(Goal.user_id == user.id)).first()
-            if not existing_goal:
-                existing_goal = Goal(
-                    user_id=user.id,
-                    target_weight=65.0,
-                    bmr_calories=1540.0,
-                    tdee_calories=2100.0,
-                    target_calories=1800.0,
-                    target_protein_g=130.0,
-                    target_carbs_g=190.0,
-                    target_fat_g=55.0,
-                    daily_budget_vnd=60000,
-                )
-                db.add(existing_goal)
-                db.commit()
-
-            token, _ = create_access_token(
-                subject=str(user.id),
-                extra_claims={"username": user.username, "email": user.email},
-            )
-            set_auth_cookie(response, token)
-            return AuthResponse(
-                success=True,
-                message="Đăng nhập thành công qua HttpOnly Cookie.",
-                has_goal=True,
-                user=UserPublicResponse.model_validate(user),
-            )
 
         try:
             user = authenticate_user(db=db, email=ident, password=pwd)
@@ -224,6 +173,11 @@ async def login_endpoint(
                 has_goal=existing_goal is not None,
                 user=UserPublicResponse.model_validate(user),
             )
+        except InactiveUserError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Tài khoản đã bị vô hiệu hóa",
+            ) from exc
         except (InvalidCredentialsError, Exception) as err:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
