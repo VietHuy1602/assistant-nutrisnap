@@ -9,6 +9,7 @@ import { FoodSearchCombobox } from './FoodSearchCombobox';
 import { useMealPreview } from '../../hooks/useMealPreview';
 import { getMealTypeLabel } from '../../constants/copy';
 import type { FoodReferenceItem } from '../../types/api';
+import { VoiceNotePanel } from '../voice/VoiceNotePanel';
 
 interface MealReviewListProps {
   state: MealDraftState;
@@ -169,6 +170,26 @@ export const MealReviewList: React.FC<MealReviewListProps> = ({
           </button>
         </div>
       )}
+
+      {/* Ghi chú gia vị & Chế biến bằng giọng nói */}
+      <VoiceNotePanel
+        initialNote={state.voiceNote ?? ''}
+        currentItems={state.items.map((it) => ({
+          food_id: it.food_id,
+          food_name: it.food_name,
+          estimated_gram: it.estimated_gram,
+        }))}
+        onApply={(result) => {
+          dispatch({
+            type: 'APPLY_VOICE_RESULT',
+            note: result.note,
+            adjustedItems: result.adjustedItems,
+          });
+        }}
+        onUndo={() => {
+          dispatch({ type: 'UNDO_VOICE' });
+        }}
+      />
 
       {/* Tổng dinh dưỡng Calo / Macro tính bởi Backend */}
       <MealTotalsBar nutrition={preview} isCalculating={isCalculating} />

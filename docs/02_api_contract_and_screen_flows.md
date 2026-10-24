@@ -76,6 +76,22 @@
     - Chatbot hiển thị câu chào và đính kèm 1 **Thẻ Xác nhận Thao tác**: [Món: Phở bò tái, Khẩu phần: 400g, Ước tính: ~460 kcal] kèm nút `[Xác nhận lưu]` và `[Chỉnh sửa]`.
     - Khi bấm `[Xác nhận lưu]`, Frontend gửi request xác nhận, tin nhắn cập nhật trạng thái đã lưu, và **Vòng tròn Calo trên Dashboard tự động nhảy số đồng bộ tức thì**.
 
+### 2.5 Màn hình 5: Phân tích Tiến độ (Progress Analytics), Food Swap & Ghi chú Gia vị (Tuần 5)
+* **Mục tiêu:** Cung cấp bức tranh trực quan về tiến trình cân nặng và calo dài hạn, mô phỏng linh hoạt việc đổi món không áp lực và ghi nhận gia vị ẩn bằng giọng nói tiếng Việt an toàn.
+* **Các khối chính trên trang `/progress`:**
+  - **Dual Line Chart (Cân nặng & Xu hướng EMA):** Đường nét liền xanh `#107C41` thể hiện cân nặng ghi nhận; đường nét đứt `#475569` thể hiện xu hướng EMA (chỉ vẽ khi backend có dữ liệu; khi thiếu hiển thị chip *"Đường xu hướng đang chờ hệ thống tính"* - Mode A).
+  - **Bar Chart Calo ngày/tuần:** Màu cam `#EA580C` kèm đường hạn mức nét đứt. Áp dụng phương án suy giảm D (vẽ theo ngày kèm chú thích phân tuần nếu backend chưa tổng hợp theo tuần).
+  - **Pattern Insights:** Các thẻ nhận xét thói quen (tối đa 4 thẻ, văn bản thuần từ backend); nếu người dùng có dưới 5 ngày dữ liệu sẽ hiển thị thông báo trung tính yêu cầu thêm dữ liệu.
+  - **Hỗ trợ tiếp cận (A11y):** Nút [Xem dạng bảng] chuyển đổi dữ liệu thô, `role="img"`, hỗ trợ bàn phím và tôn trọng `prefers-reduced-motion`.
+* **Luồng Food Swap Simulator:**
+  - Ngữ cảnh `draft`: Người dùng bấm "Thử đổi món" trên màn hình xác nhận bữa ăn -> chọn ứng viên -> hiển thị chênh lệch calo/đạm/giá từ backend -> bấm [Áp dụng] (`SWAP_FOOD`) để backend preview tính lại.
+  - Ngữ cảnh `logged`: Người dùng xem từ Dashboard -> chỉ mô phỏng tham khảo, không có nút áp dụng và 0 lời gọi ghi.
+  - Luôn có nút [Giữ nguyên món] nổi bật.
+* **Luồng Ghi chú Gia vị bằng Giọng nói (Voice Note):**
+  - Web Speech API tiếng Việt (`vi-VN`) phiên âm trực tiếp tại trình duyệt ra ô văn bản cho phép người dùng xem/sửa trước khi áp dụng.
+  - **Zero Audio Storage:** Tuyệt đối không thu âm hay gửi/lưu file âm thanh (không dùng MediaRecorder hay Blob).
+  - Tự động fallback sang Textarea nhập tay khi không hỗ trợ, bị từ chối quyền, hoặc ngoại tuyến.
+
 ---
 
 ## 🔌 3. Bản Hợp đồng Giao tiếp API Chi tiết (REST API Contract)
@@ -102,6 +118,11 @@ Mọi API tuân thủ:
 | Dashboard           | GET    | /api/v1/meals/daily-dashboard   | Tổng calo, macro, hạn mức ngày   |
 | Assistant           | POST   | /api/v1/assistant/chat          | Gửi tin nhắn và nhận phản hồi AI |
 | Assistant           | GET    | /api/v1/assistant/history       | Lấy lịch sử hội thoại gần nhất   |
+| Analytics (W5)      | GET    | /api/v1/analytics/weight-history| Lịch sử cân nặng & xu hướng EMA  |
+| Analytics (W5)      | GET    | /api/v1/analytics/calorie-history| Lịch sử calo theo ngày/tuần     |
+| Analytics (W5)      | GET    | /api/v1/analytics/patterns      | Mẫu thói quen (analyze_patterns) |
+| Food Swap (W5)      | GET    | /api/v1/food/swap-candidates    | Ứng viên đổi món & chênh lệch    |
+| Voice Note (W5)     | POST   | /api/v1/meal/voice-modifier     | Bóc tách gia vị từ ghi chú nói   |
 +---------------------------------------------------------------------------------------------------+
 ```
 
@@ -370,4 +391,127 @@ Mọi API tuân thủ:
 }
 ```
 * **Đồng bộ giao diện:** Khi xác nhận thành công, Frontend phát sự kiện bus `nutrisnap:meal-logged` với payload `{ source: 'chat', date: 'YYYY-MM-DD', mealId: 46 }`. `useDailyDashboard` lắng nghe sự kiện, kiểm tra đúng ngày và gộp (debounce 300ms) để thực hiện refetch êm vòng calo Dashboard mà không tải lại trang.
+
+---
+
+### 4.6 Phân hệ Phân tích Tiến độ, Food Swap & Ghi chú Gia vị (Tuần 5)
+
+#### 1. `GET /api/v1/analytics/weight-history`
+* **Query Parameters:** `days: int` (7, 14, 30, hoặc 90).
+* **Response (200 OK):**
+```json
+{
+  "weight_entries": [
+    {
+      "recorded_at": "2026-10-18T07:00:00Z",
+      "weight_kg": 65.5,
+      "ema_weight": null
+    },
+    {
+      "recorded_at": "2026-10-19T07:00:00Z",
+      "weight_kg": 65.2,
+      "ema_weight": null
+    }
+  ],
+  "disclaimer": "Đường xu hướng chỉ mang tính tham khảo. Cân nặng hằng ngày dao động theo lượng nước, muối và thời điểm đo."
+}
+```
+> **Mode A (Tolerant Reader):** `ema_weight` là optional/nullable. Khi vắng mặt, Frontend chỉ vẽ 1 đường cân nặng thực tế kèm chip *"Đường xu hướng đang chờ hệ thống tính"*. Tuyệt đối không tự tính EMA ở client (ADR-W5-01 Zero-Math).
+
+#### 2. `GET /api/v1/analytics/calorie-history` (hoặc `calories-weekly`)
+* **Query Parameters:** `weeks: int` (hoặc `days: int`).
+* **Response (200 OK):**
+```json
+{
+  "bars": [
+    {
+      "date": "2026-10-18",
+      "week_label": "Tuần 42",
+      "calories": 1850,
+      "target_calories": 2000,
+      "days_logged": 7
+    }
+  ],
+  "disclaimer": "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo."
+}
+```
+
+#### 3. `GET /api/v1/analytics/patterns`
+* **Response (200 OK):**
+```json
+{
+  "insights": [
+    {
+      "pattern_id": "late_dinner",
+      "title": "Bữa tối thường trễ",
+      "description": "Bạn thường ghi nhận bữa tối sau 20:30. Ăn tối sớm hơn có thể giúp cải thiện chất lượng giấc ngủ.",
+      "category": "timing",
+      "days_analyzed": 7
+    }
+  ],
+  "logged_days_count": 7
+}
+```
+> Nếu `logged_days_count < 5`, mảng `insights` có thể rỗng và Frontend hiển thị thông báo trung tính: *"Cần ít nhất 5 ngày có ghi chép để đưa ra nhận xét."*
+
+#### 4. `GET /api/v1/food/swap-candidates`
+* **Query Parameters:** `food_id: int`.
+* **Response (200 OK):**
+```json
+{
+  "candidates": [
+    {
+      "food_id": 105,
+      "name": "Bún chả ít mỡ",
+      "current": {
+        "calories": 520,
+        "protein": 24,
+        "price_vnd": 45000
+      },
+      "candidate": {
+        "calories": 400,
+        "protein": 27,
+        "price_vnd": 45000
+      },
+      "diff": {
+        "calories": -120,
+        "protein": 3,
+        "price_vnd": 0
+      },
+      "suggested_gram": 350
+    }
+  ]
+}
+```
+> Toàn bộ các giá trị `diff` phải do Backend tính toán. Frontend hiển thị trực tiếp verbatim dạng chữ + dấu (ví dụ: "giảm 120 kcal", "tăng 3 g đạm").
+
+#### 5. `POST /api/v1/meal/voice-modifier`
+* **Request Body:**
+```json
+{
+  "voice_note": "Ít dầu mỡ, chỉ ăn một nửa",
+  "current_items": [
+    {
+      "food_id": 24,
+      "food_name": "Bún chả Hà Nội",
+      "estimated_gram": 350.0
+    }
+  ]
+}
+```
+* **Response (200 OK):**
+```json
+{
+  "items": [
+    {
+      "food_id": 24,
+      "food_name": "Bún chả Hà Nội (ít dầu)",
+      "estimated_gram": 175.0
+    }
+  ],
+  "modifiers_summary": "Giảm 50% khẩu phần và điều chỉnh lượng dầu mỡ."
+}
+```
+> **Bảo mật & Quyền riêng tư:** Trình duyệt sử dụng Web Speech API phiên âm trực tiếp và chỉ gửi chuỗi văn bản (`voice_note`). Tuyệt đối không thu âm hay truyền tải dữ liệu âm thanh qua mạng.
+
 
