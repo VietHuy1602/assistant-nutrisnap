@@ -4,7 +4,6 @@
  * Tích hợp useMonthlyReport, ReportMetricCard, ReportNotice, LineChart và Bảng chi tiết.
  */
 
-import React from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,8 +11,6 @@ import {
   Utensils,
   Scale,
   Flame,
-  Printer,
-  Download,
   Sparkles,
 } from 'lucide-react';
 import {
@@ -28,6 +25,7 @@ import {
 import { useMonthlyReport } from '../hooks/useMonthlyReport';
 import { ReportMetricCard } from '../components/report/ReportMetricCard';
 import { ReportNotice } from '../components/report/ReportNotice';
+import { ExportMenu } from '../components/report/ExportMenu';
 import {
   currentMonthKey,
   shiftMonthKey,
@@ -35,17 +33,7 @@ import {
   formatMonthDisplay,
 } from '../utils/month';
 
-interface MonthlyReportPageProps {
-  onExportPng?: () => void;
-  onPrint?: () => void;
-  isExportingPng?: boolean;
-}
-
-export const MonthlyReportPage: React.FC<MonthlyReportPageProps> = ({
-  onExportPng,
-  onPrint,
-  isExportingPng = false,
-}) => {
+export const MonthlyReportPage: React.FC = () => {
   const currentKey = currentMonthKey();
   const { report, loadState, errorMessage, monthKey, setMonthKey, refetch, isFuture } =
     useMonthlyReport(currentKey);
@@ -53,14 +41,6 @@ export const MonthlyReportPage: React.FC<MonthlyReportPageProps> = ({
   const prevMonthKey = shiftMonthKey(monthKey, -1);
   const nextMonthKey = shiftMonthKey(monthKey, 1);
   const canGoNext = !isFutureMonth(nextMonthKey, currentKey);
-
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-    } else {
-      window.print();
-    }
-  };
 
   const chartData = (report?.days || [])
     .filter((d) => d.state === 'available' && typeof d.calories === 'number')
@@ -116,29 +96,8 @@ export const MonthlyReportPage: React.FC<MonthlyReportPageProps> = ({
             </button>
           </div>
 
-          {/* Action: Export PNG */}
-          {onExportPng && (
-            <button
-              type="button"
-              disabled={loadState !== 'ready' || isExportingPng}
-              onClick={onExportPng}
-              className="inline-flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors disabled:opacity-50"
-            >
-              <Download className="w-4 h-4 text-slate-500" />
-              <span>{isExportingPng ? 'Đang tạo ảnh…' : 'Xuất ảnh PNG'}</span>
-            </button>
-          )}
-
-          {/* Action: Print / PDF */}
-          <button
-            type="button"
-            disabled={loadState !== 'ready'}
-            onClick={handlePrint}
-            className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
-          >
-            <Printer className="w-4 h-4" />
-            <span>In / Lưu PDF</span>
-          </button>
+          {/* Export Menu */}
+          {report && <ExportMenu report={report} disabled={loadState !== 'ready'} />}
         </div>
       </header>
 
