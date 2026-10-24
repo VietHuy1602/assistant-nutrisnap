@@ -16,20 +16,34 @@ Tuân thủ nghiêm ngặt các nguyên tắc:
    - Tính toán đại số dựa trên bảng `food_references`, kèm tuyên bố miễn trừ trách nhiệm y khoa.
 """
 
-from datetime import date, datetime, timedelta
+import json
+import logging
+import uuid
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from sqlmodel import Session, select
+from fastapi import HTTPException, status
+from pydantic import ValidationError
+from sqlmodel import Session, select, update
 
+from src.backend.core.config import get_settings
 from src.backend.models.schema import (
     ChatMessage,
     ChatSession,
     FoodReference,
     Meal,
     MealItem,
+    PendingAction,
     WeightLog,
     get_vn_today,
     utc_now,
+)
+from src.backend.schemas.assistant_tools import (
+    GetDailyNutritionArgs,
+    GetProgressSummaryArgs,
+    LogMealLLMArgs,
+    LogMealUserActionArgs,
+    RecommendMealsArgs,
 )
 from src.backend.services.nutrition_service import (
     DISCLAIMER_TEXT,
@@ -38,10 +52,21 @@ from src.backend.services.nutrition_service import (
     get_daily_dashboard_data,
     log_user_meal,
 )
+from src.backend.services.tool_context import ToolContext, log_tool_audit
 from src.backend.services.tool_security import (
     sanitize_llm_tool_arguments,
     verify_session_ownership,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_user_id(authenticated_user_id: ToolContext | int) -> int:
+    """Helper trích xuất user_id từ ToolContext hoặc int."""
+    if isinstance(authenticated_user_id, ToolContext):
+        return authenticated_user_id.authenticated_user_id
+    return int(authenticated_user_id)
+
 
 MEAL_TYPE_MAPPING = {
     "breakfast": "Sáng",
@@ -70,13 +95,14 @@ MEAL_TYPE_MAPPING = {
 
 def exec_get_daily_nutrition(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     date_str: str | date | None = None,
 ) -> dict[str, Any]:
     """Lấy tổng hợp dinh dưỡng và so sánh với mục tiêu hàng ngày của người dùng.
 
     Hỗ trợ các biến thể thời gian: None / "" / "today" / "hom_nay" / "yesterday" / "hom_qua" / "YYYY-MM-DD".
     """
+    uid = _extract_user_id(authenticated_user_id)
     target_date: date
     if date_str is None or date_str == "":
         target_date = get_vn_today()
@@ -100,13 +126,13 @@ def exec_get_daily_nutrition(
 
     dash_data = get_daily_dashboard_data(
         session=session,
-        authenticated_user_id=authenticated_user_id,
+        authenticated_user_id=uid,
         target_date=target_date,
     )
 
     return {
         "tool_name": "get_daily_nutrition",
-        "user_id": authenticated_user_id,
+        "user_id": uid,
         "date": target_date.isoformat(),
         "targets": dash_data["targets"],
         "consumed": dash_data["consumed"],
@@ -124,7 +150,7 @@ def exec_get_daily_nutrition(
 
 def exec_log_meal(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     meal_type: str,
     items_list: list[dict[str, Any]],
     is_confirmed: bool = False,
@@ -136,6 +162,7 @@ def exec_log_meal(
     - is_confirmed = False: Chỉ tính nháp calo/macro, không ghi CSDL, trả về pending_confirmation.
     - is_confirmed = True: Ghi nguyên tử vào bảng meals và meal_items.
     """
+    uid = _extract_user_id(authenticated_user_id)
     clean_meal_type_key = meal_type.strip().lower()
     db_meal_type = MEAL_TYPE_MAPPING.get(clean_meal_type_key)
     if not db_meal_type:
@@ -157,6 +184,9 @@ def exec_log_meal(
 
         food_id = item.get("food_id")
         food_name = item.get("food_name") or item.get("name")
+        if food_name and len(str(food_name).strip()) > 200:
+            raise ValueError(f"Tên món ăn quá dài (tối đa 200 ký tự): {food_name}")
+
         grams = item.get("estimated_gram")
         if grams is None:
             grams = item.get("estimated_grams")
@@ -165,12 +195,25 @@ def exec_log_meal(
         if grams is None:
             grams = item.get("gram", 100.0)
 
+        try:
+            val_gram = float(grams)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Khối lượng món ăn không hợp lệ: {grams}") from exc
+
+        if val_gram <= 0:
+            raise ValueError(f"Khối lượng món ăn phải lớn hơn 0 gram: {val_gram}")
+        if val_gram > 5000:
+            raise ValueError(f"Khối lượng món ăn vượt quá giới hạn tối đa 5000g: {val_gram}")
+
         eaten_ratio = float(item.get("eaten_ratio", 1.0))
+        if eaten_ratio <= 0 or eaten_ratio > 5.0:
+            raise ValueError(f"Tỷ lệ khẩu phần ăn không hợp lệ: {eaten_ratio}")
+
         converted_items.append(
             MealItemInput(
                 food_id=food_id,
                 food_name=food_name,
-                estimated_gram=float(grams),
+                estimated_gram=val_gram,
                 eaten_ratio=eaten_ratio,
             )
         )
@@ -191,13 +234,54 @@ def exec_log_meal(
 
     response = log_user_meal(
         session=session,
-        authenticated_user_id=authenticated_user_id,
+        authenticated_user_id=uid,
         req=req,
     )
+
+    confirmation_id: str | None = None
+    expires_at_iso: str | None = None
+    if not is_confirmed:
+        # Tạo bản ghi PendingAction (README_04)
+        now = utc_now()
+        ttl_minutes = get_settings().PENDING_ACTION_TTL_MINUTES
+        expires_at = now + timedelta(minutes=ttl_minutes)
+        action_id = str(uuid.uuid4())
+
+        payload_items = [
+            {
+                "food_id": ci.food_id,
+                "food_name": ci.food_name,
+                "estimated_gram": ci.estimated_gram,
+                "eaten_ratio": ci.eaten_ratio,
+            }
+            for ci in converted_items
+        ]
+        payload_data = {
+            "meal_type": db_meal_type,
+            "items": payload_items,
+            "image_path": image_path,
+            "logged_at": logged_time.isoformat() if logged_time else None,
+        }
+        pending_act = PendingAction(
+            id=action_id,
+            user_id=uid,
+            tool_name="log_meal",
+            payload=json.dumps(payload_data, ensure_ascii=False),
+            status="pending",
+            created_at=now,
+            expires_at=expires_at,
+        )
+        session.add(pending_act)
+        session.commit()
+        session.refresh(pending_act)
+        confirmation_id = pending_act.id
+        expires_at_iso = pending_act.expires_at.isoformat()
 
     action_card = {
         "type": "confirm_log_meal",
         "status": "pending_user_action" if not is_confirmed else "confirmed",
+        "confirmation_id": confirmation_id,
+        "expires_at": expires_at_iso,
         "data": {
             "meal_type": db_meal_type,
             "items": [
@@ -219,6 +303,8 @@ def exec_log_meal(
     return {
         "tool_name": "log_meal",
         "status": response.status,
+        "confirmation_id": confirmation_id,
+        "expires_at": expires_at_iso,
         "requires_confirmation": not is_confirmed,
         "meal_id": response.meal_id,
         "meal_type": db_meal_type,
@@ -228,24 +314,250 @@ def exec_log_meal(
             else str(response.logged_at)
         ),
         "nutrition": response.nutrition.model_dump(),
+        "preview": response.nutrition.model_dump(),
         "action_card": action_card,
+        "llm_instruction": (
+            "Bữa ăn đang ở trạng thái chờ người dùng bấm xác nhận trên giao diện. "
+            "Chưa được lưu vào nhật ký bữa ăn."
+            if not is_confirmed
+            else "Đã lưu vào nhật ký bữa ăn."
+        ),
         "disclaimer": DISCLAIMER_TEXT,
+    }
+
+
+def confirm_pending_action(
+    session: Session,
+    authenticated_user_id: ToolContext | int,
+    confirmation_id: str,
+) -> dict[str, Any]:
+    """Xác nhận thực thi hành động chờ (PendingAction) an toàn và nguyên tử (README_04):
+
+    - Tìm theo id VÀ user_id đang đăng nhập (chống IDOR). Không có hoặc không phải chủ -> 404 Not Found.
+    - Hết hạn -> đánh dấu expired, trả 410 Gone.
+    - Đã confirmed hoặc cancelled -> trả 409 Conflict (ngăn chặn double-commit).
+    - UPDATE nguyên tử với rowcount check để đảm bảo 2 request song song chỉ có duy nhất 1 request thành công.
+    - Ghi Meal và cập nhật trạng thái trong cùng một transaction.
+    """
+    uid = _extract_user_id(authenticated_user_id)
+    clean_id = confirmation_id.strip()
+
+    pending = session.exec(
+        select(PendingAction).where(
+            PendingAction.id == clean_id,
+            PendingAction.user_id == uid,
+        )
+    ).first()
+
+    if not pending:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy yêu cầu xác nhận hoặc bạn không có quyền truy cập",
+        )
+
+    now = utc_now()
+    exp = pending.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=UTC)
+
+    # 1. Kiểm tra hết hạn
+    if pending.status == "pending" and now >= exp:
+        pending.status = "expired"
+        pending.resolved_at = now
+        session.add(pending)
+        session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Yêu cầu xác nhận đã hết hạn. Vui lòng thực hiện lại.",
+        )
+
+    # 2. Kiểm tra trạng thái đã giải quyết
+    if pending.status == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Yêu cầu xác nhận này đã bị hủy trước đó.",
+        )
+    if pending.status == "confirmed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Yêu cầu xác nhận này đã được thực hiện trước đó.",
+        )
+    if pending.status == "expired":
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Yêu cầu xác nhận đã hết hạn.",
+        )
+
+    # 3. Chuyển trạng thái pending -> confirmed bằng UPDATE nguyên tử kiểm tra rowcount
+    stmt = (
+        update(PendingAction)
+        .where(
+            PendingAction.id == clean_id,
+            PendingAction.status == "pending",
+        )
+        .values(
+            status="confirmed",
+            resolved_at=now,
+        )
+    )
+    result = session.exec(stmt)
+    if result.rowcount != 1:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Yêu cầu xác nhận đang được xử lý hoặc đã được thực hiện bởi một tiến trình khác.",
+        )
+
+    # 4. Ghi nhận Meal từ payload đã lưu phía server (không nhận từ client)
+    try:
+        payload = json.loads(pending.payload)
+    except Exception as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Dữ liệu payload của yêu cầu xác nhận bị lỗi: {exc}",
+        ) from exc
+
+    raw_items = payload.get("items", [])
+    converted_items: list[MealItemInput] = []
+    for item in raw_items:
+        converted_items.append(
+            MealItemInput(
+                food_id=item.get("food_id"),
+                food_name=item.get("food_name"),
+                estimated_gram=float(item.get("estimated_gram", 100.0)),
+                eaten_ratio=float(item.get("eaten_ratio", 1.0)),
+            )
+        )
+
+    logged_time: datetime | None = None
+    if payload.get("logged_at"):
+        try:
+            logged_time = datetime.fromisoformat(payload["logged_at"])
+        except Exception:
+            logged_time = None
+
+    req = MealLogRequest(
+        meal_type=payload.get("meal_type", "Trưa"),
+        items=converted_items,
+        is_confirmed=True,
+        image_path=payload.get("image_path"),
+        logged_at=logged_time,
+    )
+
+    meal_response = log_user_meal(
+        session=session,
+        authenticated_user_id=uid,
+        req=req,
+    )
+    session.commit()
+
+    return {
+        "success": True,
+        "status": "confirmed",
+        "confirmation_id": clean_id,
+        "meal_id": meal_response.meal_id,
+        "total_calories": meal_response.total_calories,
+        "message": f"Đã ghi nhận bữa ăn thành công! Mã bữa ăn: {meal_response.meal_id}.",
+        "disclaimer": DISCLAIMER_TEXT,
+    }
+
+
+def cancel_pending_action(
+    session: Session,
+    authenticated_user_id: ToolContext | int,
+    confirmation_id: str,
+) -> dict[str, Any]:
+    """Hủy hành động chờ xác nhận (README_04)."""
+    uid = _extract_user_id(authenticated_user_id)
+    clean_id = confirmation_id.strip()
+
+    pending = session.exec(
+        select(PendingAction).where(
+            PendingAction.id == clean_id,
+            PendingAction.user_id == uid,
+        )
+    ).first()
+
+    if not pending:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Không tìm thấy yêu cầu xác nhận hoặc bạn không có quyền truy cập",
+        )
+
+    now = utc_now()
+    exp = pending.expires_at
+    if exp.tzinfo is None:
+        exp = exp.replace(tzinfo=UTC)
+
+    if pending.status == "pending" and now >= exp:
+        pending.status = "expired"
+        pending.resolved_at = now
+        session.add(pending)
+        session.commit()
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Yêu cầu xác nhận đã hết hạn.",
+        )
+
+    if pending.status == "cancelled":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Yêu cầu xác nhận này đã bị hủy trước đó.",
+        )
+    if pending.status == "confirmed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Không thể hủy yêu cầu đã được xác nhận lưu.",
+        )
+    if pending.status == "expired":
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Yêu cầu xác nhận đã hết hạn.",
+        )
+
+    stmt = (
+        update(PendingAction)
+        .where(
+            PendingAction.id == clean_id,
+            PendingAction.status == "pending",
+        )
+        .values(
+            status="cancelled",
+            resolved_at=now,
+        )
+    )
+    result = session.exec(stmt)
+    if result.rowcount != 1:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Yêu cầu xác nhận đang được xử lý hoặc đã thay đổi trạng thái.",
+        )
+
+    session.commit()
+    return {
+        "success": True,
+        "status": "cancelled",
+        "confirmation_id": clean_id,
+        "message": "Đã hủy yêu cầu ghi nhận bữa ăn thành công.",
     }
 
 
 def exec_recommend_meals(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     remaining_calories: float | None = None,
     budget_vnd: int | None = None,
     meal_portion_gram: float = 250.0,
     limit: int = 5,
 ) -> dict[str, Any]:
     """Gợi ý các món ăn Việt Nam từ food_references thỏa mãn hạn mức calo và ngân sách VNĐ."""
+    uid = _extract_user_id(authenticated_user_id)
     gentle_note: str | None = None
 
     if remaining_calories is None or budget_vnd is None:
-        dash = get_daily_dashboard_data(session, authenticated_user_id)
+        dash = get_daily_dashboard_data(session, uid)
         if remaining_calories is None:
             remaining_calories = float(dash["remaining"]["calories"])
         if budget_vnd is None:
@@ -304,7 +616,7 @@ def exec_recommend_meals(
 
     return {
         "tool_name": "recommend_meals",
-        "user_id": authenticated_user_id,
+        "user_id": uid,
         "remaining_calories": remaining_calories,
         "budget_vnd": budget_vnd,
         "effective_max_calo": effective_max_calo,
@@ -317,10 +629,11 @@ def exec_recommend_meals(
 
 def exec_get_progress_summary(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     days_range: int = 7,
 ) -> dict[str, Any]:
     """Tổng hợp lịch sử cân nặng, làm mịn xu hướng EMA và chuỗi ngày duy trì nhật ký ăn uống."""
+    uid = _extract_user_id(authenticated_user_id)
     if days_range <= 0:
         raise ValueError("Khoảng ngày (days_range) phải lớn hơn 0.")
     if days_range > 90:
@@ -333,7 +646,7 @@ def exec_get_progress_summary(
     weight_stmt = (
         select(WeightLog)
         .where(
-            WeightLog.user_id == authenticated_user_id,
+            WeightLog.user_id == uid,
             WeightLog.logged_date >= start_date,
             WeightLog.logged_date <= today,
         )
@@ -374,7 +687,7 @@ def exec_get_progress_summary(
     # 2. Truy vấn các bữa ăn trong khoảng thời gian để tính số ngày duy trì (streak)
     all_user_meals = session.exec(
         select(Meal)
-        .where(Meal.user_id == authenticated_user_id)
+        .where(Meal.user_id == uid)
         .order_by(Meal.logged_at.asc())
     ).all()
 
@@ -408,7 +721,7 @@ def exec_get_progress_summary(
 
     return {
         "tool_name": "get_progress_summary",
-        "user_id": authenticated_user_id,
+        "user_id": uid,
         "days_range": days_range,
         "start_date": start_date.isoformat(),
         "end_date": today.isoformat(),
@@ -429,52 +742,156 @@ def exec_get_progress_summary(
 # ==============================================================================
 
 
+TOOL_REGISTRY: frozenset[str] = frozenset({
+    "get_daily_nutrition",
+    "log_meal",
+    "recommend_meals",
+    "get_progress_summary",
+})
+
+
 def dispatch_tool_call(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     tool_name: str,
     tool_args: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Điều phối thực thi Tool Calling an toàn tuyệt đối (Zero-Trust):
 
-    - Xóa bỏ triệt để user_id và authenticated_user_id nếu LLM/client cố tình gửi vào.
+    - authenticated_user_id: Nhận ToolContext chứa authenticated_user_id và caller ("llm" hoặc "user_action").
+      LƯU Ý: Đường truyền int thay vì ToolContext chỉ dành riêng cho các unit test cũ để tương thích ngược.
+      Mọi call site production (routers, services) bắt buộc phải truyền ToolContext tường minh.
+    - Xóa bỏ triệt để user_id, authenticated_user_id, account_id, owner_id, is_admin nếu LLM/client cố tình gửi vào (ghi log cảnh báo an ninh).
+    - Các trường lạ khác bị từ chối bằng {"error": "invalid_arguments"} qua Pydantic model extra="forbid".
+    - LogMealLLMArgs dùng is_confirmed: Literal[False] cho caller="llm".
     - Ép buộc sử dụng authenticated_user_id xác thực từ phiên đăng nhập backend.
     """
-    safe_args = sanitize_llm_tool_arguments(tool_args)
+    if isinstance(authenticated_user_id, ToolContext):
+        ctx = authenticated_user_id
+    elif isinstance(authenticated_user_id, int):
+        # Đường int chỉ dành cho test cũ; caller mặc định 'user_action' để tương thích ngược
+        ctx = ToolContext(authenticated_user_id=authenticated_user_id, caller="user_action")
+    else:
+        raise TypeError(f"Ngữ cảnh người dùng không hợp lệ: {type(authenticated_user_id)}")
 
+    safe_args = sanitize_llm_tool_arguments(tool_args)
     clean_name = tool_name.strip()
 
-    if clean_name == "get_daily_nutrition":
-        if "date" in safe_args and "date_str" not in safe_args:
-            safe_args["date_str"] = safe_args.pop("date")
-        return exec_get_daily_nutrition(
-            session=session,
-            authenticated_user_id=authenticated_user_id,
-            **safe_args,
+    # 1. ALLOWLIST KIỂM TRA TÊN CÔNG CỤ (CENTRAL REGISTRY)
+    if clean_name not in TOOL_REGISTRY:
+        logger.warning(
+            "Cảnh báo an ninh: Từ chối công cụ không xác định '%s' từ user_id=%s (caller=%s)",
+            clean_name,
+            ctx.authenticated_user_id,
+            ctx.caller,
         )
+        log_tool_audit(ctx, clean_name, "denied", detail="unknown_tool")
+        if ctx.caller == "llm":
+            return {
+                "error": "unknown_tool",
+                "detail": f"Công cụ '{tool_name}' không hợp lệ hoặc không nằm trong danh mục được phép",
+                "tool_name": clean_name,
+            }
+        raise ValueError(f"Công cụ không hợp lệ: {tool_name}")
+
+    # 2. XÁC THỰC THAM SỐ NGHIÊM NGẶT QUA PYDANTIC (extra="forbid")
+    try:
+        if clean_name == "get_daily_nutrition":
+            GetDailyNutritionArgs.model_validate(safe_args)
+        elif clean_name == "log_meal":
+            if ctx.caller == "llm":
+                LogMealLLMArgs.model_validate(safe_args)
+            else:
+                LogMealUserActionArgs.model_validate(safe_args)
+        elif clean_name == "recommend_meals":
+            RecommendMealsArgs.model_validate(safe_args)
+        elif clean_name == "get_progress_summary":
+            GetProgressSummaryArgs.model_validate(safe_args)
+    except ValidationError as val_err:
+        logger.warning(
+            "Cảnh báo an ninh: Tham số không hợp lệ cho tool '%s' bởi user_id=%s (caller=%s): %s",
+            clean_name,
+            ctx.authenticated_user_id,
+            ctx.caller,
+            val_err,
+        )
+        log_tool_audit(ctx, clean_name, "denied", detail="invalid_arguments")
+        return {
+            "error": "invalid_arguments",
+            "detail": str(val_err),
+            "tool_name": clean_name,
+        }
+
+    # 3. THỰC THI CÔNG CỤ VỚI NGỮ CẢNH ĐÃ XÁC THỰC
+    if clean_name == "get_daily_nutrition":
+        call_kwargs = dict(safe_args)
+        if "date" in call_kwargs and "date_str" not in call_kwargs:
+            call_kwargs["date_str"] = call_kwargs.pop("date")
+        call_kwargs.pop("date", None)
+        res = exec_get_daily_nutrition(
+            session=session,
+            authenticated_user_id=ctx.authenticated_user_id,
+            **call_kwargs,
+        )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
 
     if clean_name == "log_meal":
-        if "items" in safe_args and "items_list" not in safe_args:
-            safe_args["items_list"] = safe_args.pop("items")
-        return exec_log_meal(
-            session=session,
-            authenticated_user_id=authenticated_user_id,
-            **safe_args,
-        )
+        call_kwargs = dict(safe_args)
+        if "items" in call_kwargs and "items_list" not in call_kwargs:
+            call_kwargs["items_list"] = call_kwargs.pop("items")
+        call_kwargs.pop("items", None)
+        call_kwargs.pop("note", None)
+        call_kwargs.pop("notes", None)
+        if ctx.caller == "llm":
+            call_kwargs["is_confirmed"] = False
+        try:
+            res = exec_log_meal(
+                session=session,
+                authenticated_user_id=ctx.authenticated_user_id,
+                **call_kwargs,
+            )
+            log_tool_audit(ctx, clean_name, "ok")
+            return res
+        except ValueError as exc:
+            logger.warning(
+                "Cảnh báo tham số log_meal không hợp lệ từ user_id=%s (caller=%s): %s",
+                ctx.authenticated_user_id,
+                ctx.caller,
+                exc,
+            )
+            log_tool_audit(ctx, clean_name, "denied", detail=str(exc))
+            return {
+                "error": "invalid_arguments",
+                "detail": str(exc),
+                "tool_name": clean_name,
+            }
 
     if clean_name == "recommend_meals":
-        return exec_recommend_meals(
+        call_kwargs = {
+            "remaining_calories": safe_args.get("remaining_calories"),
+            "budget_vnd": safe_args.get("budget_vnd"),
+            "meal_portion_gram": safe_args.get("meal_portion_gram", 250.0),
+            "limit": safe_args.get("limit", 5),
+        }
+        filtered_kwargs = {k: v for k, v in call_kwargs.items() if v is not None}
+        res = exec_recommend_meals(
             session=session,
-            authenticated_user_id=authenticated_user_id,
-            **safe_args,
+            authenticated_user_id=ctx.authenticated_user_id,
+            **filtered_kwargs,
         )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
 
     if clean_name == "get_progress_summary":
-        return exec_get_progress_summary(
+        days = safe_args.get("days_range", 7)
+        res = exec_get_progress_summary(
             session=session,
-            authenticated_user_id=authenticated_user_id,
-            **safe_args,
+            authenticated_user_id=ctx.authenticated_user_id,
+            days_range=days,
         )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
 
     raise ValueError(f"Công cụ không hợp lệ: {tool_name}")
 
@@ -486,15 +903,16 @@ def dispatch_tool_call(
 
 def create_or_get_chat_session(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     session_id: int | None = None,
 ) -> ChatSession:
     """Tạo mới hoặc kiểm tra quyền sở hữu phiên chat (WHERE user_id == authenticated_user_id)."""
+    uid = _extract_user_id(authenticated_user_id)
     if session_id is not None:
         verify_session_ownership(
             session=session,
             session_id=session_id,
-            authenticated_user_id=authenticated_user_id,
+            authenticated_user_id=uid,
             raise_exception=True,
         )
         chat_session = session.get(ChatSession, session_id)
@@ -502,7 +920,7 @@ def create_or_get_chat_session(
             raise ValueError("Không tìm thấy phiên hội thoại")
         return chat_session
 
-    chat_session = ChatSession(user_id=authenticated_user_id, started_at=utc_now())
+    chat_session = ChatSession(user_id=uid, started_at=utc_now())
     session.add(chat_session)
     session.commit()
     session.refresh(chat_session)
@@ -514,15 +932,16 @@ get_or_create_chat_session = create_or_get_chat_session
 
 def save_chat_message(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     session_id: int,
     sender_role: str,
     content: str,
     tool_name: str | None = None,
 ) -> ChatMessage:
     """Lưu tin nhắn chi tiết sau khi xác minh phiên hội thoại thuộc về authenticated_user_id."""
+    uid = _extract_user_id(authenticated_user_id)
     # Kiểm tra quyền sở hữu phiên trước khi ghi
-    create_or_get_chat_session(session, authenticated_user_id, session_id)
+    create_or_get_chat_session(session, uid, session_id)
 
     clean_role = sender_role.strip().lower()
     if clean_role not in {"user", "assistant", "tool"}:
@@ -548,13 +967,14 @@ def save_chat_message(
 
 def get_chat_history(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     session_id: int,
     limit: int = 10,
 ) -> list[ChatMessage]:
     """Đọc lịch sử tin nhắn của session_id, sắp xếp theo thứ tự thời gian tăng dần."""
+    uid = _extract_user_id(authenticated_user_id)
     # Kiểm tra quyền sở hữu phiên
-    create_or_get_chat_session(session, authenticated_user_id, session_id)
+    create_or_get_chat_session(session, uid, session_id)
 
     stmt = (
         select(ChatMessage)
@@ -569,12 +989,13 @@ def get_chat_history(
 
 def list_user_chat_sessions(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
 ) -> list[ChatSession]:
     """Lấy danh sách các phiên chat của authenticated_user_id."""
+    uid = _extract_user_id(authenticated_user_id)
     stmt = (
         select(ChatSession)
-        .where(ChatSession.user_id == authenticated_user_id)
+        .where(ChatSession.user_id == uid)
         .order_by(ChatSession.started_at.desc(), ChatSession.id.desc())
     )
     return list(session.exec(stmt).all())
@@ -582,11 +1003,13 @@ def list_user_chat_sessions(
 
 def delete_user_chat_session(
     session: Session,
-    authenticated_user_id: int,
+    authenticated_user_id: ToolContext | int,
     session_id: int,
 ) -> bool:
     """Xóa một phiên chat sau khi xác nhận quyền sở hữu."""
-    chat_session = create_or_get_chat_session(session, authenticated_user_id, session_id)
+    uid = _extract_user_id(authenticated_user_id)
+    chat_session = create_or_get_chat_session(session, uid, session_id)
     session.delete(chat_session)
     session.commit()
     return True
+

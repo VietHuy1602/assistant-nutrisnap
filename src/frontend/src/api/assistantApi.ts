@@ -225,3 +225,26 @@ export async function saveAssistantMeal(card: ActionCard) {
   }
   return { mealId: Number(data.meal_id), calories: data.total_calories as number };
 }
+
+export async function confirmAssistantAction(confirmationId: string) {
+  if (!confirmationId || typeof confirmationId !== 'string') {
+    throw new ApiError('Mã xác nhận không hợp lệ.');
+  }
+  const { data, status } = await apiClient.post<unknown>(`/assistant/confirmations/${confirmationId}/confirm`);
+  if (status !== 200 || !record(data) || data.success !== true) {
+    throw new UncertainMealSaveError('Chưa xác minh được kết quả xác nhận. Vui lòng kiểm tra lại nhật ký.');
+  }
+  return {
+    mealId: typeof data.meal_id === 'number' ? data.meal_id : undefined,
+    calories: typeof data.total_calories === 'number' ? data.total_calories : undefined,
+  };
+}
+
+export async function cancelAssistantAction(confirmationId: string) {
+  if (!confirmationId || typeof confirmationId !== 'string') {
+    throw new ApiError('Mã xác nhận không hợp lệ.');
+  }
+  const { data } = await apiClient.post<unknown>(`/assistant/confirmations/${confirmationId}/cancel`);
+  return data;
+}
+

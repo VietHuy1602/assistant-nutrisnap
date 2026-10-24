@@ -63,6 +63,7 @@ function normalizeCardObject(raw: Record<string, unknown>): {
   normalizedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   normalizedTotals?: { calories?: number; protein?: number; carbs?: number; fat?: number };
   actionId?: string | number;
+  confirmation_id?: string;
   status?: string;
   expiresAt?: string;
 } {
@@ -106,6 +107,8 @@ function normalizeCardObject(raw: Record<string, unknown>): {
 
   const actionIdRaw = raw.action_id ?? (raw.data as Record<string, unknown> | undefined)?.action_id;
   const actionId = (typeof actionIdRaw === 'string' || typeof actionIdRaw === 'number') ? actionIdRaw : undefined;
+  const confirmationIdRaw = firstDefined(data, ['confirmation_id', 'confirmationId']) ?? firstDefined(raw, ['confirmation_id', 'confirmationId']);
+  const confirmation_id = typeof confirmationIdRaw === 'string' && confirmationIdRaw.trim() ? confirmationIdRaw.trim() : undefined;
   const status = typeof raw.status === 'string' ? raw.status : undefined;
   const expiresAt = typeof raw.expires_at === 'string' ? raw.expires_at : undefined;
 
@@ -114,6 +117,7 @@ function normalizeCardObject(raw: Record<string, unknown>): {
     normalizedMealType: mealType,
     normalizedTotals: totalCal !== undefined && !isNaN(totalCal) ? { calories: totalCal } : undefined,
     actionId,
+    confirmation_id,
     status,
     expiresAt,
   };
@@ -173,6 +177,7 @@ export function normalizeAssistantResponse(raw: unknown): AssistantTurn {
             items: validatedItems,
             totals: normalized.normalizedTotals,
             actionId: normalized.actionId,
+            confirmation_id: normalized.confirmation_id,
             status: normalized.status,
             expiresAt: normalized.expiresAt,
           };

@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, date, datetime, timedelta, timezone
 
 from sqlmodel import Field, SQLModel
@@ -169,3 +170,27 @@ class ChatMessage(SQLModel, table=True):
     content: str = Field(nullable=False)
     tool_name: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+
+# 9. Bảng Hành động Chờ xác nhận (Two-Step Confirmation Flow - README_04)
+class PendingAction(SQLModel, table=True):
+    __tablename__ = "pending_actions"
+
+    id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        primary_key=True,
+        index=True,
+    )
+    user_id: int = Field(
+        foreign_key="users.id",
+        ondelete="CASCADE",
+        index=True,
+        nullable=False,
+    )
+    tool_name: str = Field(default="log_meal", nullable=False)
+    payload: str = Field(nullable=False)  # JSON string chứa tham số đã validate
+    status: str = Field(default="pending", index=True, nullable=False)  # pending | confirmed | cancelled | expired
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+    expires_at: datetime = Field(nullable=False)
+    resolved_at: datetime | None = Field(default=None, nullable=True)
+

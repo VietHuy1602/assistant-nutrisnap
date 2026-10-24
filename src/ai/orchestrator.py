@@ -28,6 +28,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import uuid
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -43,6 +44,7 @@ from src.backend.services.assistant_tools import (
     exec_recommend_meals,
 )
 from src.backend.services.nutrition_service import DISCLAIMER_TEXT
+from src.backend.services.tool_context import ToolContext
 
 logger = logging.getLogger("nutrisnap.ai.orchestrator")
 
@@ -633,7 +635,11 @@ class AIOrchestrator:
 
                 result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=user_id,
+                    authenticated_user_id=ToolContext(
+                        authenticated_user_id=user_id,
+                        caller="llm",
+                        request_id=str(uuid.uuid4()),
+                    ),
                     tool_name=str(t_name),
                     tool_args=t_args,
                 )
@@ -751,7 +757,11 @@ class AIOrchestrator:
         # Thực thi công cụ với user_id khoá cứng (Zero-Trust)
         tool_result = dispatch_tool_call(
             session=session,
-            authenticated_user_id=user_id,
+            authenticated_user_id=ToolContext(
+                authenticated_user_id=user_id,
+                caller="llm",
+                request_id=str(uuid.uuid4()),
+            ),
             tool_name=fn_name,
             tool_args=fn_args,
         )

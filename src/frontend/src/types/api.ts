@@ -129,7 +129,9 @@ export interface ActionCard {
     meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
     items: ActionCardItem[];
     total_calories: number;
+    confirmation_id?: string;
   };
+  confirmation_id?: string;
 }
 
 export interface ChatMessageResponse {

@@ -13,11 +13,14 @@ Tuân thủ nghiêm ngặt các nguyên tắc:
    hoặc xem chi tiết bữa ăn của người dùng khác.
 """
 
+import logging
 from typing import Any
 
 from sqlmodel import Session
 
 from src.backend.models.schema import ChatSession, Meal
+
+logger = logging.getLogger(__name__)
 
 # Danh mục các khóa nhạy cảm bị cấm nhận từ LLM / Client
 SENSITIVE_TOOL_KEYS = {
@@ -33,7 +36,7 @@ def sanitize_llm_tool_arguments(raw_args: dict[str, Any] | None) -> dict[str, An
     """Tự động quét và loại bỏ mọi khóa nhạy cảm nếu LLM hoặc client cố tình truyền vào.
 
     Hỗ trợ duyệt đệ quy qua các dictionary con để loại bỏ hoàn toàn các nỗ lực
-    Prompt Injection / Parameter Tampering.
+    Prompt Injection / Parameter Tampering. Ghi cảnh báo an ninh mà không in payload nhạy cảm.
     """
     if not raw_args:
         return {}
@@ -42,6 +45,10 @@ def sanitize_llm_tool_arguments(raw_args: dict[str, Any] | None) -> dict[str, An
     for key, val in raw_args.items():
         clean_key = str(key).strip().lower()
         if clean_key in SENSITIVE_TOOL_KEYS:
+            logger.warning(
+                "Cảnh báo an ninh: Phát hiện khóa định danh bị cấm '%s' trong tham số công cụ. Đã tự động loại bỏ.",
+                clean_key,
+            )
             continue
         if isinstance(val, dict):
             sanitized[key] = sanitize_llm_tool_arguments(val)

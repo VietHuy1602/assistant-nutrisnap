@@ -2,7 +2,13 @@ import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 
 import { Bot, Check, X } from 'lucide-react';
 import type { ActionCard } from '../types/api';
 import { isApiError } from '../utils/apiError';
-import { isMealCard, saveAssistantMeal, sendAssistantMessage } from '../api/assistantApi';
+import {
+  cancelAssistantAction,
+  confirmAssistantAction,
+  isMealCard,
+  saveAssistantMeal,
+  sendAssistantMessage,
+} from '../api/assistantApi';
 import { useOptionalChat, type ChatContextValue } from '../context/ChatContext';
 import { useChatScroll } from '../chat/useChatScroll';
 import { ChatComposer } from '../chat/components/ChatComposer';
@@ -227,9 +233,15 @@ function AssistantChatDrawerView({
     cardLocks.current.add(card.id);
     updateCard(card.id, { phase: 'saving', error: undefined });
     let saved;
+    const confId = card.source.confirmation_id ?? card.source.data?.confirmation_id;
     try {
-      saved = await saveAssistantMeal(card.source);
+      if (confId) {
+        saved = await confirmAssistantAction(confId);
+      } else {
+        saved = await saveAssistantMeal(card.source);
+      }
     } catch (error) {
+      // A rejected validation request is retryable; a timeout/invalid acknowledgement may already have written.
       const retryable = isApiError(error) && (error.status === 400 || error.status === 422);
       if (retryable) cardLocks.current.delete(card.id);
       if (mounted.current) {
@@ -251,6 +263,10 @@ function AssistantChatDrawerView({
   function cancelCard(card: MealCardState) {
     if (cardLocks.current.has(card.id) || !['pending', 'failed'].includes(card.phase)) return;
     cardLocks.current.add(card.id);
+    const confId = card.source.confirmation_id ?? card.source.data?.confirmation_id;
+    if (confId) {
+      void cancelAssistantAction(confId);
+    }
     updateCard(card.id, { phase: 'cancelled', error: undefined });
   }
 
