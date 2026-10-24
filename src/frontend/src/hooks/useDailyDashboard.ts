@@ -2,6 +2,11 @@
  * src/frontend/src/hooks/useDailyDashboard.ts
  * Hook tải và tự động đồng bộ dữ liệu Daily Dashboard.
  * Lắng nghe CustomEvent 'nutrisnap:meal-logged' để tự refetch khi có bữa ăn mới.
+ * Tuân thủ Step 7:
+ * - Kiểm tra đúng ngày (detail.date !== selectedDate -> bỏ qua).
+ * - Debounce 300ms gộp các sự kiện liên tiếp thành một lần refetch.
+ * - Làm mới êm (silent refetch: không bật skeleton, giữ layout ổn định).
+ * - Performance mark 'ns:dash:ring-updated' để đo thời gian đồng bộ.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,6 +35,7 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
   const [error, setError] = useState<string | null>(null);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -37,10 +43,11 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
     return () => {
       isMountedRef.current = false;
       if (abortControllerRef.current) abortControllerRef.current.abort();
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
 
-  const loadData = useCallback(async (dateToFetch: string) => {
+  const loadData = useCallback(async (dateToFetch: string, silent = false) => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -48,7 +55,10 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    setStatus('loading');
+    // Làm mới êm: Giữ nguyên dữ liệu cũ, không giật skeleton nếu là silent refetch
+    if (!silent) {
+      setStatus('loading');
+    }
     setError(null);
 
     try {
@@ -57,6 +67,14 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
       if (!isMountedRef.current || abortControllerRef.current !== controller) return;
 
       setData(result);
+
+      if (typeof performance !== 'undefined' && typeof performance.mark === 'function') {
+        try {
+          performance.mark('ns:dash:ring-updated');
+        } catch {
+          // ignore mark error
+        }
+      }
 
       // Xác định trạng thái hiển thị
       const meals = result.meals_summary || result.meals || [];
@@ -71,7 +89,9 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
 
       const msg = err instanceof Error ? err.message : 'Không thể tải dữ liệu tiến trình dinh dưỡng.';
       setError(msg);
-      setStatus('error');
+      if (!silent) {
+        setStatus('error');
+      }
     } finally {
       if (isMountedRef.current && abortControllerRef.current === controller) {
         abortControllerRef.current = null;
@@ -80,19 +100,38 @@ export function useDailyDashboard(initialDate?: string): UseDailyDashboardReturn
   }, []);
 
   useEffect(() => {
-    void loadData(selectedDate);
+    void loadData(selectedDate, false);
   }, [selectedDate, loadData]);
 
-  // Tự động lắng nghe sự kiện meal-logged từ MealCaptureFlow hoặc AssistantChatDrawer
+  // Tự động lắng nghe sự kiện meal-logged từ chat hoặc capture flow
   useEffect(() => {
-    const unsubscribe = onMealLogged(() => {
-      void loadData(selectedDate);
+    const unsubscribe = onMealLogged((event) => {
+      const detail = event?.detail;
+      // 1. Kiểm tra ngày: nếu có date và khác ngày đang xem -> bỏ qua
+      if (detail?.date && detail.date !== selectedDate) {
+        return;
+      }
+
+      // 2. Coalescing: Gộp debounce 300ms thành một lần gọi refetch êm
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        void loadData(selectedDate, true);
+      }, 300);
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribe();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
   }, [selectedDate, loadData]);
 
   const refetch = useCallback(async () => {
-    await loadData(selectedDate);
+    await loadData(selectedDate, false);
   }, [selectedDate, loadData]);
 
   return {

@@ -29,8 +29,11 @@ export const ENDPOINTS = {
   // Reference Database (500 Món ăn Việt)
   FOOD_SEARCH: '/foods/search',
 
-  // AI Assistant Chat (W4)
+  // AI Assistant Chat & Tools (W4)
   ASSISTANT_CHAT: '/assistant/chat',
   ASSISTANT_SESSIONS: '/assistant/sessions',
   ASSISTANT_MESSAGES: (sessionId: number | string) => `/assistant/sessions/${sessionId}/messages`,
+  ASSISTANT_HISTORY: '/assistant/history',
+  ASSISTANT_EXECUTE: '/assistant/tools/execute',
+  ASSISTANT_CONFIRM: '/assistant/action-card/confirm',
 } as const;

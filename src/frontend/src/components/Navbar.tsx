@@ -113,6 +113,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           <button
             type="button"
             onClick={onOpenChat}
+            aria-haspopup="dialog"
+            aria-controls="assistant-title"
             className="flex min-h-11 items-center gap-1.5 whitespace-nowrap px-3 py-2 sm:ml-2 rounded-lg text-sm font-medium bg-nutri-primary hover:bg-nutri-dark text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none"
           >
             <MessageSquareText className="w-4 h-4" />
