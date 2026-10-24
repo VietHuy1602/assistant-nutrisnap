@@ -35,6 +35,13 @@ class BaseResponse(BaseModel):
     )
 
 
+class HealthCheckResponse(BaseResponse):
+    """Schema phản hồi kiểm tra sức khỏe hệ thống và trạng thái AI."""
+    status: str = Field(default="ok", description="Trạng thái dịch vụ")
+    ai_provider: str = Field(default="gemini", description="Nhà cung cấp AI")
+    ai_live: bool = Field(default=False, description="Trạng thái kết nối trực tuyến tới Gemini API")
+
+
 # ==============================================================================
 # 1. PHÂN HỆ XÁC THỰC (AUTHENTICATION SCHEMAS)
 # ==============================================================================

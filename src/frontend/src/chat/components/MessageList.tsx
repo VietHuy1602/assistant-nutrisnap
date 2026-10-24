@@ -3,6 +3,7 @@ import { ArrowDown, RotateCcw } from 'lucide-react';
 import type { ChatMessage } from '../types';
 import { TypingIndicator } from './TypingIndicator';
 import { ChatEmptyState } from './ChatEmptyState';
+import { MarkdownText } from './MarkdownText';
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -57,17 +58,17 @@ export function MessageList({
             >
               {message.text && (
                 <div className="flex flex-col gap-1 max-w-[90%]">
-                  <p
-                    className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                  <div
+                    className={`break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
                       isUser
-                        ? 'bg-nutri-primary text-white'
+                        ? 'bg-nutri-primary text-white whitespace-pre-wrap'
                         : isError
-                        ? 'bg-red-50 text-nutri-error border border-red-200'
-                        : 'bg-nutri-surface text-nutri-ink'
+                        ? 'bg-red-50 text-nutri-error border border-red-200 whitespace-pre-wrap'
+                        : 'bg-nutri-surface text-nutri-ink shadow-xs'
                     }`}
                   >
-                    {message.text}
-                  </p>
+                    <MarkdownText content={message.text} isUser={isUser || isError} />
+                  </div>
                   {isError && message.error && <p role="alert" className="text-sm text-nutri-error">{message.error}</p>}
                   {isError && onRetry && (
                     <button

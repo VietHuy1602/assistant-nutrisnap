@@ -14,6 +14,7 @@ export const ApiStatusBadge: React.FC = () => {
   }
 
   const [status, setStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [aiLive, setAiLive] = useState<boolean>(false);
   const contractMode = getContractMode();
 
   useEffect(() => {
@@ -21,8 +22,18 @@ export const ApiStatusBadge: React.FC = () => {
 
     const checkHealth = async () => {
       try {
-        await apiClient.get('/health', { timeout: 3000 });
-        if (!ignore) setStatus('online');
+        const res = await apiClient.get<{
+          status?: string;
+          ai_provider?: string;
+          ai_live?: boolean;
+          success?: boolean;
+        }>('/health', { timeout: 3000 });
+        if (!ignore) {
+          setStatus('online');
+          if (res.data?.ai_live === true || import.meta.env.VITE_ENABLE_LIVE_AI === 'true') {
+            setAiLive(true);
+          }
+        }
       } catch {
         if (!ignore) setStatus('offline');
       }
@@ -48,7 +59,7 @@ export const ApiStatusBadge: React.FC = () => {
     },
     online: {
       bg: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-      label: contractMode === 'warn' ? 'API: online ✓ (warn)' : 'API: online ✓',
+      label: (aiLive || contractMode !== 'warn') ? 'API: online ✓' : 'API: online ✓ (warn)',
     },
     offline: {
       bg: 'bg-red-50 text-red-700 border-red-300',

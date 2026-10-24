@@ -1,8 +1,11 @@
 # tests/test_recommend_meals_w5.py
 # W5: Kiem thu exec_recommend_meals - DATABASE ISOLATION: SQLite :memory:
 from __future__ import annotations
-import os, sqlite3
+
+import os
+import sqlite3
 from pathlib import Path
+
 import pytest
 from sqlalchemy import event
 from sqlalchemy.pool import StaticPool
@@ -21,8 +24,10 @@ def _set_fk_pragma(dbapi_conn, _):
         cur.close()
 
 import src.backend.models.database as _db_mod
+
 _db_mod.engine = _MEM_ENGINE
 import src.backend.models.schema as _schema  # noqa: F401
+
 SQLModel.metadata.create_all(_MEM_ENGINE)
 from src.backend.models.schema import FoodReference, User
 from src.backend.services.assistant_tools import exec_recommend_meals

@@ -12,6 +12,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from src.ai.config import get_gemini_api_key
 from src.ai.tool_definitions import get_gemini_tool_declarations
 
 logger = logging.getLogger("nutrisnap.ai.llm_client")
@@ -63,9 +64,12 @@ class GeminiLLMClient(BaseLLMClient):
         model_name: Optional[str] = None,
         timeout_seconds: Optional[int] = None,
     ) -> None:
-        self.api_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
+        if api_key is not None:
+            self.api_key = api_key.strip()
+        else:
+            self.api_key = (get_gemini_api_key() or os.getenv("GEMINI_API_KEY", "")).strip()
         self.model_name = (
-            model_name or os.getenv("GEMINI_MODEL") or DEFAULT_MODEL_NAME
+            model_name or os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or DEFAULT_MODEL_NAME
         ).strip()
         try:
             self.timeout_seconds = int(
@@ -84,8 +88,10 @@ class GeminiLLMClient(BaseLLMClient):
             "your_actual_api_key_here",
             "change-me",
             "mock",
+            "dummy_api_key_for_testing",
+            "your_api_key_here",
         }
-        return self.api_key not in invalid_keys
+        return self.api_key not in invalid_keys and len(self.api_key) >= 15
 
     def generate(
         self,

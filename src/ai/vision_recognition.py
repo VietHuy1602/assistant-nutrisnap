@@ -26,13 +26,7 @@ from typing import Any, Optional, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# Tải cấu hình biến môi trường nếu có
-try:
-    from dotenv import load_dotenv
-
-    load_dotenv()
-except ImportError:
-    pass
+from src.ai.config import get_gemini_api_key
 
 logger = logging.getLogger("nutrisnap.ai.vision")
 
@@ -394,11 +388,19 @@ def get_gemini_vision_model(
     - JSON mode & TypedDict schema chuẩn.
     - Temperature thấp (0.2) để đảm bảo tính xác định (deterministic).
     """
-    effective_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
+    if api_key is not None:
+        effective_key = api_key.strip()
+    else:
+        effective_key = (get_gemini_api_key() or os.getenv("GEMINI_API_KEY", "")).strip()
+    target_model = model_name
     if not effective_key or effective_key in (
         "YOUR_GEMINI_API_KEY_HERE",
         "your_actual_api_key_here",
-    ):
+        "mock",
+        "change-me",
+        "dummy_api_key_for_testing",
+        "your_api_key_here",
+    ) or len(effective_key) < 15:
         raise APIConnectionError(
             "Chưa cấu hình GEMINI_API_KEY hợp lệ trong môi trường hoặc tham số."
         )
@@ -409,7 +411,7 @@ def get_gemini_vision_model(
         genai.configure(api_key=effective_key)
 
         model = genai.GenerativeModel(
-            model_name=model_name,
+            model_name=target_model,
             system_instruction=VISION_SYSTEM_INSTRUCTION,
             generation_config={
                 "response_mime_type": "application/json",
@@ -451,12 +453,21 @@ def recognize_dishes_from_image(
     # 1. Kiểm tra và tải dữ liệu ảnh
     image_bytes, mime_type = load_image_bytes(image_input)
 
+    target_model = model_name
+
     # 2. Kiểm tra API Key sớm nếu cần kích hoạt mock fallback
-    effective_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
+    if api_key is not None:
+        effective_key = api_key.strip()
+    else:
+        effective_key = (get_gemini_api_key() or os.getenv("GEMINI_API_KEY", "")).strip()
     is_mock_key = not effective_key or effective_key in (
         "YOUR_GEMINI_API_KEY_HERE",
         "your_actual_api_key_here",
-    )
+        "mock",
+        "change-me",
+        "dummy_api_key_for_testing",
+        "your_api_key_here",
+    ) or len(effective_key) < 15
 
     if is_mock_key and use_mock_fallback:
         logger.warning(
@@ -466,7 +477,7 @@ def recognize_dishes_from_image(
 
     # 3. Gọi Gemini Vision API
     try:
-        model = get_gemini_vision_model(api_key=effective_key, model_name=model_name)
+        model = get_gemini_vision_model(api_key=effective_key, model_name=target_model)
 
         # Định dạng inline data cho Gemini API
         image_part = {

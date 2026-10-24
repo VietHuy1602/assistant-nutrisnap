@@ -34,6 +34,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import Session, select
 
+from src.ai.config import get_gemini_api_key, get_gemini_model_name
 from src.ai.guardrails import check_input, check_output, verify_number_consistency
 from src.ai.intent_classifier import classify_user_intent
 from src.ai.llm_client import BaseLLMClient
@@ -555,10 +556,17 @@ class AIOrchestrator:
         llm_client: Optional[BaseLLMClient] = None,
         use_mock_fallback: bool = True,
     ) -> None:
-        self.api_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
-        self.model_name = (
-            model_name or os.getenv("GEMINI_MODEL") or "gemini-1.5-flash"
-        ).strip()
+        if api_key is not None:
+            self.api_key = api_key.strip()
+        else:
+            self.api_key = (get_gemini_api_key() or os.getenv("GEMINI_API_KEY", "")).strip()
+
+        if model_name is not None:
+            self.model_name = model_name.strip()
+        else:
+            self.model_name = (
+                os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or "gemini-1.5-flash"
+            ).strip()
         self.use_mock_fallback = use_mock_fallback
         self.llm_client = llm_client
         self._gemini_model: Any = None
@@ -575,8 +583,10 @@ class AIOrchestrator:
             "your_gemini_api_key_here",
             "change-me",
             "mock",
+            "dummy_api_key_for_testing",
+            "your_api_key_here",
         }
-        return self.api_key not in placeholders
+        return self.api_key not in placeholders and len(self.api_key) >= 15
 
     def _init_gemini_model(self, system_instruction: str) -> Any:
         """Khởi tạo GenerativeModel của Google GenAI / Generative AI kèm 4 Tools."""
@@ -682,8 +692,6 @@ class AIOrchestrator:
             t_name = explicit_tool_call.get("tool_name") or explicit_tool_call.get("name")
             raw_args = explicit_tool_call.get("tool_args") or explicit_tool_call.get("args") or {}
             t_args = sanitize_llm_tool_arguments(raw_args)
-            if str(t_name) == "log_meal":
-                t_args["is_confirmed"] = False
 
             if t_name:
                 needs_clarify, clarify_msg = check_clarification_needed(
@@ -865,11 +873,20 @@ class AIOrchestrator:
                     clarification_needed=True,
                 )
 
+            dispatch_args = (
+                {k: v for k, v in fn_args.items() if k != "is_confirmed"}
+                if fn_name == "log_meal"
+                else fn_args
+            )
             tool_result = dispatch_tool_call(
                 session=session,
-                authenticated_user_id=user_id,
+                authenticated_user_id=ToolContext(
+                    authenticated_user_id=user_id,
+                    caller="llm",
+                    request_id=str(uuid.uuid4()),
+                ),
                 tool_name=fn_name,
-                tool_args=fn_args,
+                tool_args=dispatch_args,
             )
 
             synthesized = synthesize_tool_output(fn_name, tool_result, profile)
@@ -970,8 +987,6 @@ class AIOrchestrator:
 
         # Thực thi công cụ với user_id khoá cứng (Zero-Trust)
         fn_args = sanitize_llm_tool_arguments(fn_args)
-        if fn_name == "log_meal":
-            fn_args["is_confirmed"] = False
 
         tool_result = dispatch_tool_call(
             session=session,
@@ -1290,8 +1305,8 @@ def get_ai_orchestrator(
     global _orchestrator_instance
     if _orchestrator_instance is None or api_key is not None or llm_client is not None:
         _orchestrator_instance = AIOrchestrator(
-            api_key=api_key,
-            model_name=model_name or os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+            api_key=api_key or get_gemini_api_key(),
+            model_name=model_name or get_gemini_model_name(),
             llm_client=llm_client,
             use_mock_fallback=use_mock_fallback,
         )
