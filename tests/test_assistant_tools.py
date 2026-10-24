@@ -25,21 +25,19 @@ from __future__ import annotations
 
 import difflib
 import math
-import os
 import sqlite3
 from pathlib import Path
 
 import pandas as pd
 import pytest
 from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine, select
 
-# --- Set env BEFORE any src imports so database.py reads the right URL ---
-os.environ["JWT_SECRET_KEY"] = "test_nutrisnap_secure_jwt_secret_key_min32chars_w4_testonly!"
-os.environ["APP_ENV"] = "testing"
-os.environ["DATABASE_URL"] = "sqlite+pysqlite:///:memory:"
-
-from sqlalchemy.pool import StaticPool
+from src.backend.models.schema import FoodReference, Meal, MealItem, User
+from src.backend.services.assistant_tools import dispatch_tool_call, exec_log_meal
+from src.backend.services.auth_service import register_with_initial_goal
+from src.backend.services.goal_service import GoalPlanInput
 
 # --- Create isolated :memory: engine BEFORE importing src modules ---
 _TEST_ENGINE = create_engine(
@@ -48,6 +46,7 @@ _TEST_ENGINE = create_engine(
     poolclass=StaticPool,
 )
 
+
 @event.listens_for(_TEST_ENGINE, "connect")
 def _set_fk_pragma(dbapi_conn, _):
     if isinstance(dbapi_conn, sqlite3.Connection):
@@ -55,18 +54,8 @@ def _set_fk_pragma(dbapi_conn, _):
         cur.execute("PRAGMA foreign_keys=ON;")
         cur.close()
 
-# Override default engine in models.database so nutrisnap.db is NEVER accessed
-import src.backend.models.database as _db_mod
-_db_mod.engine = _TEST_ENGINE
 
-# Now import schema (registers metadata) and create all tables in :memory:
-import src.backend.models.schema as _schema  # noqa: F401
 SQLModel.metadata.create_all(_TEST_ENGINE)
-
-from src.backend.models.schema import FoodReference, Meal, MealItem, User
-from src.backend.services.assistant_tools import dispatch_tool_call, exec_log_meal
-from src.backend.services.auth_service import register_with_initial_goal
-from src.backend.services.goal_service import GoalPlanInput
 
 # Path to CSV for seeding (read-only, never written)
 _CSV_PATH = Path(__file__).resolve().parent.parent / "data" / "vn_foods.csv"
@@ -203,6 +192,7 @@ def api_client(test_user: User):
       - NEVER accesses or modifies nutrisnap.db.
     """
     from fastapi.testclient import TestClient
+
     from src.backend.main import app
     from src.backend.models.database import get_session
     from src.backend.services.auth_service import create_access_token
