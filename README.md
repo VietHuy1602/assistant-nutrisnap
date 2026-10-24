@@ -65,6 +65,24 @@ JWT_ISSUER=nutriscan-api
 BCRYPT_ROUNDS=12
 ```
 
+### 4.3. Khởi chạy Backend an toàn (Chống xung đột cổng WinError 10013)
+Trên Windows, nếu một tiến trình uvicorn/python chạy ngầm đang chiếm cổng 8000, lệnh uvicorn thông thường có thể gặp lỗi `[WinError 10013]`. Dự án cung cấp các công cụ tự động dọn dẹp và khởi chạy an toàn:
+
+- **Cách 1 (Khuyến nghị - Tự động giải phóng cổng):**
+```bash
+python run_backend.py
+# hoặc trên PowerShell: .\scripts\start_backend.ps1
+```
+- **Cách 2 (Sử dụng uvicorn truyền thống):**
+```bash
+python -m uvicorn src.backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+- **Nếu cổng 8000 hoặc 5173 bị treo:**
+```bash
+python scripts/free_port.py              # Tự động giải phóng cả cổng 8000 và 5173
+python scripts/free_port.py --port 8000  # Giải phóng riêng cổng 8000
+```
+
 ---
 
 ## 🚪 5. Phân hệ Xác thực (Authentication API)
