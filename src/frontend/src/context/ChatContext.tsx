@@ -50,6 +50,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     state,
     dispatch,
     isAuthenticated,
+    userId: user?.id,
   });
 
   // Tự động RESET toàn bộ hội thoại khi đăng xuất hoặc đổi tài khoản (M11)
@@ -64,13 +65,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentUserId = user?.id ?? null;
     if (previousUserIdRef.current !== null && previousUserIdRef.current !== currentUserId) {
       dispatch({ type: 'RESET' });
+      setIsOpen(false);
     }
     previousUserIdRef.current = currentUserId;
   }, [isAuthenticated, user?.id]);
 
   // Lên lịch tải trước lịch sử (Prefetch) một cách êm ái khi authenticated
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !isOpen) return;
 
     let timerId: ReturnType<typeof setTimeout> | null = null;
     let idleId: number | null = null;
@@ -96,7 +98,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearTimeout(timerId);
       }
     };
-  }, [isAuthenticated, loadHistory]);
+  }, [isAuthenticated, isOpen, loadHistory]);
 
   const openChat = () => setIsOpen(true);
   const closeChat = () => setIsOpen(false);

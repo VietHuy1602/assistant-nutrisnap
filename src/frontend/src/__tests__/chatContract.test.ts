@@ -10,6 +10,21 @@ import {
 } from './fixtures/chat';
 
 describe('chatContract — normalizeAssistantResponse (Tolerant Reader)', () => {
+  it.each(['confirm_update_goal', 'recommendation_preview', 'unknown'])('does not turn %s into a saveable meal', type => {
+    const result = normalizeAssistantResponse({ ...mockChatTurnStandard, action_card: { ...mockChatTurnStandard.action_card, type } });
+    expect(result.card).toBeNull();
+    expect(result.text).toBe(mockChatTurnStandard.reply_text);
+  });
+  it.each(['confirmed', 'cancelled', 'unknown'])('keeps card status %s readonly', status => {
+    const result = normalizeAssistantResponse({ ...mockChatTurnStandard, action_card: { ...mockChatTurnStandard.action_card, status } });
+    expect(result.card?.state).toBe('readonly');
+  });
+  it('keeps an unverified expiry contract readonly and missing nutrition undefined', () => {
+    const result = normalizeAssistantResponse({ action_card: { type: 'confirm_log_meal', status: 'pending_user_action', expires_at: 'invalid', data: { meal_type: 'lunch', items: [{ food_id: 4, food_name: 'Món kiểm thử', estimated_gram: 100 }] } } });
+    expect(result.card?.state).toBe('readonly');
+    expect(result.card?.totals).toBeUndefined();
+    expect(result.card?.items[0].calories).toBeUndefined();
+  });
   it('1. Chuẩn hóa thành công fixture thật tiêu chuẩn (Standard)', () => {
     const res = normalizeAssistantResponse(mockChatTurnStandard);
     expect(res.sessionId).toBe(1);

@@ -3,13 +3,17 @@ import { AlertCircle, Check, Edit2, ExternalLink } from 'lucide-react';
 import type { ActionCardModel, CardPhase } from '../types';
 import { ActionCardEditor } from './ActionCardEditor';
 import { EstimatedBadge } from '../../components/common/EstimatedBadge';
+import { useOptionalChat } from '../../context/ChatContext';
+import { useCardConfirm } from '../../hooks/useCardConfirm';
+import { transitionCard } from '../actionCardMachine';
 
 interface ActionConfirmationCardProps {
   card: ActionCardModel;
   phase?: CardPhase;
   error?: string;
   savedCalories?: number;
-  onConfirm: (card: ActionCardModel) => Promise<void>;
+  onConfirm?: (card: ActionCardModel) => Promise<void>;
+  onMealSaved?: () => void;
   onEdit?: () => void;
   onCancelEdit?: () => void;
   onSaveEdited?: (
@@ -37,7 +41,7 @@ const display = (value: number) => Math.round(value).toLocaleString('vi-VN');
 
 export function ActionConfirmationCard({
   card,
-  phase = 'pending',
+  phase: suppliedPhase,
   error,
   savedCalories,
   onConfirm,
@@ -46,23 +50,33 @@ export function ActionConfirmationCard({
   onSaveEdited,
   onCancelCard,
   onNavigateDashboard,
+  onMealSaved,
 }: ActionConfirmationCardProps) {
+  const chat = useOptionalChat();
+  const integration = useCardConfirm({ card, dispatch: chat?.dispatch ?? (() => {}), onSaved: onMealSaved });
+  const phase = ['confirmed', 'expired', 'readonly'].includes(card.state) ? card.state : suppliedPhase ?? card.state;
+  const save = onConfirm ?? integration.confirm;
+  const saveError = error ?? card.errorMessage;
   const [isEditing, setIsEditing] = useState(false);
   const [checkedDashboard, setCheckedDashboard] = useState(false);
 
   // If in editing mode, show the ActionCardEditor
-  if (phase === 'editing' || isEditing) {
+  if ((phase === 'editing' || isEditing) && ['pending', 'editing', 'confirming'].includes(phase)) {
     return (
       <ActionCardEditor
         card={card}
+        isSaving={integration.isConfirming || phase === 'confirming'}
         onSave={async (items, mealType) => {
           if (onSaveEdited) {
             await onSaveEdited(items, mealType);
+          } else if (chat && ['breakfast', 'lunch', 'dinner', 'snack'].includes(mealType)) {
+            await integration.confirm({ ...card, items, mealType: mealType as ActionCardModel['mealType'] });
           }
           setIsEditing(false);
         }}
         onCancel={() => {
           onCancelEdit?.();
+          if (chat) chat.dispatch({ type: 'UPDATE_CARD', card: transitionCard(card, { type: 'CANCEL_EDIT' }) });
           setIsEditing(false);
         }}
       />
@@ -101,7 +115,7 @@ export function ActionConfirmationCard({
             </span>
             <div className="flex items-center gap-1.5 text-nutri-muted">
               <span>
-                {display(item.estimated_gram)} g · {display(item.calories || 0)} kcal
+                {display(item.estimated_gram)} g · {item.calories === undefined ? 'Chưa có dữ liệu kcal' : `${display(item.calories)} kcal`}
               </span>
               <EstimatedBadge size="sm" showIcon={false} />
             </div>
@@ -113,7 +127,7 @@ export function ActionConfirmationCard({
       <div className="space-y-1">
         <p className="text-sm font-semibold text-nutri-ink flex items-center justify-between">
           <span>Tổng ước tính trước khi lưu:</span>
-          <span>{display(card.totals?.calories || 0)} kcal</span>
+          <span>{card.totals?.calories === undefined ? 'Chưa có dữ liệu kcal' : `${display(card.totals.calories)} kcal`}</span>
         </p>
 
         {(card.totals?.protein || card.totals?.carbs || card.totals?.fat) && (
@@ -143,7 +157,7 @@ export function ActionConfirmationCard({
           <p className="flex items-center gap-2 text-sm font-semibold text-nutri-dark">
             <Check aria-hidden="true" size={18} className="text-emerald-600" />
             <span>
-              Đã lưu vào nhật ký · {display(savedCalories || card.totals?.calories || 0)} kcal (máy chủ xác nhận).
+              {(savedCalories ?? card.savedCalories) === undefined ? 'Đã lưu vào nhật ký · Chưa có số liệu kcal đã lưu.' : `Đã lưu vào nhật ký · ${display((savedCalories ?? card.savedCalories)!)} kcal (máy chủ xác nhận).`}
             </span>
           </p>
           {onNavigateDashboard && (
@@ -166,7 +180,7 @@ export function ActionConfirmationCard({
         >
           <p className="font-semibold">Chưa xác nhận lưu thành công</p>
           <p className="text-xs leading-5">
-            {error || 'Máy chủ chưa chấp nhận bữa ăn. Bạn có thể thử lại hoặc hủy thẻ.'}
+            {saveError || 'Máy chủ chưa chấp nhận bữa ăn. Bạn có thể thử lại hoặc hủy thẻ.'}
           </p>
         </div>
       )}
@@ -181,7 +195,7 @@ export function ActionConfirmationCard({
             <span>Kết quả lưu chưa rõ ràng</span>
           </div>
           <p className="text-xs leading-5">
-            Chưa rõ bữa ăn đã được lưu chưa do phản hồi mạng bị gián đoạn. Hãy kiểm tra Dashboard trước khi thử lại để tránh ghi trùng.
+            {saveError || 'Chưa rõ bữa ăn đã được lưu chưa do phản hồi mạng bị gián đoạn. Hãy kiểm tra Dashboard trước khi thử lại để tránh ghi trùng.'}
           </p>
           <button
             type="button"
@@ -198,7 +212,7 @@ export function ActionConfirmationCard({
 
       {(phase === 'readonly' || phase === 'expired') && (
         <p className="text-xs text-nutri-muted italic">
-          Thẻ này thuộc phiên trước nên không thể xác nhận. Hãy yêu cầu lại hoặc ghi bữa ăn bằng màn hình chụp ảnh.
+          Thẻ này chưa hỗ trợ lưu tại đây, đã kết thúc hoặc thiếu trạng thái xác nhận hợp lệ. Hãy yêu cầu lại hoặc ghi bữa ăn bằng màn hình chụp ảnh.
         </p>
       )}
 
@@ -206,12 +220,12 @@ export function ActionConfirmationCard({
       {(phase === 'pending' ||
         isConfirming ||
         phase === 'failed' ||
-        (phase === 'uncertain' && checkedDashboard)) && (
+        (phase === 'uncertain' && checkedDashboard && onConfirm)) && (
         <div className="flex flex-wrap gap-2 pt-1">
           <button
             type="button"
             disabled={isConfirming}
-            onClick={() => void onConfirm(card)}
+            onClick={() => void save(card)}
             aria-label={
               phase === 'failed' || phase === 'uncertain'
                 ? `Thử lưu lại bữa ăn gồm ${itemCount} món`
@@ -231,6 +245,8 @@ export function ActionConfirmationCard({
               onClick={() => {
                 if (onEdit) {
                   onEdit();
+                } else if (chat) {
+                  chat.dispatch({ type: 'UPDATE_CARD', card: transitionCard(card, { type: 'START_EDIT' }) });
                 } else {
                   setIsEditing(true);
                 }
@@ -242,11 +258,11 @@ export function ActionConfirmationCard({
             </button>
           )}
 
-          {onCancelCard && (phase === 'pending' || phase === 'failed') && (
+          {(onCancelCard || chat) && (phase === 'pending' || phase === 'failed' || isConfirming) && (
             <button
               type="button"
               disabled={isConfirming}
-              onClick={onCancelCard}
+              onClick={onCancelCard ?? integration.cancel}
               className={secondaryBtn}
             >
               Hủy

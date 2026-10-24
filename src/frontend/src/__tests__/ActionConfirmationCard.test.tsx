@@ -174,9 +174,22 @@ describe('ActionConfirmationCard & ActionCardEditor (Step 6)', () => {
     );
 
     expect(
-      screen.getByText(/Thẻ này thuộc phiên trước nên không thể xác nhận/),
+      screen.getByText(/Thẻ này chưa hỗ trợ lưu tại đây/),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Xác nhận lưu/ })).not.toBeInTheDocument();
+  });
+
+  it('does not use preview calories as saved calories, including a confirmed zero', () => {
+    const { rerender } = render(<ActionConfirmationCard card={sampleCard} phase="confirmed" />);
+    expect(screen.getByText(/Chưa có số liệu kcal đã lưu/)).toBeInTheDocument();
+    rerender(<ActionConfirmationCard card={sampleCard} phase="confirmed" savedCalories={0} />);
+    expect(screen.getByText(/Đã lưu vào nhật ký · 0 kcal/)).toBeInTheDocument();
+  });
+
+  it.each(['readonly', 'expired', 'confirmed'] as const)('cannot override terminal model state %s with pending props', state => {
+    render(<ActionConfirmationCard card={{ ...sampleCard, state }} phase="pending" onConfirm={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Xác nhận lưu/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Chỉnh sửa' })).not.toBeInTheDocument();
   });
 
   it('switches to ActionCardEditor when Chỉnh sửa is clicked', async () => {

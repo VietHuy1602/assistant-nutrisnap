@@ -48,11 +48,14 @@ const firstDefined = (o: Record<string, unknown>, keys: readonly string[]): unkn
   return undefined;
 };
 
+const numeric = (value: unknown): number =>
+  (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) && Number.isFinite(Number(value)) ? Number(value) : NaN;
+
 export const cardItemSchema = z.object({
-  food_id: z.number().int().positive(),
+  food_id: z.number().finite().int().positive(),
   food_name: z.string().min(1).max(MEAL_ITEM_LIMITS.maxNameLength),
-  estimated_gram: z.number().positive().max(MEAL_ITEM_LIMITS.maxGram),
-  calories: z.number().nonnegative().optional(),
+  estimated_gram: z.number().min(MEAL_ITEM_LIMITS.minGram).max(MEAL_ITEM_LIMITS.maxGram),
+  calories: z.number().finite().nonnegative().optional(),
   protein_g: z.number().nonnegative().optional(),
   carbs_g: z.number().nonnegative().optional(),
   fat_g: z.number().nonnegative().optional(),
@@ -61,6 +64,7 @@ export const cardItemSchema = z.object({
 function normalizeCardObject(raw: Record<string, unknown>): {
   normalizedItems: unknown[];
   normalizedMealType: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  validMealType: boolean;
   normalizedTotals?: { calories?: number; protein?: number; carbs?: number; fat?: number };
   actionId?: string | number;
   status?: string;
@@ -70,7 +74,8 @@ function normalizeCardObject(raw: Record<string, unknown>): {
     ? (raw.data as Record<string, unknown>)
     : raw;
 
-  const rawMealType = String(firstDefined(data, ALIASES.mealType) || firstDefined(raw, ALIASES.mealType) || 'lunch').trim().toLowerCase();
+  const mealTypeValue = firstDefined(data, ALIASES.mealType) ?? firstDefined(raw, ALIASES.mealType);
+  const rawMealType = typeof mealTypeValue === 'string' ? mealTypeValue.trim().toLowerCase() : '';
   const mealType = MEAL_TYPE_MAP[rawMealType] || 'lunch';
 
   const rawItemsList = (firstDefined(data, ALIASES.items) || firstDefined(raw, ALIASES.items));
@@ -80,15 +85,16 @@ function normalizeCardObject(raw: Record<string, unknown>): {
     if (!item || typeof item !== 'object') return {};
     const itemObj = item as Record<string, unknown>;
     const foodIdRaw = itemObj.food_id ?? itemObj.foodId ?? itemObj.id;
-    const foodId = typeof foodIdRaw === 'number' ? foodIdRaw : Number(foodIdRaw);
-    const foodName = String(firstDefined(itemObj, ALIASES.foodName) || '').trim();
+    const foodId = numeric(foodIdRaw);
+    const nameValue = firstDefined(itemObj, ALIASES.foodName);
+    const foodName = typeof nameValue === 'string' ? nameValue.trim() : '';
     const gramsRaw = firstDefined(itemObj, ALIASES.gram);
-    const grams = typeof gramsRaw === 'number' ? gramsRaw : Number(gramsRaw);
+    const grams = numeric(gramsRaw);
     const caloriesRaw = firstDefined(itemObj, ALIASES.calories);
-    const calories = caloriesRaw !== undefined ? Number(caloriesRaw) : undefined;
-    const protein = itemObj.protein_g !== undefined ? Number(itemObj.protein_g) : (itemObj.protein !== undefined ? Number(itemObj.protein) : undefined);
-    const carbs = itemObj.carbs_g !== undefined ? Number(itemObj.carbs_g) : (itemObj.carbs !== undefined ? Number(itemObj.carbs) : undefined);
-    const fat = itemObj.fat_g !== undefined ? Number(itemObj.fat_g) : (itemObj.fat !== undefined ? Number(itemObj.fat) : undefined);
+    const calories = caloriesRaw !== undefined ? numeric(caloriesRaw) : undefined;
+    const protein = numeric(itemObj.protein_g ?? itemObj.protein);
+    const carbs = numeric(itemObj.carbs_g ?? itemObj.carbs);
+    const fat = numeric(itemObj.fat_g ?? itemObj.fat);
 
     return {
       food_id: foodId,
@@ -102,7 +108,7 @@ function normalizeCardObject(raw: Record<string, unknown>): {
   });
 
   const totalCalRaw = firstDefined(data, ['total_calories', 'calories', 'totalCalories']) ?? firstDefined(raw, ['total_calories', 'calories']);
-  const totalCal = totalCalRaw !== undefined ? Number(totalCalRaw) : undefined;
+  const totalCal = totalCalRaw !== undefined ? numeric(totalCalRaw) : undefined;
 
   const actionIdRaw = raw.action_id ?? (raw.data as Record<string, unknown> | undefined)?.action_id;
   const actionId = (typeof actionIdRaw === 'string' || typeof actionIdRaw === 'number') ? actionIdRaw : undefined;
@@ -112,6 +118,7 @@ function normalizeCardObject(raw: Record<string, unknown>): {
   return {
     normalizedItems,
     normalizedMealType: mealType,
+    validMealType: typeof mealTypeValue === 'string' && Object.prototype.hasOwnProperty.call(MEAL_TYPE_MAP, rawMealType),
     normalizedTotals: totalCal !== undefined && !isNaN(totalCal) ? { calories: totalCal } : undefined,
     actionId,
     status,
@@ -143,6 +150,10 @@ export function normalizeAssistantResponse(raw: unknown): AssistantTurn {
   if (rawCard && typeof rawCard === 'object' && !Array.isArray(rawCard)) {
     try {
       const cardObj = rawCard as Record<string, unknown>;
+      if (cardObj.type !== undefined && cardObj.type !== 'confirm_log_meal') {
+        warnings.push('card.type:unsupported');
+        return { sessionId, text: text || 'Thẻ này chưa hỗ trợ lưu bữa ăn.', card: null, warnings };
+      }
       const normalized = normalizeCardObject(cardObj);
 
       if (!Array.isArray(normalized.normalizedItems) || normalized.normalizedItems.length === 0) {
@@ -167,7 +178,8 @@ export function normalizeAssistantResponse(raw: unknown): AssistantTurn {
           card = {
             id: nextCardId(),
             kind: 'log_meal',
-            state: 'pending',
+            state: normalized.validMealType && cardObj.type === 'confirm_log_meal' && normalized.status === 'pending_user_action' &&
+              cardObj.expires_at === undefined ? 'pending' : 'readonly',
             mealType: normalized.normalizedMealType,
             mealTypeVi: MEAL_TYPE_VI_LABELS[normalized.normalizedMealType],
             items: validatedItems,
@@ -182,6 +194,9 @@ export function normalizeAssistantResponse(raw: unknown): AssistantTurn {
       warnings.push('card:parse_exception');
     }
   }
+
+  if (!text && !card) warnings.push('response:empty');
+  if (root.pending_confirmation === true && !card) warnings.push('card:missing_confirmation');
 
   return {
     sessionId,

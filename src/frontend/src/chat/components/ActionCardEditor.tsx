@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
 import type { ActionCardModel, ActionCardItemModel } from '../types';
 import { useMealPreview } from '../../hooks/useMealPreview';
@@ -45,10 +45,10 @@ export function ActionCardEditor({
   );
 
   // Hook preview Backend: Zero Frontend math (ADR-W3-02 / N1)
-  const previewItems = items.map((i) => ({
+  const previewItems = useMemo(() => items.map((i) => ({
     food_id: i.food_id,
     estimated_gram: i.estimated_gram,
-  }));
+  })), [items]);
   const { preview, status: previewStatus, error: previewError } = useMealPreview(
     previewItems,
     mealType,
@@ -72,7 +72,9 @@ export function ActionCardEditor({
     (i) => i.estimated_gram < MEAL_ITEM_LIMITS.minGram || i.estimated_gram > MEAL_ITEM_LIMITS.maxGram,
   );
   const isCalculating = previewStatus === 'calculating';
-  const canSave = !hasInvalidGram && items.length > 0 && !isCalculating && !isSaving;
+  const previewCurrent = previewStatus === 'ready' && preview?.items.length === items.length &&
+    preview.items.every((item, index) => item.food_id === items[index].food_id && item.estimated_gram === items[index].estimated_gram);
+  const canSave = !hasInvalidGram && items.length > 0 && previewCurrent && !isSaving;
 
   const handleSubmit = async () => {
     if (!canSave) return;
@@ -93,6 +95,7 @@ export function ActionCardEditor({
       <div className="flex items-center justify-between border-b border-nutri-border/60 pb-3">
         <h3 className="text-sm font-semibold text-nutri-ink">Chỉnh sửa khẩu phần</h3>
         <select
+          disabled={isSaving}
           value={mealType}
           onChange={(e) => setMealType(e.target.value)}
           aria-label="Chọn loại bữa ăn"
@@ -131,12 +134,14 @@ export function ActionCardEditor({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <input
+                    disabled={isSaving}
                     type="number"
                     value={item.estimated_gram}
                     min={MEAL_ITEM_LIMITS.minGram}
                     max={MEAL_ITEM_LIMITS.maxGram}
                     onChange={(e) => handleGramChange(index, e.target.value)}
                     aria-label={`Số gam cho ${item.food_name}`}
+                    aria-invalid={isInvalid}
                     className={`w-16 rounded-lg border px-2 py-1 text-right text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-nutri-focus ${
                       isInvalid ? 'border-red-400 bg-red-50 text-red-700' : 'border-nutri-border bg-white'
                     }`}
@@ -147,10 +152,11 @@ export function ActionCardEditor({
                 {items.length > 1 && (
                   <button
                     type="button"
+                    disabled={isSaving}
                     onClick={() => handleRemoveItem(index)}
                     aria-label={`Xóa ${item.food_name}`}
                     title="Xóa món"
-                    className="p-1 text-nutri-muted hover:text-red-500 rounded-lg hover:bg-red-50"
+                    className="min-h-11 min-w-11 p-1 text-nutri-muted hover:text-red-500 rounded-lg hover:bg-red-50 focus-visible:ring-2 focus-visible:ring-nutri-focus"
                   >
                     <Trash2 size={16} aria-hidden="true" />
                   </button>
@@ -180,15 +186,15 @@ export function ActionCardEditor({
                 <Loader2 size={12} className="animate-spin" />
                 Đang tính...
               </span>
-            ) : preview ? (
+            ) : previewCurrent && preview ? (
               `${Math.round(preview.total_calories)} kcal`
             ) : (
-              `${Math.round(card.totals?.calories || 0)} kcal`
+              'Chưa có bản xem trước hợp lệ'
             )}
           </span>
         </div>
 
-        {preview && (
+        {previewCurrent && preview && (
           <div className="flex justify-between text-nutri-muted pt-1 border-t border-nutri-border/40">
             <span>Đạm: {Math.round(preview.total_protein_g)}g</span>
             <span>Carbs: {Math.round(preview.total_carbs_g)}g</span>

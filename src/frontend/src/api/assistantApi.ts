@@ -11,11 +11,12 @@
 import { apiClient } from './client';
 import { ENDPOINTS } from './endpoints';
 import { CHAT_TIMEOUT_MS } from '../chat/config';
-import { normalizeAssistantResponse } from './chatContract';
+import { cardItemSchema, normalizeAssistantResponse } from './chatContract';
 import { buildLogPayload } from '../chat/confirmStrategy';
 import type { ActionCardModel, AssistantTurn } from '../chat/types';
-import type { ActionCard, MealLogResponse } from '../types/api';
-import { ApiError } from '../utils/apiError';
+import type { ActionCard } from '../types/api';
+import { ApiError, ContractError } from '../utils/apiError';
+import { MEAL_ITEM_LIMITS } from '../constants/mealLimits';
 
 export interface SendMessageParams {
   message: string;
@@ -66,7 +67,11 @@ export const assistantApi = {
       },
     );
 
-    return normalizeAssistantResponse(response.data);
+    const turn = normalizeAssistantResponse(response.data);
+    if (turn.warnings.includes('response:empty')) {
+      throw new ContractError('CONTRACT_MISMATCH', 'assistant/chat', turn.warnings);
+    }
+    return turn;
   },
 
   /**
@@ -124,21 +129,31 @@ export const assistantApi = {
     card: ActionCardModel,
     signal?: AbortSignal,
   ): Promise<{ mealId: number; calories: number; loggedAt: string }> {
+    if (card.kind !== 'log_meal' || !['pending', 'editing', 'failed', 'uncertain'].includes(card.state) ||
+      (card.status !== undefined && card.status !== 'pending_user_action') || card.expiresAt !== undefined ||
+      !['breakfast', 'lunch', 'dinner', 'snack'].includes(card.mealType) ||
+      !Array.isArray(card.items) || !card.items.length || card.items.length > MEAL_ITEM_LIMITS.maxItems || card.items.some(item => !cardItemSchema.safeParse(item).success)) {
+      throw new InvalidMealCardError('Thẻ không đủ thông tin để lưu. Vui lòng yêu cầu trợ lý kiểm tra lại.');
+    }
     const payload = buildLogPayload(card);
-    const response = await apiClient.post<MealLogResponse>(
+    const response = await apiClient.post<unknown>(
       ENDPOINTS.MEAL_LOG,
       payload,
       { signal },
     );
 
     const data = response.data;
-    const mealId = Number(data.meal_id);
-    const calories = Number(data.total_calories || data.nutrition?.total_calories || 0);
+    const calories = record(data) ? data.total_calories ?? (record(data.nutrition) ? data.nutrition.total_calories : undefined) : undefined;
+    if (response.status !== 201 || !record(data) || data.success !== true || data.status !== 'logged' ||
+      !Number.isInteger(data.meal_id) || Number(data.meal_id) <= 0 || !nonnegative(calories) ||
+      typeof data.logged_at !== 'string' || !Number.isFinite(Date.parse(data.logged_at))) {
+      throw new UncertainMealSaveError('Chưa xác minh được kết quả lưu. Hãy kiểm tra nhật ký trước khi ghi lại để tránh trùng bữa ăn.');
+    }
 
     return {
-      mealId: Number.isInteger(mealId) && mealId > 0 ? mealId : 0,
-      calories: !isNaN(calories) ? calories : 0,
-      loggedAt: data.logged_at || new Date().toISOString(),
+      mealId: data.meal_id as number,
+      calories,
+      loggedAt: data.logged_at,
     };
   },
 };
@@ -196,6 +211,7 @@ export async function sendAssistantMessage(message: string) {
 }
 
 export class UncertainMealSaveError extends Error {}
+export class InvalidMealCardError extends ApiError {}
 
 export async function saveAssistantMeal(card: ActionCard) {
   if (!isMealCard(card) || card.status !== 'pending_user_action')

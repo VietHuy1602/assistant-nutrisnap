@@ -31,6 +31,7 @@ export const initialChatState: ChatState = {
 };
 
 export type ChatAction =
+  | { type: 'RESET_SESSION' }
   | {
       type: 'SEND_START';
       clientId: string;
@@ -100,6 +101,8 @@ function generateId(prefix: string): string {
 
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
+    case 'RESET_SESSION':
+      return { ...state, sessionId: null };
     case 'SEND_START': {
       // Chỉ cho phép 1 tin nhắn chạy tại một thời điểm
       if (state.status !== 'idle') {
