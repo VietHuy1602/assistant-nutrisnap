@@ -86,6 +86,8 @@ class FoodReference(SQLModel, table=True):
     carbs_per_100g: float = Field(nullable=False)
     fat_per_100g: float = Field(nullable=False)
     avg_price_vnd: int = Field(default=0, nullable=False)
+    default_serving_g: float = Field(default=100.0, nullable=False)
+    serving_label: str = Field(default="100g", nullable=False)
 
 
 # 4. Bảng Nhật ký Cân nặng (Khóa ngoại -> users.id, ON DELETE CASCADE)

@@ -51,5 +51,5 @@ def get_gemini_model_name() -> str:
     return (
         os.getenv("GEMINI_MODEL")
         or os.getenv("GEMINI_MODEL_NAME")
-        or "gemini-1.5-flash"
+        or "gemini-2.5-flash"
     ).strip()

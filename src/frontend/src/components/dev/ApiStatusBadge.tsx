@@ -28,10 +28,24 @@ export const ApiStatusBadge: React.FC = () => {
           ai_live?: boolean;
           success?: boolean;
         }>('/health', { timeout: 3000 });
+        let assistantMode = 'fallback';
+        try {
+          const rawBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000/api/v1';
+          const base = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase.replace(/\/+$/, '')}/api/v1`;
+          const aRes = await fetch(`${base}/assistant/health`, { signal: AbortSignal.timeout(3000) });
+          const aData = await aRes.json();
+          if (aData?.mode === 'live') {
+            assistantMode = 'live';
+          }
+        } catch {
+          // fallback
+        }
         if (!ignore) {
           setStatus('online');
-          if (res.data?.ai_live === true || import.meta.env.VITE_ENABLE_LIVE_AI === 'true') {
+          if (assistantMode === 'live' || res.data?.ai_live === true || import.meta.env.VITE_ENABLE_LIVE_AI === 'true') {
             setAiLive(true);
+          } else {
+            setAiLive(false);
           }
         }
       } catch {
@@ -58,8 +72,8 @@ export const ApiStatusBadge: React.FC = () => {
       label: 'API: checking…',
     },
     online: {
-      bg: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-      label: (aiLive || contractMode !== 'warn') ? 'API: online ✓' : 'API: online ✓ (warn)',
+      bg: aiLive ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-amber-50 text-amber-800 border-amber-300',
+      label: aiLive ? (contractMode === 'warn' ? 'AI trực tuyến ✓ (warn)' : 'AI trực tuyến ✓') : 'Chế độ cơ bản ⚠',
     },
     offline: {
       bg: 'bg-red-50 text-red-700 border-red-300',

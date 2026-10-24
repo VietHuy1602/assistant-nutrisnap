@@ -1,27 +1,33 @@
 """
 src/ai/tool_definitions.py
-Định nghĩa JSON Schema chuẩn hóa cho 4 công cụ cốt lõi (Tool Calling) của trợ lý ảo NutriSnap.
+Định nghĩa JSON Schema chuẩn hóa cho các công cụ (Tool Calling) của trợ lý ảo NutriSnap.
 
 Tuân thủ nghiêm ngặt các nguyên tắc:
 1. Zero-Trust Security: Schema TUYỆT ĐỐI KHÔNG chứa tham số `user_id` (Backend tự trích xuất từ JWT).
 2. Tên tham số đơn nhất, nhất quán: Không có alias trùng lặp (dùng duy nhất `remaining_calories`, `budget_vnd`, `days_range`).
 3. Two-Step Confirmation: log_meal tích hợp cờ `is_confirmed: bool` phân định rõ bản xem trước và ghi dữ liệu.
 4. Tương thích đa nền tảng (Gemini SDK & OpenAPI/OpenAI): Cung cấp hàm chuyển đổi định dạng chuẩn cho Google Generative AI (loại bỏ additionalProperties, chuẩn hóa kiểu dữ liệu hoa OBJECT/STRING/...).
+5. Mô tả chi tiết khi nào dùng và khi nào không dùng kèm ví dụ câu tiếng Việt có dấu/không dấu theo Task B1.
+6. Hỗ trợ đầy đủ các công cụ chỉ-đọc mở rộng C1: list_meals, get_food_info, compare_foods, get_goal_summary, suggest_swap.
 """
+
+from __future__ import annotations
 
 import copy
 from typing import Any
 
 # ==============================================================================
-# 1. ĐẶC TẢ FUNCTION SCHEMAS NGUYÊN BẢN (OPENAPI / REST CONTRACT COMPLIANT)
+# 1. ĐẶC TẢ FUNCTION SCHEMAS NGUYÊN BẢN (CORE & EXTENDED TOOLS)
 # ==============================================================================
 
 GET_DAILY_NUTRITION_DECLARATION: dict[str, Any] = {
     "name": "get_daily_nutrition",
     "description": (
-        "Lấy tổng hợp dinh dưỡng (Calories, Protein, Carbs, Fat) đã tiêu thụ trong một ngày cụ thể "
-        "và so sánh với hạn mức calo / mục tiêu hàng ngày (daily target) của người dùng. "
-        "Sử dụng khi người dùng hỏi hôm nay đã ăn bao nhiêu calo, còn lại bao nhiêu, hoặc kiểm tra nhật ký ăn uống trong ngày."
+        "Lấy tổng hợp dinh dưỡng (Calories, Protein, Carbs, Fat) đã tiêu thụ và calo còn lại trong ngày cụ thể so với mục tiêu người dùng. "
+        "KHI NÀO DÙNG: Người dùng hỏi calo còn lại, đã nạp bao nhiêu calo, tổng calo ngày hôm nay hoặc hôm qua. "
+        "Ví dụ: 'hôm nay tôi còn bao nhiêu calo', 'hom nay con may kcal', 'hôm qua tôi ăn bao nhiêu', 'tổng kết dinh dưỡng hôm nay'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi người dùng hỏi liệt kê danh sách các món đã ăn (hãy dùng list_meals) "
+        "hoặc xin gợi ý món ăn tương lai (hãy dùng recommend_meals)."
     ),
     "parameters": {
         "type": "object",
@@ -38,12 +44,40 @@ GET_DAILY_NUTRITION_DECLARATION: dict[str, Any] = {
     },
 }
 
+LIST_MEALS_DECLARATION: dict[str, Any] = {
+    "name": "list_meals",
+    "description": (
+        "Liệt kê danh sách chi tiết các bữa ăn (Sáng, Trưa, Tối, Phụ) và các món ăn kèm khối lượng gram, calo ước tính mà người dùng ĐÃ ĂN trong một ngày cụ thể từ CSDL. "
+        "KHI NÀO DÙNG: Người dùng hỏi đã ăn gì, liệt kê bữa ăn, kiểm tra món đã ghi. "
+        "Ví dụ: 'hôm nay tôi đã ăn gì', 'hom nay toi da an gi', 'tôi đã ăn gì hôm qua', 'liệt kê bữa ăn', 'sáng nay đã ăn món gì'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi người dùng xin gợi ý món ăn tương lai (hãy dùng recommend_meals) "
+        "hoặc chỉ hỏi tổng số calo/macro (hãy dùng get_daily_nutrition)."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "date": {
+                "type": "string",
+                "description": (
+                    "Ngày cần tra cứu danh sách món đã ăn theo định dạng 'YYYY-MM-DD' (hoặc 'today', 'yesterday'). "
+                    "Mặc định để trống là ngày hôm nay."
+                ),
+            }
+        },
+        "required": [],
+    },
+}
+
 LOG_MEAL_DECLARATION: dict[str, Any] = {
     "name": "log_meal",
     "description": (
         "Ghi nhận (lưu) một bữa ăn vào nhật ký dinh dưỡng của người dùng. "
         "Hệ thống tự động kích hoạt quy trình Xác nhận Thao tác (Two-Step Confirmation Flow): "
-        "công cụ sẽ tạo bản xem trước tính nháp calo và yêu cầu người dùng bấm nút xác nhận trên giao diện trước khi lưu vào CSDL."
+        "công cụ sẽ tạo bản xem trước tính nháp calo và yêu cầu người dùng bấm nút xác nhận trên giao diện trước khi lưu vào CSDL. "
+        "KHI NÀO DÙNG: Người dùng nói vừa ăn xong hoặc muốn ghi món ăn đã dùng kèm số lượng/khẩu phần. "
+        "Ví dụ: 'Trưa nay mình ăn một tô phở bò tái', 'Vừa ăn tối cơm tấm sườn nướng 300g', 'Ghi giúp mình bữa sáng 2 ổ bánh mì'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi người dùng chỉ hỏi tra cứu (dùng list_meals hoặc get_daily_nutrition) "
+        "hoặc chỉ hỏi calo món ăn (dùng get_food_info)."
     ),
     "parameters": {
         "type": "object",
@@ -69,7 +103,7 @@ LOG_MEAL_DECLARATION: dict[str, Any] = {
                         },
                         "unit": {
                             "type": "string",
-                            "description": "Đơn vị tính khẩu phần (ví dụ: 'bát', 'tô', 'đĩa', 'gram', 'ml', 'hộp').",
+                            "description": "Đơn vị tính khẩu phần (ví dụ: 'bát', 'tô', 'đĩa', 'gram', 'ml', 'hộp', 'ổ', 'quả').",
                         },
                         "estimated_grams": {
                             "type": "number",
@@ -99,8 +133,10 @@ LOG_MEAL_DECLARATION: dict[str, Any] = {
 RECOMMEND_MEALS_DECLARATION: dict[str, Any] = {
     "name": "recommend_meals",
     "description": (
-        "Đề xuất các món ăn Việt Nam từ cơ sở dữ liệu food_references phù hợp với hạn mức calo còn lại trong ngày "
-        "và ngân sách chi tiêu của người dùng."
+        "Gợi ý các món ăn Việt Nam từ cơ sở dữ liệu food_references phù hợp với hạn mức calo còn lại trong ngày và ngân sách chi tiêu của người dùng. "
+        "KHI NÀO DÙNG: Người dùng hỏi xin gợi ý món ăn, thực đơn, nên ăn gì trong tương lai hoặc bữa ăn sắp tới. "
+        "Ví dụ: 'gợi ý bữa tối 40k đủ đạm', 'còn 500 kcal thì ăn gì no mà rẻ', 'nên ăn gì bây giờ', 'gợi ý thực đơn sinh viên 30k'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi người dùng hỏi các món đã ăn trong quá khứ như 'hôm nay tôi đã ăn gì' (phải dùng list_meals)."
     ),
     "parameters": {
         "type": "object",
@@ -135,8 +171,10 @@ RECOMMEND_MEALS_DECLARATION: dict[str, Any] = {
 GET_PROGRESS_SUMMARY_DECLARATION: dict[str, Any] = {
     "name": "get_progress_summary",
     "description": (
-        "Truy xuất lịch sử cân nặng (đã làm mịn EMA/lọc nhiễu), tổng hợp calo trung bình và số ngày duy trì ghi chép nhật ký "
-        "trong khoảng thời gian chỉ định."
+        "Tổng hợp tiến độ đa ngày: xu hướng cân nặng làm mịn EMA, trung bình calo mỗi ngày và số ngày duy trì chuỗi ghi chép (streak) trong khoảng thời gian 7 đến 30 ngày. "
+        "KHI NÀO DÙNG: Người dùng hỏi về tiến độ, cân nặng, streak, báo cáo tuần/tháng. "
+        "Ví dụ: 'xem tiến độ tuần này', 'tháng này mình ghi nhật ký được mấy ngày', 'xu hướng cân nặng 14 ngày qua'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi chỉ hỏi dinh dưỡng ngày hôm nay (dùng get_daily_nutrition)."
     ),
     "parameters": {
         "type": "object",
@@ -158,6 +196,90 @@ GET_PROGRESS_SUMMARY_DECLARATION: dict[str, Any] = {
     },
 }
 
+GET_FOOD_INFO_DECLARATION: dict[str, Any] = {
+    "name": "get_food_info",
+    "description": (
+        "Tra cứu thông tin dinh dưỡng (Calories, Protein, Carbs, Fat) và giá ước tính của một món ăn cụ thể từ CSDL food_references. "
+        "KHI NÀO DÙNG: Người dùng hỏi calo/dinh dưỡng của một món ăn. "
+        "Ví dụ: 'bún bò Huế bao nhiêu calo', '100g ức gà bao nhiêu đạm', '1 tô phở bao nhiêu kcal'. "
+        "KHI NÀO KHÔNG DÙNG: KHÔNG dùng khi người dùng ghi nhận bữa ăn (dùng log_meal)."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "food_name": {
+                "type": "string",
+                "description": "Tên món ăn hoặc thực phẩm cần tra cứu (ví dụ: 'Bún bò Huế', 'Ức gà áp chảo', 'Trứng gà ốp la').",
+            },
+            "gram": {
+                "type": "number",
+                "description": "Khối lượng gram cần tính (nếu không truyền, hệ thống tự lấy khẩu phần chuẩn của món ăn).",
+            },
+        },
+        "required": ["food_name"],
+    },
+}
+
+COMPARE_FOODS_DECLARATION: dict[str, Any] = {
+    "name": "compare_foods",
+    "description": (
+        "So sánh giá trị dinh dưỡng (calo, đạm, carbs, chất béo) và giá tiền giữa 2 món ăn từ CSDL food_references. "
+        "KHI NÀO DÙNG: Người dùng phân vân hoặc so sánh 2 món. "
+        "Ví dụ: 'so sánh cơm và bún', 'cơm tấm hay bánh mì ít calo hơn', 'phở bò với bún riêu món nào nhiều đạm hơn'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "food_a": {
+                "type": "string",
+                "description": "Tên món ăn thứ nhất.",
+            },
+            "food_b": {
+                "type": "string",
+                "description": "Tên món ăn thứ hai.",
+            },
+            "gram": {
+                "type": "number",
+                "description": "Khối lượng quy đổi đồng đều (mặc định lấy theo khẩu phần chuẩn của từng món).",
+            },
+        },
+        "required": ["food_a", "food_b"],
+    },
+}
+
+GET_GOAL_SUMMARY_DECLARATION: dict[str, Any] = {
+    "name": "get_goal_summary",
+    "description": (
+        "Tra cứu mục tiêu dinh dưỡng cá nhân, TDEE, BMR, hạn mức calo và macro hàng ngày đã thiết lập của người dùng từ CSDL goals. "
+        "KHI NÀO DÙNG: Người dùng hỏi về mục tiêu của bản thân. "
+        "Ví dụ: 'mục tiêu của tôi là gì', 'TDEE của tôi bao nhiêu', 'mỗi ngày tôi nên ăn bao nhiêu đạm'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+    },
+}
+
+SUGGEST_SWAP_DECLARATION: dict[str, Any] = {
+    "name": "suggest_swap",
+    "description": (
+        "Đề xuất món ăn thay thế lành mạnh hơn (ít calo hơn, nhiều đạm hơn hoặc thanh đạm hơn) cho một món ăn nhiều năng lượng. "
+        "KHI NÀO DÙNG: Người dùng muốn đổi món hoặc tìm món thay thế. "
+        "Ví dụ: 'thay trà sữa bằng gì cho đỡ calo', 'đổi cơm tấm bằng món gì', 'thay thế món bánh mì'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "food_name": {
+                "type": "string",
+                "description": "Tên món ăn muốn thay thế (ví dụ: 'Trà sữa trân châu', 'Cơm tấm sườn nướng').",
+            }
+        },
+        "required": ["food_name"],
+    },
+}
+
 # ==============================================================================
 # 2. WRAPPERS DÀNH CHO CÁC MÔ HÌNH CHUẨN OPENAPI / OPENAI
 # ==============================================================================
@@ -165,6 +287,11 @@ GET_PROGRESS_SUMMARY_DECLARATION: dict[str, Any] = {
 GET_DAILY_NUTRITION_SCHEMA: dict[str, Any] = {
     "type": "function",
     "function": GET_DAILY_NUTRITION_DECLARATION,
+}
+
+LIST_MEALS_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": LIST_MEALS_DECLARATION,
 }
 
 LOG_MEAL_SCHEMA: dict[str, Any] = {
@@ -182,22 +309,68 @@ GET_PROGRESS_SUMMARY_SCHEMA: dict[str, Any] = {
     "function": GET_PROGRESS_SUMMARY_DECLARATION,
 }
 
-NUTRISNAP_TOOLS: list[dict[str, Any]] = [
+GET_FOOD_INFO_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": GET_FOOD_INFO_DECLARATION,
+}
+
+COMPARE_FOODS_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": COMPARE_FOODS_DECLARATION,
+}
+
+GET_GOAL_SUMMARY_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": GET_GOAL_SUMMARY_DECLARATION,
+}
+
+SUGGEST_SWAP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": SUGGEST_SWAP_DECLARATION,
+}
+
+CORE_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
     GET_DAILY_NUTRITION_SCHEMA,
     LOG_MEAL_SCHEMA,
     RECOMMEND_MEALS_SCHEMA,
     GET_PROGRESS_SUMMARY_SCHEMA,
 ]
 
+EXTENDED_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
+    LIST_MEALS_SCHEMA,
+    GET_FOOD_INFO_SCHEMA,
+    COMPARE_FOODS_SCHEMA,
+    GET_GOAL_SUMMARY_SCHEMA,
+    SUGGEST_SWAP_SCHEMA,
+]
 
-def get_tool_definitions() -> list[dict[str, Any]]:
-    """Hàm helper trả về danh sách toàn bộ cấu hình Tool Calling dạng OpenAI-compatible."""
+ALL_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
+    GET_DAILY_NUTRITION_SCHEMA,
+    LIST_MEALS_SCHEMA,
+    LOG_MEAL_SCHEMA,
+    RECOMMEND_MEALS_SCHEMA,
+    GET_PROGRESS_SUMMARY_SCHEMA,
+    GET_FOOD_INFO_SCHEMA,
+    COMPARE_FOODS_SCHEMA,
+    GET_GOAL_SUMMARY_SCHEMA,
+    SUGGEST_SWAP_SCHEMA,
+]
+
+NUTRISNAP_TOOLS: list[dict[str, Any]] = CORE_NUTRISNAP_TOOLS
+
+
+def get_tool_definitions(include_extended: bool = False) -> list[dict[str, Any]]:
+    """Hàm helper trả về danh sách cấu hình Tool Calling dạng OpenAI-compatible.
+    Mặc định trả về 4 công cụ cốt lõi (tương thích ngược với các bài kiểm thử Tuần 4).
+    Khi include_extended=True, bổ sung 5 công cụ chỉ-đọc theo C1."""
+    if include_extended:
+        return ALL_NUTRISNAP_TOOLS
     return NUTRISNAP_TOOLS
 
 
 def get_tool_by_name(tool_name: str) -> dict[str, Any] | None:
     """Hàm helper tìm kiếm nhanh schema của một tool theo tên."""
-    for tool in NUTRISNAP_TOOLS:
+    for tool in ALL_NUTRISNAP_TOOLS:
         if tool.get("function", {}).get("name") == tool_name:
             return tool
     return None
@@ -228,10 +401,8 @@ def sanitize_schema_for_gemini(schema: Any) -> Any:
 
     sanitized: dict[str, Any] = {}
     for key, value in schema.items():
-        # Google Generative AI protobuf Schema không có additionalProperties
         if key == "additionalProperties":
             continue
-        # Bảo mật Zero-Trust
         if key == "user_id":
             continue
 
@@ -250,11 +421,13 @@ def sanitize_schema_for_gemini(schema: Any) -> Any:
     return sanitized
 
 
-def get_gemini_tool_declarations() -> list[dict[str, Any]]:
+def get_gemini_tool_declarations(include_extended: bool = False) -> list[dict[str, Any]]:
     """
-    Trả về danh sách 4 Function Declarations tương thích trực tiếp với Google Gemini SDK:
+    Trả về danh sách các Function Declarations tương thích trực tiếp với Google Gemini SDK:
     - Đã bóc lớp wrapper {"type": "function"}.
     - Đã làm sạch additionalProperties và chuẩn hóa enum Type.
+    - Tuyệt đối không chứa user_id (Zero-Trust).
+    - Mặc định trả về 4 công cụ cốt lõi; khi include_extended=True trả về cả 9 công cụ.
     """
     raw_declarations = [
         GET_DAILY_NUTRITION_DECLARATION,
@@ -262,4 +435,16 @@ def get_gemini_tool_declarations() -> list[dict[str, Any]]:
         RECOMMEND_MEALS_DECLARATION,
         GET_PROGRESS_SUMMARY_DECLARATION,
     ]
+    if include_extended:
+        raw_declarations = [
+            GET_DAILY_NUTRITION_DECLARATION,
+            LIST_MEALS_DECLARATION,
+            LOG_MEAL_DECLARATION,
+            RECOMMEND_MEALS_DECLARATION,
+            GET_PROGRESS_SUMMARY_DECLARATION,
+            GET_FOOD_INFO_DECLARATION,
+            COMPARE_FOODS_DECLARATION,
+            GET_GOAL_SUMMARY_DECLARATION,
+            SUGGEST_SWAP_DECLARATION,
+        ]
     return [sanitize_schema_for_gemini(copy.deepcopy(decl)) for decl in raw_declarations]

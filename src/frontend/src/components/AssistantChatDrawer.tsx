@@ -21,11 +21,25 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
   const chat = useChat();
   const navigate = useNavigate();
   const [draft, setDraft] = useState('');
+  const [aiMode, setAiMode] = useState<'live' | 'fallback'>('fallback');
   const dialog = useRef<HTMLDivElement>(null);
   const isSending = chat.state.status !== 'idle';
   const scroll = useChatScroll({ dependency: chat.state.messages.length });
 
   useEffect(() => { setDraft(''); }, [username]);
+  useEffect(() => {
+    if (!isOpen) return;
+    const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8000/api/v1';
+    const baseUrl = rawBaseUrl.endsWith('/api/v1') ? rawBaseUrl : `${rawBaseUrl.replace(/\/+$/, '')}/api/v1`;
+    fetch(`${baseUrl}/assistant/health`)
+      .then(res => res.json())
+      .then(data => {
+        if (data?.mode === 'live') setAiMode('live');
+        else setAiMode('fallback');
+      })
+      .catch(() => setAiMode('fallback'));
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -63,7 +77,17 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-nutri-border/60 bg-nutri-surface p-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="rounded-xl bg-nutri-selected p-2 text-nutri-primary"><Bot aria-hidden="true" size={20} /></span>
-            <div><h2 id="assistant-title" className="text-sm font-semibold">Trợ lý AI NutriSnap</h2><p className="text-xs text-nutri-muted">Dinh dưỡng · Thông tin tham khảo</p></div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h2 id="assistant-title" className="text-sm font-semibold">Trợ lý AI NutriSnap</h2>
+                <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium border ${
+                  aiMode === 'live' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'
+                }`}>
+                  {aiMode === 'live' ? 'AI trực tuyến' : 'Chế độ cơ bản'}
+                </span>
+              </div>
+              <p className="text-xs text-nutri-muted">Dinh dưỡng · Thông tin tham khảo</p>
+            </div>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng trợ lý"
             className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">

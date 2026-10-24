@@ -25,6 +25,7 @@ Trách nhiệm cốt lõi:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -42,10 +43,15 @@ from src.ai.tool_definitions import get_gemini_tool_declarations
 from src.backend.models.schema import Goal, User
 from src.backend.services.assistant_tools import (
     dispatch_tool_call,
+    exec_compare_foods,
     exec_get_daily_nutrition,
+    exec_get_food_info,
+    exec_get_goal_summary,
     exec_get_progress_summary,
+    exec_list_meals,
     exec_log_meal,
     exec_recommend_meals,
+    exec_suggest_swap,
 )
 from src.backend.services.nutrition_service import DISCLAIMER_TEXT
 from src.backend.services.tool_context import ToolContext
@@ -107,6 +113,7 @@ class OrchestratorResponse(BaseModel):
     action_card: Optional[dict[str, Any]] = Field(default=None, description="Thẻ hành động preview bữa ăn")
     clarification_needed: bool = Field(default=False, description="Đang yêu cầu người dùng làm rõ thông tin")
     is_fallback: bool = Field(default=False, description="Chạy qua chế độ dự phòng thông minh (Offline/Fallback)")
+    engine: str = Field(default="fallback", description="Engine thực thi: llm hoặc fallback")
     voice_modifier_result: Optional[dict[str, Any]] = Field(
         default=None, description="Kết quả phân tích điều chỉnh món ăn từ giọng nói"
     )
@@ -457,25 +464,139 @@ def synthesize_tool_output(
                 "Thanh tiến độ dinh dưỡng hôm nay của bạn đã được cập nhật!"
             )
 
+    if tool_name == "list_meals":
+        date_str = tool_result.get("date", "hôm nay")
+        meals = tool_result.get("meals", [])
+        total_cal = float(tool_result.get("total_calories", 0.0))
+        count = int(tool_result.get("meals_count", len(meals)))
+        if not meals:
+            return (
+                f"Trong ngày {date_str}, bạn chưa ghi nhận bữa ăn nào trong nhật ký. "
+                "Bạn có muốn mình giúp ghi lại bữa ăn vừa rồi không?"
+            )
+        lines = [f"Nhật ký ăn uống ngày **{date_str}** của bạn gồm **{count} bữa** (tổng ~**{total_cal:.0f} kcal**):\n"]
+        for m in meals:
+            m_type = m.get("meal_type_vn", m.get("meal_type", "Bữa ăn"))
+            m_time = f" ({m.get('time')})" if m.get("time") else ""
+            m_cal = float(m.get("total_calories", 0.0))
+            lines.append(f"• **{m_type}**{m_time}: ~{m_cal:.0f} kcal")
+            for it in m.get("items", []):
+                name = it.get("food_name", "Món")
+                g = float(it.get("weight_g", it.get("gram", 0.0)))
+                c = float(it.get("calories", 0.0))
+                lines.append(f"   - {name} ({g:.0f}g): ~{c:.0f} kcal")
+        return "\n".join(lines)
+
+    if tool_name == "get_food_info":
+        found = tool_result.get("found", bool(tool_result.get("food_name")))
+        if not found or tool_result.get("error"):
+            q = tool_result.get("query") or tool_result.get("food_name", "món ăn")
+            return f"Rất tiếc, mình chưa tìm thấy thông tin cho món **{q}** trong cơ sở dữ liệu. Bạn có thể thử tìm với tên gọi phổ biến hơn nhé!"
+        f_name = tool_result.get("food_name", "Món ăn")
+        s_gram = float(tool_result.get("serving_gram") or tool_result.get("gram", 100.0))
+        s_label = tool_result.get("serving_label") or f"{s_gram:.0f}g"
+        label_display = f"{s_label} (~{s_gram:.0f}g)" if s_label != f"{s_gram:.0f}g" else f"{s_gram:.0f}g"
+        cal = float(tool_result.get("calories", 0.0))
+        p = float(tool_result.get("protein_g", 0.0))
+        c = float(tool_result.get("carbs_g", 0.0))
+        f = float(tool_result.get("fat_g", 0.0))
+        price = tool_result.get("avg_price_vnd")
+        price_str = f" | Giá tham khảo: ~{int(price):,} VNĐ" if price else ""
+        return (
+            f"Thông tin dinh dưỡng của **{f_name}** (khẩu phần tiêu chuẩn: **{label_display}**):\n\n"
+            f"- **Năng lượng:** ~{cal:.0f} kcal\n"
+            f"- **Protein (Đạm):** {p:.1f}g\n"
+            f"- **Carbohydrate (Đường bột):** {c:.1f}g\n"
+            f"- **Fat (Chất béo):** {f:.1f}g{price_str}\n\n"
+            "Số liệu được tính theo khẩu phần ước tính chuẩn."
+        )
+
+    if tool_name == "compare_foods":
+        f1 = tool_result.get("food_a") or tool_result.get("food_1")
+        f2 = tool_result.get("food_b") or tool_result.get("food_2")
+        if not f1 or not f2 or tool_result.get("error"):
+            return "Mình chưa tìm đủ dữ liệu 2 món để so sánh. Bạn kiểm tra lại tên món nhé!"
+        n1 = f1.get("food_name", "Món 1")
+        c1 = float(f1.get("calories", 0.0))
+        p1 = float(f1.get("protein_g", 0.0))
+        l1 = f1.get("serving_label", "khẩu phần")
+        n2 = f2.get("food_name", "Món 2")
+        c2 = float(f2.get("calories", 0.0))
+        p2 = float(f2.get("protein_g", 0.0))
+        l2 = f2.get("serving_label", "khẩu phần")
+        analysis = tool_result.get("comparison_analysis")
+        if not analysis:
+            if c1 > c2:
+                analysis = f"**{n2}** tiết kiệm hơn ~{abs(c1 - c2):.0f} kcal so với **{n1}**."
+            elif c2 > c1:
+                analysis = f"**{n1}** tiết kiệm hơn ~{abs(c2 - c1):.0f} kcal so với **{n2}**."
+            else:
+                analysis = f"Cả hai món có mức năng lượng tương đương nhau (~{c1:.0f} kcal)."
+        return (
+            f"So sánh dinh dưỡng giữa **{n1}** và **{n2}**:\n\n"
+            f"• **{n1}** ({l1}): ~{c1:.0f} kcal | Protein: {p1:.1f}g\n"
+            f"• **{n2}** ({l2}): ~{c2:.0f} kcal | Protein: {p2:.1f}g\n\n"
+            f"💡 **Nhận xét nhanh:** {analysis}"
+        )
+
+    if tool_name == "get_goal_summary":
+        g_type = tool_result.get("goal_type_vn", "Duy trì cân nặng")
+        bmr = float(tool_result.get("bmr_calories", 0.0))
+        tdee = float(tool_result.get("tdee_calories", 0.0))
+        target_c = float(tool_result.get("target_calories", 0.0))
+        target_p = float(tool_result.get("target_protein_g", 0.0))
+        target_carb = float(tool_result.get("target_carbs_g", 0.0))
+        target_fat = float(tool_result.get("target_fat_g", 0.0))
+        target_w = float(tool_result.get("target_weight_kg", 0.0))
+        budget = int(tool_result.get("daily_budget_vnd", 0))
+        return (
+            f"Mục tiêu dinh dưỡng hiện tại của bạn:\n\n"
+            f"- **Mục tiêu chính:** {g_type} (Cân nặng đích: {target_w:.1f} kg)\n"
+            f"- **BMR / TDEE:** ~{bmr:.0f} / ~{tdee:.0f} kcal/ngày\n"
+            f"- **Mục tiêu nạp hàng ngày:** ~{target_c:.0f} kcal\n"
+            f"- **Phân bổ Macros:** Đạm {target_p:.0f}g | Đường bột {target_carb:.0f}g | Béo {target_fat:.0f}g\n"
+            f"- **Ngân sách ăn uống:** {budget:,} VNĐ/ngày"
+        )
+
+    if tool_name == "suggest_swap":
+        orig = tool_result.get("original_food", "Món ăn")
+        swaps = tool_result.get("healthy_swaps", [])
+        if not swaps:
+            return (
+                f"Hiện tại mình chưa tìm thấy món thay thế tương đương trong danh mục cho **{orig}**. "
+                "Bạn có thể chọn các món luộc/hấp hoặc giàu đạm tự nhiên nhé!"
+            )
+        lines = [f"Nếu bạn đang muốn tìm món thay thế thanh đạm hoặc lành mạnh hơn cho **{orig}**, đây là một số gợi ý:\n"]
+        for idx, s in enumerate(swaps, 1):
+            s_name = s.get("food_name")
+            s_cal = float(s.get("calories", 0.0))
+            s_p = float(s.get("protein_g", 0.0))
+            s_label = s.get("serving_label", "khẩu phần")
+            lines.append(f"{idx}. **{s_name}** ({s_label}) – ~{s_cal:.0f} kcal | Protein: {s_p:.1f}g")
+        return "\n".join(lines)
+
     if tool_name == "recommend_meals":
         recs = tool_result.get("recommendations", [])
         rem_cal = float(tool_result.get("remaining_calories", profile.target_calories))
         budget = int(tool_result.get("budget_vnd", profile.daily_budget_vnd))
+        budget_exceeded = bool(tool_result.get("budget_exceeded", budget <= 0))
         gentle_note = tool_result.get("gentle_note")
 
+        budget_str = f"{budget:,} VNĐ" if not budget_exceeded and budget > 0 else "đã vượt ngân sách dự kiến (gợi ý món tiết kiệm)"
+
         pattern_note = ""
-        if profile.behavioral_patterns:
+        if profile.has_pattern_insights and profile.behavioral_patterns:
             p_codes = [p.get("pattern_code") for p in profile.behavioral_patterns]
             if "low_protein" in p_codes:
-                pattern_note = "\n\n*💡 Gợi ý bù trừ đạm (Smart Compensation): Hệ thống nhận thấy bạn có xu hướng thiếu đạm gần đây. Hãy ưu tiên các món giàu protein như ức gà, cá, đậu hũ hoặc trứng để bảo vệ cơ bắp nhé!*"
+                pattern_note = "\n\n*💡 Gợi ý cân bằng nhẹ nhàng: Bạn có xu hướng nạp ít đạm trong các ngày qua. Hãy ưu tiên các món giàu protein như ức gà, cá, đậu hũ hoặc trứng để bảo vệ cơ bắp nhé!*"
             elif "skipping_breakfast" in p_codes:
-                pattern_note = "\n\n*💡 Nhắn nhủ nhẹ nhàng: Bạn hay bỏ bữa sáng vài ngày gần đây. Một bữa ăn đủ chất sẽ giúp bạn duy trì năng lượng bền bỉ suốt ngày!*"
+                pattern_note = "\n\n*💡 Nhắn nhủ nhẹ nhàng: Bạn hay bỏ bữa sáng vài ngày gần đây. Một bữa sáng đủ chất sẽ giúp bạn duy trì năng lượng bền bỉ suốt ngày!*"
             elif "late_night_eating" in p_codes:
-                pattern_note = "\n\n*💡 Gợi ý ăn tối nhẹ nhàng: Hệ thống nhận thấy bạn có thói quen ăn sau 21:00. Bạn nên chọn các món thanh nhẹ, ít dầu mỡ để ngủ ngon hơn.*"
+                pattern_note = "\n\n*💡 Gợi ý nhẹ nhàng: Hệ thống nhận thấy bạn có thói quen ăn sau 21:00. Bạn nên chọn các món thanh nhẹ, ít dầu mỡ để ngủ ngon hơn.*"
 
         if not recs:
             return (
-                f"Dựa trên hạn mức còn lại ({rem_cal:.0f} kcal) và ngân sách ({budget:,} VNĐ), "
+                f"Dựa trên hạn mức còn lại ({rem_cal:.0f} kcal) và ngân sách ({budget_str}), "
                 "mình chưa tìm thấy món ăn hoàn toàn khớp trong CSDL. "
                 "Bạn có thể nạp các món thanh đạm như canh rau củ thịt bằm, ức gà áp chảo hoặc trứng luộc nhé!"
                 f"{pattern_note}"
@@ -484,12 +605,14 @@ def synthesize_tool_output(
         lines = []
         for idx, r in enumerate(recs, 1):
             name = r.get("food_name", "Món ăn")
-            gram = r.get("suggested_gram", 250.0)
-            cal = r.get("estimated_calories", 0.0)
-            p = r.get("protein_g", 0.0)
-            price = r.get("avg_price_vnd", 0)
+            gram = float(r.get("suggested_gram", 100.0))
+            serving_label = r.get("serving_label")
+            label_display = f"{serving_label} (~{gram:.0f}g)" if serving_label and serving_label != f"{gram:.0f}g" else f"{gram:.0f}g"
+            cal = float(r.get("estimated_calories", 0.0))
+            p = float(r.get("protein_g", 0.0))
+            price = int(r.get("avg_price_vnd", 0))
             lines.append(
-                f"{idx}. **{name}** ({gram:.0f}g) – ~{cal:.0f} kcal | Protein: {p:.1f}g | Giá: ~{price:,} VNĐ"
+                f"{idx}. **{name}** ({label_display}) – ~{cal:.0f} kcal | Protein: {p:.1f}g | Giá: ~{price:,} VNĐ"
             )
 
         recs_text = "\n".join(lines)
@@ -497,7 +620,7 @@ def synthesize_tool_output(
 
         return (
             f"Dưới đây là một số gợi ý món ăn phù hợp với hạn mức năng lượng (~{rem_cal:.0f} kcal) "
-            f"và ngân sách ({budget:,} VNĐ) của bạn:\n\n"
+            f"và ngân sách ({budget_str}) của bạn:\n\n"
             f"{recs_text}{note_text}{pattern_note}\n\n"
             "Bạn thích món nào nhất? Sau khi ăn xong hãy nhắn để mình giúp bạn ghi nhận nhé!"
         )
@@ -564,9 +687,7 @@ class AIOrchestrator:
         if model_name is not None:
             self.model_name = model_name.strip()
         else:
-            self.model_name = (
-                os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or "gemini-1.5-flash"
-            ).strip()
+            self.model_name = get_gemini_model_name().strip()
         self.use_mock_fallback = use_mock_fallback
         self.llm_client = llm_client
         self._gemini_model: Any = None
@@ -599,7 +720,7 @@ class AIOrchestrator:
             from google.genai import types
 
             client = genai.Client(api_key=self.api_key)
-            tools = get_gemini_tool_declarations()
+            tools = get_gemini_tool_declarations(include_extended=True)
 
             class GenAIModelWrapper:
                 def __init__(self, client, model_name, sys_instruction, tools):
@@ -627,7 +748,7 @@ class AIOrchestrator:
             import google.generativeai as genai
 
             genai.configure(api_key=self.api_key)
-            tools = get_gemini_tool_declarations()
+            tools = get_gemini_tool_declarations(include_extended=True)
 
             model = genai.GenerativeModel(
                 model_name=self.model_name,
@@ -681,6 +802,7 @@ class AIOrchestrator:
                 reply=safe_text,
                 reply_text=safe_text,
                 is_fallback=False,
+                engine="llm",
             )
 
         # 2. Nạp ngữ cảnh hồ sơ người dùng
@@ -704,6 +826,8 @@ class AIOrchestrator:
                         reply=clarify_msg,
                         reply_text=clarify_msg,
                         clarification_needed=True,
+                        is_fallback=False,
+                        engine="llm",
                     )
 
                 result = dispatch_tool_call(
@@ -732,6 +856,7 @@ class AIOrchestrator:
                     pending_confirmation=requires_confirm,
                     action_card=action_card,
                     is_fallback=False,
+                    engine="llm",
                 )
 
         # 4. Kiểm tra cơ chế hỏi lại khi thông tin mơ hồ (Clarification Handling)
@@ -742,6 +867,7 @@ class AIOrchestrator:
                 reply_text=clarify_msg,
                 clarification_needed=True,
                 is_fallback=False,
+                engine="llm",
             )
 
         # 5. Nếu có llm_client được inject qua constructor
@@ -808,7 +934,7 @@ class AIOrchestrator:
             messages.extend(chat_history[-10:])
         messages.append({"role": "user", "content": message})
 
-        tools_decl = get_gemini_tool_declarations()
+        tools_decl = get_gemini_tool_declarations(include_extended=True)
         llm_res = self.llm_client.generate(
             messages=messages,
             system_instruction=sys_instruction,
@@ -891,7 +1017,28 @@ class AIOrchestrator:
 
             synthesized = synthesize_tool_output(fn_name, tool_result, profile)
             final_reply = synthesized
-            if llm_res.text:
+            if not llm_res.is_fallback:
+                try:
+                    followup_messages = list(messages)
+                    followup_messages.append({"role": "assistant", "content": f"Đã gọi công cụ {fn_name}"})
+                    followup_messages.append({
+                        "role": "user",
+                        "content": (
+                            f"Kết quả thực thi công cụ '{fn_name}' từ CSDL NutriSnap: {json.dumps(tool_result, ensure_ascii=False)}.\n"
+                            "Hãy viết câu trả lời tự nhiên, thân thiện và ấm áp gửi tới người dùng dựa trên 100% số liệu này. "
+                            "TUYỆT ĐỐI không bịa đặt số liệu dinh dưỡng khác với số liệu trên. Luôn kèm từ 'ước tính'."
+                        ),
+                    })
+                    followup_res = self.llm_client.generate(messages=followup_messages, system_instruction=sys_instruction)
+                    if followup_res.text:
+                        consistent, unverified = verify_number_consistency(followup_res.text, tool_result, message)
+                        if consistent:
+                            final_reply = followup_res.text
+                        else:
+                            logger.warning("Number mismatch: %s. Using synthesized fallback.", unverified)
+                except Exception as exc:
+                    logger.debug("Failed turn 2 client generation: %s", exc)
+            elif llm_res.text:
                 consistent, unverified = verify_number_consistency(llm_res.text, tool_result, message)
                 if consistent:
                     final_reply = llm_res.text
@@ -913,6 +1060,7 @@ class AIOrchestrator:
                 pending_confirmation=requires_confirm,
                 action_card=action_card,
                 is_fallback=llm_res.is_fallback,
+                engine="fallback" if llm_res.is_fallback else "llm",
             )
 
         if llm_res.text:
@@ -922,6 +1070,7 @@ class AIOrchestrator:
                 reply=cleaned_text,
                 reply_text=cleaned_text,
                 is_fallback=llm_res.is_fallback,
+                engine="fallback" if llm_res.is_fallback else "llm",
             )
 
         return None
@@ -961,10 +1110,13 @@ class AIOrchestrator:
 
         if not function_calls:
             raw_reply = response.text or ""
+            out_guard = check_output(raw_reply, None, message)
+            cleaned_reply = out_guard.sanitized_text or raw_reply
             return OrchestratorResponse(
-                reply=raw_reply,
-                reply_text=raw_reply,
+                reply=cleaned_reply,
+                reply_text=cleaned_reply,
                 is_fallback=False,
+                engine="llm",
             )
 
         # Xử lý function call đầu tiên
@@ -983,6 +1135,8 @@ class AIOrchestrator:
                 reply=clarify_msg,
                 reply_text=clarify_msg,
                 clarification_needed=True,
+                is_fallback=False,
+                engine="llm",
             )
 
         # Thực thi công cụ với user_id khoá cứng (Zero-Trust)
@@ -1004,8 +1158,29 @@ class AIOrchestrator:
         requires_confirm = tool_result.get("requires_confirmation", False)
         action_card = tool_result.get("action_card")
 
-        out_guard = check_output(synthesized_reply, tool_result, message)
-        final_reply = out_guard.sanitized_text or synthesized_reply
+        final_reply = synthesized_reply
+        try:
+            # Turn 2: Feed tool output to Gemini chat to write natural response
+            tool_followup = (
+                f"Kết quả thực thi công cụ '{fn_name}' từ CSDL NutriSnap:\n"
+                f"{json.dumps(tool_result, ensure_ascii=False)}\n\n"
+                "Dựa trên 100% số liệu trên, hãy viết câu trả lời tự nhiên, thân thiện và ấm áp gửi tới người dùng. "
+                "TUYỆT ĐỐI không bịa đặt số liệu dinh dưỡng khác với số liệu trên. Luôn kèm từ 'ước tính'."
+            )
+            followup_resp = chat.send_message(tool_followup)
+            candidate_text = getattr(followup_resp, "text", None)
+            if candidate_text:
+                candidate_text = candidate_text.strip()
+                consistent, unverified = verify_number_consistency(candidate_text, tool_result, message)
+                if consistent:
+                    final_reply = candidate_text
+                else:
+                    logger.warning("Gemini generated mismatched numbers: %s. Using synthesized fallback.", unverified)
+        except Exception as exc:
+            logger.warning("Error getting Gemini natural response in turn 2: %s", exc)
+
+        out_guard = check_output(final_reply, tool_result, message)
+        final_reply = out_guard.sanitized_text or final_reply
 
         return OrchestratorResponse(
             reply=final_reply,
@@ -1016,6 +1191,7 @@ class AIOrchestrator:
             pending_confirmation=requires_confirm,
             action_card=action_card,
             is_fallback=False,
+            engine="llm",
         )
 
     def _run_deterministic_fallback(
@@ -1058,9 +1234,36 @@ class AIOrchestrator:
                 tool_args={"date_str": target_date},
                 tool_result=result,
                 is_fallback=True,
+                engine="fallback",
             )
 
-        # Ý định 2: Gợi ý món ăn / recommend_meals
+        # Ý định 2: Liệt kê bữa ăn đã ghi nhận / list_meals
+        if intent == "list_meals":
+            target_date = "today"
+            if "hôm qua" in msg_lower or "hom qua" in msg_lower or "yesterday" in msg_lower:
+                target_date = "yesterday"
+            else:
+                m_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", msg_lower)
+                if m_date:
+                    target_date = m_date.group(1)
+
+            result = exec_list_meals(
+                session=session,
+                authenticated_user_id=user_id,
+                date_str=target_date,
+            )
+            reply = synthesize_tool_output("list_meals", result, profile)
+            return OrchestratorResponse(
+                reply=reply,
+                reply_text=reply,
+                tool_called="list_meals",
+                tool_args={"date_str": target_date},
+                tool_result=result,
+                is_fallback=True,
+                engine="fallback",
+            )
+
+        # Ý định 3: Gợi ý món ăn / recommend_meals
         if intent == "recommend_meals":
             # Trích xuất ngân sách nếu người dùng nêu (ví dụ: 50.000đ, 80.000 VNĐ, 50k, 60000)
             budget: Optional[int] = None
@@ -1093,9 +1296,10 @@ class AIOrchestrator:
                 tool_args={"remaining_calories": rem_cal, "budget_vnd": budget},
                 tool_result=result,
                 is_fallback=True,
+                engine="fallback",
             )
 
-        # Ý định 3: Tổng hợp tiến độ / get_progress_summary
+        # Ý định 4: Tổng hợp tiến độ / get_progress_summary
         if intent == "get_progress_summary":
             days_range = 7
             if any(k in msg_lower for k in ("30 ngày", "30 ngay", "tháng", "thang")):
@@ -1120,9 +1324,10 @@ class AIOrchestrator:
                 tool_args={"days_range": days_range},
                 tool_result=result,
                 is_fallback=True,
+                engine="fallback",
             )
 
-        # Ý định 4: Ghi nhận bữa ăn cụ thể / log_meal
+        # Ý định 5: Ghi nhận bữa ăn cụ thể / log_meal
         if intent == "log_meal":
             dish_name = "Cơm tấm sườn nướng"
             dish_gram = 300.0
@@ -1222,11 +1427,103 @@ class AIOrchestrator:
                 pending_confirmation=True,
                 action_card=result.get("action_card"),
                 is_fallback=True,
+                engine="fallback",
                 voice_modifier_result=vm_dict,
                 applied_modifications=applied_mods,
             )
 
-        # Ý định 5: Tư vấn thói quen & lời khuyên cá nhân hóa (Behavioral Insights)
+        # Ý định 6: Tra cứu thông tin món ăn / get_food_info
+        if intent == "get_food_info":
+            food_query = message
+            for p in [
+                "bao nhiêu calo", "bao nhieu calo", "bao nhiêu kcal", "bao nhieu kcal",
+                "bao nhiêu protein", "bao nhiêu đạm", "thông tin dinh dưỡng của", "thông tin dinh dưỡng món",
+                "calo của", "dinh dưỡng trong", "tra cứu món", "tra cứu", "thông tin món",
+                "hỏi món", "cho mình hỏi món", "cho hoi mon"
+            ]:
+                food_query = re.sub(re.escape(p), "", food_query, flags=re.IGNORECASE)
+            food_query = food_query.strip("? .,!:")
+            result = exec_get_food_info(
+                session=session,
+                food_name=food_query or "ức gà",
+            )
+            reply = synthesize_tool_output("get_food_info", result, profile)
+            return OrchestratorResponse(
+                reply=reply,
+                reply_text=reply,
+                tool_called="get_food_info",
+                tool_args={"food_name": food_query},
+                tool_result=result,
+                is_fallback=True,
+                engine="fallback",
+            )
+
+        # Ý định 7: So sánh món ăn / compare_foods
+        if intent == "compare_foods":
+            f1, f2 = "cơm trắng", "bún tươi"
+            m_comp = re.search(r"so sánh\s+(.+?)\s+(?:và|với|hay)\s+(.+)", msg_lower)
+            if m_comp:
+                f1 = m_comp.group(1).strip()
+                f2 = m_comp.group(2).strip("? .,!:")
+            elif " hay " in msg_lower:
+                parts = msg_lower.split(" hay ")
+                f1 = parts[0].replace("nên ăn", "").replace("chọn", "").strip()
+                f2 = parts[1].replace("ít calo hơn", "").replace("tốt hơn", "").strip("? .,!:")
+            result = exec_compare_foods(
+                session=session,
+                food_a=f1,
+                food_b=f2,
+            )
+            reply = synthesize_tool_output("compare_foods", result, profile)
+            return OrchestratorResponse(
+                reply=reply,
+                reply_text=reply,
+                tool_called="compare_foods",
+                tool_args={"food_a": f1, "food_b": f2},
+                tool_result=result,
+                is_fallback=True,
+                engine="fallback",
+            )
+
+        # Ý định 8: Tra cứu mục tiêu dinh dưỡng cá nhân / get_goal_summary
+        if intent == "get_goal_summary":
+            result = exec_get_goal_summary(
+                session=session,
+                authenticated_user_id=user_id,
+            )
+            reply = synthesize_tool_output("get_goal_summary", result, profile)
+            return OrchestratorResponse(
+                reply=reply,
+                reply_text=reply,
+                tool_called="get_goal_summary",
+                tool_args={},
+                tool_result=result,
+                is_fallback=True,
+                engine="fallback",
+            )
+
+        # Ý định 9: Gợi ý đổi món lành mạnh / suggest_swap
+        if intent == "suggest_swap":
+            food_query = message
+            for p in ["thay thế cho", "thay thế", "thay cho", "thay", "bằng gì", "đổi món", "đổi"]:
+                food_query = re.sub(re.escape(p), "", food_query, flags=re.IGNORECASE)
+            food_query = food_query.strip("? .,!:")
+            result = exec_suggest_swap(
+                session=session,
+                food_name=food_query or "trà sữa",
+            )
+            reply = synthesize_tool_output("suggest_swap", result, profile)
+            return OrchestratorResponse(
+                reply=reply,
+                reply_text=reply,
+                tool_called="suggest_swap",
+                tool_args={"food_name": food_query},
+                tool_result=result,
+                is_fallback=True,
+                engine="fallback",
+            )
+
+        # Ý định 10: Tư vấn thói quen & lời khuyên cá nhân hóa (Behavioral Insights)
         if any(
             k in msg_lower
             for k in [
@@ -1237,8 +1534,7 @@ class AIOrchestrator:
                 "nhận xét",
                 "ăn uống ra sao",
                 "gần đây thế nào",
-                "bù trừ",
-                "compensation",
+                "cân bằng",
                 "pattern",
             ]
         ):
@@ -1256,6 +1552,55 @@ class AIOrchestrator:
                     reply=habit_reply,
                     reply_text=habit_reply,
                     is_fallback=True,
+                    engine="fallback",
+                )
+
+        # Kiến thức dinh dưỡng phổ thông (General Nutrition Knowledge Base)
+        if any(
+            k in msg_lower
+            for k in [
+                "uống nước", "bao nhiêu nước", "chất béo tốt", "chất béo xấu",
+                "protein là gì", "tác dụng của protein", "đạm có tác dụng gì",
+                "uống nước chanh", "chanh ấm", "thâm hụt calo", "tdee là gì"
+            ]
+        ):
+            kb_reply = None
+            if "nước" in msg_lower and "chanh" not in msg_lower:
+                kb_reply = (
+                    "Để cơ thể duy trì trao đổi chất và phục hồi tốt, người trưởng thành nên uống từ **1.5 - 2.5 lít nước mỗi ngày** "
+                    "(tương đương 35 - 40ml trên mỗi kg trọng lượng cơ thể). Hãy uống đều đặn từng ngụm nhỏ suốt cả ngày nhé!"
+                )
+            elif "chanh" in msg_lower:
+                kb_reply = (
+                    "Nước chanh ấm cung cấp một lượng vitamin C và giúp bổ sung nước nhẹ nhàng sau khi thức dậy. "
+                    "Tuy nhiên, nước chanh không thể trực tiếp 'đốt mỡ'. Việc giảm cân lành mạnh luôn cần thâm hụt calo tổng thể và ăn uống cân đối."
+                )
+            elif "chất béo" in msg_lower:
+                kb_reply = (
+                    "Chất béo tốt (axit béo không bão hòa đơn và đa) có nhiều trong dầu ô liu, quả bơ, cá hồi và các loại hạt, "
+                    "giúp bảo vệ tim mạch và hấp thụ vitamin. Hãy hạn chế chất béo bão hòa từ đồ chiên rán ngập dầu nhiều lần."
+                )
+            elif "protein" in msg_lower or "đạm" in msg_lower:
+                kb_reply = (
+                    "Protein (chất đạm) là dưỡng chất quan trọng giúp xây dựng, sửa chữa mô cơ và tạo cảm giác no lâu hơn. "
+                    "Nguồn đạm dồi dào và lành mạnh gồm có: ức gà, cá, tôm, trứng, đậu hũ và các loại đậu."
+                )
+            elif "thâm hụt calo" in msg_lower:
+                kb_reply = (
+                    "Thâm hụt calo là trạng thái nạp vào lượng năng lượng ít hơn mức cơ thể tiêu hao trong ngày (TDEE). "
+                    "Mức thâm hụt lý tưởng và an toàn khoa học là khoảng **300 - 500 kcal/ngày**, không nên nhịn ăn quá mức."
+                )
+
+            if kb_reply:
+                reply_with_label = (
+                    f"💡 *Thông tin tham khảo dinh dưỡng:*\n\n{kb_reply}\n\n"
+                    "*Lưu ý: Thông tin mang tính tham khảo khoa học chung, không thay thế chẩn đoán y khoa.*"
+                )
+                return OrchestratorResponse(
+                    reply=reply_with_label,
+                    reply_text=reply_with_label,
+                    is_fallback=True,
+                    engine="fallback",
                 )
 
         # Chào hỏi hoặc hội thoại mở thông thường
@@ -1273,6 +1618,7 @@ class AIOrchestrator:
                 reply=greetings_reply,
                 reply_text=greetings_reply,
                 is_fallback=True,
+                engine="fallback",
             )
 
         greetings_reply = (
@@ -1285,6 +1631,7 @@ class AIOrchestrator:
             reply=final_greet,
             reply_text=final_greet,
             is_fallback=True,
+            engine="fallback",
         )
 
 
