@@ -33,6 +33,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import Session, select
 
+from src.ai.intent_classifier import classify_user_intent
 from src.ai.tool_definitions import get_gemini_tool_declarations
 from src.backend.models.schema import Goal, User
 from src.backend.services.assistant_tools import (
@@ -556,10 +557,40 @@ class AIOrchestrator:
         return self.api_key not in placeholders
 
     def _init_gemini_model(self, system_instruction: str) -> Any:
-        """Khởi tạo GenerativeModel của Google Generative AI kèm 4 Tools."""
+        """Khởi tạo GenerativeModel của Google GenAI / Generative AI kèm 4 Tools."""
         if not self._is_api_key_valid():
             return None
 
+        # 1. Thử dùng Google GenAI SDK mới (google-genai)
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=self.api_key)
+            tools = get_gemini_tool_declarations()
+
+            class GenAIModelWrapper:
+                def __init__(self, client, model_name, sys_instruction, tools):
+                    self.client = client
+                    self.model_name = model_name
+                    self.sys_instruction = sys_instruction
+                    self.tools = tools
+
+                def start_chat(self, enable_automatic_function_calling: bool = False):
+                    return self.client.chats.create(
+                        model=self.model_name,
+                        config=types.GenerateContentConfig(
+                            system_instruction=self.sys_instruction,
+                            tools=self.tools,
+                            temperature=0.2,
+                        ),
+                    )
+
+            return GenAIModelWrapper(client, self.model_name, system_instruction, tools)
+        except Exception:
+            pass
+
+        # 2. Fallback sang google.generativeai nếu cần
         try:
             import google.generativeai as genai
 
@@ -786,42 +817,18 @@ class AIOrchestrator:
         - Gọi 4 công cụ backend với dữ liệu thực từ CSDL.
         - Đảm bảo Zero-Crash và phản hồi mang phong cách Constructive Nutrition Coach.
         """
+        intent = classify_user_intent(message)
         msg_lower = message.lower()
 
         # Ý định 1: Tra cứu dinh dưỡng hôm nay / get_daily_nutrition
-        is_daily_nutrition = False
-        if any(
-            k in msg_lower
-            for k in [
-                "hôm nay ăn",
-                "calo hôm nay",
-                "dinh dưỡng hôm nay",
-                "đã ăn bao nhiêu",
-                "còn lại bao nhiêu",
-                "target",
-                "mục tiêu calo",
-                "tiến độ hôm nay",
-                "bao nhiêu calo",
-                "nạp bao nhiêu",
-                "ăn bao nhiêu",
-            ]
-        ):
-            is_daily_nutrition = True
-        elif (
-            "calo" in msg_lower
-            or "calorie" in msg_lower
-            or "dinh dưỡng" in msg_lower
-            or "năng lượng" in msg_lower
-        ) and any(
-            d in msg_lower
-            for d in ["hôm nay", "hôm qua", "nay", "đã nạp", "đã ăn", "mục tiêu", "còn lại"]
-        ):
-            is_daily_nutrition = True
-
-        if is_daily_nutrition and not any(r in msg_lower for r in ["gợi ý", "ăn gì", "recommend", "đề xuất"]):
+        if intent == "get_daily_nutrition":
             target_date = "today"
-            if "hôm qua" in msg_lower or "hom qua" in msg_lower:
+            if "hôm qua" in msg_lower or "hom qua" in msg_lower or "yesterday" in msg_lower:
                 target_date = "yesterday"
+            else:
+                m_date = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", msg_lower)
+                if m_date:
+                    target_date = m_date.group(1)
 
             result = exec_get_daily_nutrition(
                 session=session,
@@ -839,18 +846,7 @@ class AIOrchestrator:
             )
 
         # Ý định 2: Gợi ý món ăn / recommend_meals
-        if any(
-            k in msg_lower
-            for k in [
-                "gợi ý",
-                "ăn gì",
-                "recommend",
-                "đề xuất",
-                "món ăn nào",
-                "món gì",
-                "thực đơn",
-            ]
-        ):
+        if intent == "recommend_meals":
             # Trích xuất ngân sách nếu người dùng nêu (ví dụ: 50.000đ, 80.000 VNĐ, 50k, 60000)
             budget: Optional[int] = None
             b_dot_match = re.search(r"(\d{1,3}(?:[.,]\d{3})+)\s*(?:đ|vnd|vnđ)?", msg_lower)
@@ -885,23 +881,16 @@ class AIOrchestrator:
             )
 
         # Ý định 3: Tổng hợp tiến độ / get_progress_summary
-        if any(
-            k in msg_lower
-            for k in [
-                "tiến độ",
-                "cân nặng",
-                "progress",
-                "tổng hợp",
-                "xu hướng",
-                "streak",
-                "chuỗi ngày",
-                "lịch sử",
-            ]
-        ):
+        if intent == "get_progress_summary":
             days_range = 7
-            days_match = re.search(r"(\d+)\s*ngày", msg_lower)
-            if days_match:
-                days_range = int(days_match.group(1))
+            if any(k in msg_lower for k in ("30 ngày", "30 ngay", "tháng", "thang")):
+                days_range = 30
+            elif any(k in msg_lower for k in ("14 ngày", "14 ngay", "2 tuần", "2 tuan")):
+                days_range = 14
+            else:
+                days_match = re.search(r"(\d+)\s*(?:ngày|ngay)", msg_lower)
+                if days_match:
+                    days_range = int(days_match.group(1))
 
             result = exec_get_progress_summary(
                 session=session,
@@ -919,41 +908,53 @@ class AIOrchestrator:
             )
 
         # Ý định 4: Ghi nhận bữa ăn cụ thể / log_meal
-        if any(k in msg_lower for k in ["ghi", "lưu", "note", "vừa ăn", "mới ăn"]):
+        if intent == "log_meal":
             dish_name = "Cơm tấm sườn nướng"
             dish_gram = 300.0
             meal_type = "lunch"
 
-            if "phở bò" in msg_lower:
+            if "phở bò" in msg_lower or "pho bo" in msg_lower:
                 dish_name = "Phở bò tái"
                 dish_gram = 400.0
-            elif "phở gà" in msg_lower:
+            elif "phở gà" in msg_lower or "pho ga" in msg_lower:
                 dish_name = "Phở gà"
                 dish_gram = 400.0
-            elif "bún chả" in msg_lower:
+            elif "phở" in msg_lower or "pho" in msg_lower:
+                dish_name = "Phở bò tái"
+                dish_gram = 400.0
+            elif "bún chả" in msg_lower or "bun cha" in msg_lower:
                 dish_name = "Bún chả"
                 dish_gram = 350.0
-            elif "bún bò" in msg_lower:
+            elif "bún bò" in msg_lower or "bun bo" in msg_lower:
                 dish_name = "Bún bò Huế"
-                dish_gram = 400.0
-            elif "cơm tấm" in msg_lower or "cơm sườn" in msg_lower:
+                dish_gram = 450.0
+            elif "bún" in msg_lower or "bun" in msg_lower:
+                dish_name = "Bún bò Huế"
+                dish_gram = 450.0
+            elif "cơm tấm" in msg_lower or "com tam" in msg_lower or "cơm sườn" in msg_lower or "com suon" in msg_lower:
                 dish_name = "Cơm tấm sườn nướng"
                 dish_gram = 300.0
-            elif "ức gà" in msg_lower:
-                dish_name = "Ức gà luộc"
+            elif "bánh mì" in msg_lower or "banh mi" in msg_lower:
+                dish_name = "Bánh mì trứng ốp la"
+                dish_gram = 150.0
+            elif "ức gà" in msg_lower or "uc ga" in msg_lower:
+                dish_name = "Ức gà áp chảo"
                 dish_gram = 200.0
-            elif "trứng" in msg_lower:
+            elif "sữa" in msg_lower or "sua" in msg_lower:
+                dish_name = "Sữa tươi không đường"
+                dish_gram = 200.0
+            elif "trứng" in msg_lower or "trung" in msg_lower:
                 dish_name = "Trứng gà ốp la (1 quả)"
                 dish_gram = 60.0
 
-            if "sáng" in msg_lower:
+            if any(k in msg_lower for k in ("sáng", "sang")):
                 meal_type = "breakfast"
-            elif "tối" in msg_lower:
+            elif any(k in msg_lower for k in ("tối", "toi")):
                 meal_type = "dinner"
-            elif "phụ" in msg_lower or "vặt" in msg_lower:
+            elif any(k in msg_lower for k in ("phụ", "phu", "vặt", "vat")):
                 meal_type = "snack"
 
-            gram_match = re.search(r"(\d+)\s*(g|gram|gam)", msg_lower)
+            gram_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:g|gram|gam|ml)", msg_lower)
             if gram_match:
                 dish_gram = float(gram_match.group(1))
 

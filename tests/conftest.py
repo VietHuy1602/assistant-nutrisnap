@@ -16,7 +16,7 @@ from src.backend.models.schema import FoodReference
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database():
-    """Khởi tạo CSDL kiểm thử và nạp dữ liệu tham chiếu 500 món ăn cho toàn bộ test suite."""
+    """Khởi tạo CSDL kiểm thử và nạp dữ liệu tham chiếu cùng tài khoản demo cho toàn bộ test suite."""
     init_db()
     with Session(engine) as session:
         count = len(session.exec(select(FoodReference)).all())
@@ -24,4 +24,7 @@ def setup_test_database():
             from scripts.seed_food_references import seed_foods
 
             seed_foods()
+    from scripts.seed_demo_accounts import seed_demo_data
+
+    seed_demo_data()
 
