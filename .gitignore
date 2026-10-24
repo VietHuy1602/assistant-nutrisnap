@@ -232,6 +232,9 @@ venv/
 .env
 .env.*
 !.env.example
+src/frontend/.env
+src/frontend/.env.*
+src/frontend/.env.local
 
 # Frontend build and cache
 .vite/

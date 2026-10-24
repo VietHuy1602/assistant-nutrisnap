@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
+from src.ai.config import is_live_ai_available
 from src.backend.models.database import get_session, init_db
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
@@ -23,7 +24,7 @@ from src.backend.routers.meal_router import router as meal_router
 from src.backend.routers.report_router import router as report_router
 from src.backend.schemas.api_contract import (
     RESPONSIBLE_NUTRITION_DISCLAIMER,
-    BaseResponse,
+    HealthCheckResponse,
     MealPreviewItem,
     MealPreviewRequest,
     MealPreviewResponse,
@@ -96,12 +97,18 @@ app.include_router(report_router)
 # ==============================================================================
 
 
-@app.get("/api/v1/health", response_model=BaseResponse, tags=["Health"])
+@app.get("/api/v1/health", response_model=HealthCheckResponse, tags=["Health"])
+@app.get("/health", response_model=HealthCheckResponse, tags=["Health"])
+@app.get("/api/v1/ping", response_model=HealthCheckResponse, tags=["Health"])
 def health_check():
-    """Kiểm tra tình trạng hoạt động của hệ thống Backend."""
-    return BaseResponse(
+    """Kiểm tra tình trạng hoạt động của hệ thống Backend và kết nối AI."""
+    ai_live = is_live_ai_available()
+    return HealthCheckResponse(
         success=True,
-        message="NutriSnap API is running healthy.",
+        status="ok",
+        ai_provider="gemini",
+        ai_live=ai_live,
+        message="NutriSnap API is running healthy." if ai_live else "NutriSnap API is running in offline fallback mode.",
         disclaimer=RESPONSIBLE_NUTRITION_DISCLAIMER,
     )
 

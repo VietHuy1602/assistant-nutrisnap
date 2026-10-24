@@ -24,6 +24,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.ai.config import get_gemini_api_key
+
 logger = logging.getLogger("nutrisnap.ai.voice_modifier")
 
 # ==============================================================================
@@ -583,18 +585,31 @@ class VoiceModifier:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model_name: str = "gemini-1.5-flash",
+        model_name: Optional[str] = None,
         use_mock_fallback: bool = True,
     ):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        self.model_name = model_name
+        if api_key is not None:
+            self.api_key = api_key.strip()
+        else:
+            self.api_key = (get_gemini_api_key() or os.getenv("GEMINI_API_KEY", "")).strip()
+        self.model_name = (
+            model_name or os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or "gemini-1.5-flash"
+        ).strip()
         self.use_mock_fallback = use_mock_fallback
 
     def _is_api_key_valid(self) -> bool:
         if not self.api_key:
             return False
         clean = self.api_key.strip()
-        return bool(clean and clean != "dummy_api_key_for_testing" and len(clean) >= 20)
+        invalid_keys = {
+            "YOUR_GEMINI_API_KEY_HERE",
+            "your_actual_api_key_here",
+            "dummy_api_key_for_testing",
+            "mock",
+            "change-me",
+            "your_api_key_here",
+        }
+        return bool(clean and clean not in invalid_keys and len(clean) >= 15)
 
     def process(
         self,

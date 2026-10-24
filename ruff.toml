@@ -10,6 +10,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "scripts/*" = ["E402"]
+"tests/*" = ["E402"]
 
 [lint.isort]
 combine-as-imports = true

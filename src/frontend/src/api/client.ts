@@ -10,8 +10,13 @@ import { normalizeAxiosError } from '../utils/apiError';
 export const UNAUTHORIZED_EVENT = 'nutrisnap:unauthorized';
 const AUTH_PROBE_PATHS = ['/auth/login', '/auth/register', '/auth/me'];
 
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+const normalizedBaseUrl = rawBaseUrl.endsWith('/api/v1')
+  ? rawBaseUrl
+  : `${rawBaseUrl.replace(/\/+$/, '')}/api/v1`;
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1',
+  baseURL: normalizedBaseUrl,
   withCredentials: true, // Trình duyệt tự gắn HttpOnly cookie
   timeout: 15_000,
   headers: {
