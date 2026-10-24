@@ -275,3 +275,14 @@ async def recognize_food_endpoint(request: Request):
         # Cơ chế Mock Fallback bắt buộc: Đảm bảo không bao giờ crash 500 làm gián đoạn Demo
         return get_fallback_recognition_response(meal_type=meal_type)
 
+
+if __name__ == "__main__":
+    import uvicorn
+
+    from src.backend.services.port_utils import ensure_port_available
+
+    port = 8000
+    host = "127.0.0.1"
+    ensure_port_available(port=port, host=host, auto_kill=True)
+    uvicorn.run("src.backend.main:app", host=host, port=port, reload=True)
+
