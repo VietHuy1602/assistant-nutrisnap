@@ -1,0 +1,236 @@
+# tests/test_recommend_meals_w5.py
+# W5: Kiem thu exec_recommend_meals - DATABASE ISOLATION: SQLite :memory:
+from __future__ import annotations
+import os, sqlite3
+from pathlib import Path
+import pytest
+from sqlalchemy import event
+from sqlalchemy.pool import StaticPool
+from sqlmodel import Session, SQLModel, create_engine, select
+
+os.environ.setdefault('JWT_SECRET_KEY', 'test_w5_recommend_meals_jwt_secret_32chars_safe!')
+os.environ.setdefault('APP_ENV', 'testing')
+
+_MEM_ENGINE = create_engine('sqlite:///:memory:', connect_args={'check_same_thread': False}, poolclass=StaticPool)
+
+@event.listens_for(_MEM_ENGINE, 'connect')
+def _set_fk_pragma(dbapi_conn, _):
+    if isinstance(dbapi_conn, sqlite3.Connection):
+        cur = dbapi_conn.cursor()
+        cur.execute('PRAGMA foreign_keys=ON;')
+        cur.close()
+
+import src.backend.models.database as _db_mod
+_db_mod.engine = _MEM_ENGINE
+import src.backend.models.schema as _schema  # noqa: F401
+SQLModel.metadata.create_all(_MEM_ENGINE)
+from src.backend.models.schema import FoodReference, User
+from src.backend.services.assistant_tools import exec_recommend_meals
+from src.backend.services.auth_service import register_with_initial_goal
+from src.backend.services.goal_service import GoalPlanInput
+
+_CSV_PATH = Path(__file__).resolve().parent.parent / 'data' / 'vn_foods.csv'
+_USER = None
+
+def _seed_foods():
+    if not _CSV_PATH.exists():
+        return 0
+    import csv
+    count = 0
+    with open(_CSV_PATH, encoding='utf-8-sig', newline='') as fh:
+        reader = csv.DictReader(fh)
+        with Session(_MEM_ENGINE) as session:
+            for row in reader:
+                ex = session.exec(select(FoodReference).where(FoodReference.food_name == row['food_name'])).first()
+                if not ex:
+                    session.add(FoodReference(
+                        food_name=row['food_name'],
+                        calories_per_100g=float(row['calories_per_100g']),
+                        protein_per_100g=float(row['protein_per_100g']),
+                        carbs_per_100g=float(row['carbs_per_100g']),
+                        fat_per_100g=float(row['fat_per_100g']),
+                        avg_price_vnd=int(row['avg_price_vnd'])))
+                    count += 1
+            session.commit()
+    return count
+
+def _create_user(username, email, budget=80000):
+    with Session(_MEM_ENGINE) as session:
+        ex = session.exec(select(User).where(User.email == email)).first()
+        if ex:
+            return ex
+        user, _ = register_with_initial_goal(
+            session=session, username=username, email=email, password='TestPass123!',
+            initial_goal=GoalPlanInput(
+                gender='female', age=28, height_cm=162.0, current_weight_kg=55.0,
+                target_weight_kg=52.0, goal_type='lose_weight', weekly_pace_kg=0.3,
+                activity_level='moderate', daily_budget_vnd=budget))
+    return user
+
+def _food_count():
+    with Session(_MEM_ENGINE) as session:
+        return len(session.exec(select(FoodReference)).all())
+
+def _recommend(*, remaining_calories, budget_vnd, meal_portion_gram=250.0, limit=5):
+    with Session(_MEM_ENGINE) as session:
+        return exec_recommend_meals(session=session, authenticated_user_id=_USER.id,
+            remaining_calories=remaining_calories, budget_vnd=budget_vnd,
+            meal_portion_gram=meal_portion_gram, limit=limit)
+
+@pytest.fixture(scope='module', autouse=True)
+def setup_module_db():
+    global _USER
+    seeded = _seed_foods()
+    assert seeded > 0 or _food_count() > 0
+    _USER = _create_user('w5_rm_user01', 'w5_rm_user01@test.local')
+    assert _USER is not None and _USER.id is not None
+
+# TC01: Budget 50000
+def test_tc01_budget_50000():
+    res = _recommend(remaining_calories=800.0, budget_vnd=50000)
+    assert res['tool_name'] == 'recommend_meals'
+    assert res['effective_budget_vnd'] == 50000
+    assert len(res['recommendations']) > 0
+    for rec in res['recommendations']:
+        assert rec['avg_price_vnd'] <= 50000
+    assert 'disclaimer' in res
+
+# TC02: Budget 60000
+def test_tc02_budget_60000():
+    res = _recommend(remaining_calories=800.0, budget_vnd=60000)
+    assert res['effective_budget_vnd'] == 60000
+    assert len(res['recommendations']) > 0
+    for rec in res['recommendations']:
+        assert rec['avg_price_vnd'] <= 60000
+
+# TC03: Budget 80000
+def test_tc03_budget_80000():
+    res = _recommend(remaining_calories=800.0, budget_vnd=80000)
+    assert res['effective_budget_vnd'] == 80000
+    assert len(res['recommendations']) > 0
+    for rec in res['recommendations']:
+        assert rec['avg_price_vnd'] <= 80000
+
+# TC04: Calo limit 200
+def test_tc04_calo_200():
+    res = _recommend(remaining_calories=200.0, budget_vnd=80000)
+    assert res['effective_max_calo'] == 200.0
+    for rec in res['recommendations']:
+        assert rec['estimated_calories'] <= 200.0
+
+# TC05: Multiple calo limits
+def test_tc05_multiple_calo_limits():
+    for lim in [300.0, 500.0, 800.0]:
+        res = _recommend(remaining_calories=lim, budget_vnd=80000)
+        assert res['effective_max_calo'] == lim
+        for rec in res['recommendations']:
+            assert rec['estimated_calories'] <= lim
+
+# TC06: No USDA
+def test_tc06_no_usda_items():
+    res = _recommend(remaining_calories=1000.0, budget_vnd=80000, limit=50)
+    assert len(res['recommendations']) > 0
+    for rec in res['recommendations']:
+        assert '(usda)' not in rec['food_name'].lower()
+        assert rec['food_id'] is not None
+
+# TC07: Combined calo + budget
+def test_tc07_combined_calo_budget():
+    res = _recommend(remaining_calories=400.0, budget_vnd=60000)
+    assert res['effective_max_calo'] == 400.0
+    assert res['effective_budget_vnd'] == 60000
+    for rec in res['recommendations']:
+        assert rec['estimated_calories'] <= 400.0
+        assert rec['avg_price_vnd'] <= 60000
+
+# TC08: No match -> empty
+def test_tc08_no_match_returns_empty():
+    res = _recommend(remaining_calories=800.0, budget_vnd=500)
+    assert res['tool_name'] == 'recommend_meals'
+    assert res['recommendations'] == []
+    assert 'disclaimer' in res
+
+# TC08b: remaining_calories < 150 triggers gentle_note override -> effective_max_calo=300
+# (NOT empty; this tests that the override works correctly for very low calo input)
+def test_tc08b_very_low_calo_triggers_override_not_empty():
+    # remaining_calories=5 <= 150, so effective_max_calo is overridden to 300
+    # This is correct behavior per exec_recommend_meals contract
+    res = _recommend(remaining_calories=5.0, budget_vnd=80000)
+    # The gentle_note override kicks in -> effective_max_calo=300, not 5
+    assert res['effective_max_calo'] == 300.0, f"Expected override to 300, got {res['effective_max_calo']}"
+    assert res['gentle_note'] is not None, 'Expected gentle_note when remaining_calories=5'
+    # Result may or may not be empty depending on food data, but constraint must be honored
+    for rec in res['recommendations']:
+        assert rec['estimated_calories'] <= 300.0
+
+# TC09: budget=0 fallback
+def test_tc09_budget_zero_fallback_50000():
+    res = _recommend(remaining_calories=800.0, budget_vnd=0)
+    assert res['effective_budget_vnd'] == 50000
+    for rec in res['recommendations']:
+        assert rec['avg_price_vnd'] <= 50000
+
+# TC09b: budget=-1 fallback
+def test_tc09b_budget_negative_fallback_50000():
+    res = _recommend(remaining_calories=800.0, budget_vnd=-1)
+    assert res['effective_budget_vnd'] == 50000
+
+# TC10: limit
+def test_tc10_limit_respected():
+    for lim in [1, 3, 5, 10]:
+        res = _recommend(remaining_calories=800.0, budget_vnd=80000, limit=lim)
+        assert len(res['recommendations']) <= lim
+
+# TC11: gentle note when calo <= 150
+def test_tc11_gentle_note_calo_100():
+    res = _recommend(remaining_calories=100.0, budget_vnd=80000)
+    assert res['effective_max_calo'] == 300.0
+    assert res['gentle_note'] is not None
+    for rec in res['recommendations']:
+        assert rec['estimated_calories'] <= 300.0
+
+# TC11b: exactly 150
+def test_tc11b_exactly_150_triggers_note():
+    res = _recommend(remaining_calories=150.0, budget_vnd=80000)
+    assert res['effective_max_calo'] == 300.0
+    assert res['gentle_note'] is not None
+
+# TC11c: 151 no gentle note
+def test_tc11c_151_no_gentle_note():
+    res = _recommend(remaining_calories=151.0, budget_vnd=80000)
+    assert res['effective_max_calo'] == 151.0
+    assert res['gentle_note'] is None
+
+# TC12: no duplicates
+def test_tc12_no_duplicate_food_ids():
+    res = _recommend(remaining_calories=800.0, budget_vnd=80000, limit=50)
+    ids = [r['food_id'] for r in res['recommendations']]
+    assert len(ids) == len(set(ids))
+
+# TC13: deterministic
+def test_tc13_deterministic():
+    kw = dict(remaining_calories=500.0, budget_vnd=60000, limit=5)
+    r1 = _recommend(**kw)
+    r2 = _recommend(**kw)
+    assert [x['food_id'] for x in r1['recommendations']] == [x['food_id'] for x in r2['recommendations']]
+
+# TC14: required fields
+def test_tc14_required_fields():
+    req = {'food_id','food_name','suggested_gram','estimated_calories','protein_g','carbs_g','fat_g','avg_price_vnd'}
+    res = _recommend(remaining_calories=800.0, budget_vnd=80000, limit=5)
+    assert len(res['recommendations']) > 0
+    for rec in res['recommendations']:
+        assert not (req - set(rec.keys()))
+        assert rec['estimated_calories'] >= 0
+        assert rec['protein_g'] >= 0
+        assert rec['avg_price_vnd'] >= 0
+        assert rec['suggested_gram'] == 250.0
+
+# TC15: metadata
+def test_tc15_response_metadata():
+    res = _recommend(remaining_calories=600.0, budget_vnd=70000)
+    for f in ['tool_name','user_id','effective_max_calo','effective_budget_vnd',
+              'remaining_calories','budget_vnd','gentle_note','disclaimer']:
+        assert f in res
+    assert res['tool_name'] == 'recommend_meals'
+    assert res['user_id'] == _USER.id
