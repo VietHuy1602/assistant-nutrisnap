@@ -77,6 +77,12 @@ def classify_user_intent(message: str) -> str | None:
 
     # 4. Nhóm A: Tra cứu dinh dưỡng ngày (get_daily_nutrition)
     nutrition_patterns = (
+        r"con.*bao nhieu.*(calo|kcal)",
+        r"bao nhieu.*(calo|kcal).*con",
+        r"con bao nhieu calo",
+        r"con bao nhieu kcal",
+        r"con bao nhieu",
+        r"con.*calo",
         r"nap bao nhieu calo",
         r"bao nhieu calo roi",
         r"calo con lai",

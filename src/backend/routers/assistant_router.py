@@ -158,6 +158,19 @@ def assistant_chat_endpoint(
     preview: dict[str, Any] | None = None
     expires_at: str | None = None
 
+    # Tải lịch sử 10 tin nhắn gần nhất của phiên này để cung cấp ngữ cảnh hội thoại
+    recent_history = get_chat_history(
+        session=session,
+        authenticated_user_id=verified_user_id,
+        session_id=chat_session.id,  # type: ignore
+        limit=10,
+    )
+    chat_history_payload = [
+        {"role": m.sender_role, "content": m.content}
+        for m in recent_history
+        if m.sender_role in ("user", "assistant") and m.content != req.message
+    ]
+
     try:
         from src.ai.orchestrator import orchestrate_chat
 
@@ -166,6 +179,7 @@ def assistant_chat_endpoint(
             user_id=verified_user_id,
             message=req.message,
             explicit_tool_call=req.tool_call,
+            chat_history=chat_history_payload,
         )
         reply = orch_res.reply or orch_res.reply_text
         used_tool_name = orch_res.tool_called
@@ -186,6 +200,7 @@ def assistant_chat_endpoint(
             reply = f"Lỗi thực thi công cụ: {tool_result.get('detail', 'Tham số không hợp lệ')}"
     except Exception:
         # Fallback khi LLM / Orchestrator gặp sự cố: giữ từ khóa làm fallback an toàn
+        fallback_notice = "Trợ lý đang chạy chế độ cơ bản. "
         if req.tool_call:
             t_name = req.tool_call.get("tool_name") or req.tool_call.get("name")
             t_args = req.tool_call.get("tool_args") or req.tool_call.get("args") or {}
@@ -316,6 +331,9 @@ def assistant_chat_endpoint(
                 reply = "Đã thực thi công cụ thành công."
         else:
             reply = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
+
+        if "fallback_notice" in locals() and fallback_notice and not reply.startswith("Trợ lý đang chạy chế độ cơ bản"):
+            reply = f"{fallback_notice}{reply}"
 
     # Lưu phản hồi của trợ lý vào CSDL
     save_chat_message(
