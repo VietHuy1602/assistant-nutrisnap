@@ -21,6 +21,10 @@ import { SaveSuccess } from '../components/meal/SaveSuccess';
 import { getDefaultMealTypeByHour } from '../utils/date';
 import { mealApi } from '../api/mealApi';
 import { emitMealLogged } from '../utils/mealEvents';
+import { useConnectivity } from '../app/ConnectivityProvider';
+import { draftStore } from '../storage/draftStore';
+import { useDraftAutosave } from '../offline/useDraftAutosave';
+import { Check } from 'lucide-react';
 
 export type CaptureMode =
   | 'idle'
@@ -54,6 +58,9 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [manualReason, setManualReason] = useState<string | undefined>();
+  const [isSavedOffline, setIsSavedOffline] = useState(false);
+
+  const { isOnline } = useConnectivity();
 
   // Hook quản lý máy ảnh WebRTC
   const { videoRef, status: cameraStatus, error: cameraError, start: startCamera, stop: stopCamera, capture: captureFrame } =
@@ -67,6 +74,24 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   const [draftState, draftDispatch] = useReducer(mealDraftReducer, {
     ...initialDraftState,
     mealType: selectedMealType,
+  });
+
+  const draftPayload = React.useMemo(() => {
+    const validItems = draftState.items
+      .filter((it) => it.food_id !== null && it.estimated_gram > 0)
+      .map((it) => ({
+        foodId: it.food_id,
+        name: it.food_name,
+        grams: it.estimated_gram,
+      }));
+    return {
+      mealType: draftState.mealType,
+      items: validItems,
+    };
+  }, [draftState.mealType, draftState.items]);
+
+  const { clearDraft } = useDraftAutosave(draftPayload, {
+    enabled: !isOnline && draftPayload.items.length > 0,
   });
 
   // Tự động bật camera nếu bắt đầu ở chế độ chụp ảnh
@@ -147,10 +172,38 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
     const validItems = draftState.items
       .filter((it) => it.food_id !== null && it.estimated_gram > 0)
       .map((it) => ({
-        food_id: it.food_id,
+        food_id: it.food_id!,
         food_name: it.food_name,
         estimated_gram: it.estimated_gram,
       }));
+
+    if (validItems.length === 0) {
+      setSaveError('Vui lòng chọn ít nhất một món ăn với trọng lượng hợp lệ.');
+      setIsSaving(false);
+      return;
+    }
+
+    if (!isOnline) {
+      try {
+        await draftStore.saveDraft({
+          mealType: draftState.mealType,
+          items: validItems.map((v) => ({
+            foodId: v.food_id,
+            name: v.food_name,
+            grams: v.estimated_gram,
+          })),
+        });
+        setIsSavedOffline(true);
+        setMode('saved');
+        onSaved?.();
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Không thể lưu bản nháp ngoại tuyến.';
+        setSaveError(msg);
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
 
     try {
       await mealApi.logMeal({
@@ -159,9 +212,11 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
         image_path: null,
       });
 
+      await clearDraft();
       // Phát sự kiện toàn cục để Dashboard tự động refetch (mục 3.2, 4.2)
       emitMealLogged({ itemCount: validItems.length });
       onSaved?.();
+      setIsSavedOffline(false);
       setMode('saved');
     } catch (err: unknown) {
       // Giữ nguyên bản nháp khi lỗi (PSC-8)
@@ -176,6 +231,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
     draftDispatch({ type: 'RESET' });
     setCapturedBlob(null);
     setSaveError(null);
+    setIsSavedOffline(false);
     resetRecognition();
     handleStartCamera();
   };
@@ -264,7 +320,23 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
 
       {/* Trạng thái 4: Đang nhận diện AI */}
       {mode === 'recognizing' && (
-        <RecognitionProgress slow={recSlow} onCancel={handleCancelRecognition} />
+        <div className="space-y-4">
+          <RecognitionProgress slow={recSlow} onCancel={handleCancelRecognition} />
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => {
+                cancelRecognition();
+                setManualReason('Đã chuyển sang nhập món thủ công theo yêu cầu.');
+                setMode('manualEntry');
+              }}
+              className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-xs font-semibold text-slate-600 hover:text-emerald-700 bg-white border border-slate-200 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
+            >
+              <Edit3 className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Chuyển sang chọn món thủ công</span>
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Trạng thái 5: Không nhận diện được món */}
@@ -297,8 +369,8 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       {mode === 'review' && (
         <div className="flex flex-col gap-4">
           {saveError && (
-            <div className="flex items-center gap-2 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
-              <AlertCircle className="w-4 h-4 text-red-500 shrink-0" aria-hidden="true" />
+            <div className="flex items-center gap-2 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800">
+              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
               <span>{saveError}</span>
             </div>
           )}
@@ -318,11 +390,33 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
 
       {/* Trạng thái 8: Đã lưu thành công */}
       {mode === 'saved' && (
-        <SaveSuccess
-          itemCount={draftState.items.length}
-          mealType={draftState.mealType}
-          onReset={handleResetFlow}
-        />
+        isSavedOffline ? (
+          <div className="w-full max-w-lg mx-auto bg-white p-8 rounded-3xl border border-slate-200 shadow-sm text-center space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+              <Check className="w-7 h-7" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">Đã lưu nháp ngoại tuyến</h2>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Bản ghi bữa ăn ({draftState.items.length} món) đã được mã hóa an toàn trên thiết bị của bạn.
+              Khi có mạng lại, hệ thống sẽ nhắc bạn duyệt và đồng bộ lên máy chủ.
+            </p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleResetFlow}
+                className="inline-flex min-h-11 items-center justify-center px-6 py-2.5 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-xs font-semibold shadow-xs transition-colors"
+              >
+                Ghi nhận bữa ăn khác
+              </button>
+            </div>
+          </div>
+        ) : (
+          <SaveSuccess
+            itemCount={draftState.items.length}
+            mealType={draftState.mealType}
+            onReset={handleResetFlow}
+          />
+        )
       )}
     </div>
   );

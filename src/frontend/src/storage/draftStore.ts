@@ -238,6 +238,14 @@ export class DraftStoreEngine {
   }
 
   /**
+   * Đếm số lượng bản nháp hợp lệ còn trong kho.
+   */
+  public async countDrafts(): Promise<number> {
+    const list = await this.listDrafts();
+    return list.length;
+  }
+
+  /**
    * Xóa một bản nháp theo id.
    */
   public async deleteDraft(id: string): Promise<void> {
@@ -302,8 +310,8 @@ export class DraftStoreEngine {
     if (this.dbPromise) {
       this.dbPromise.then((db) => db.close()).catch(() => {});
       this.dbPromise = null;
-      this.keyPromise = null;
     }
+    this.keyPromise = null;
   }
 }
 

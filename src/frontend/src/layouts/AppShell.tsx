@@ -7,6 +7,7 @@ import { AssistantChatDrawer } from '../components/AssistantChatDrawer';
 import { ChatProvider, useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { ConnectivityProvider } from '../app/ConnectivityProvider';
+import { DraftBanner } from '../offline/DraftBanner';
 
 export interface AppShellContext {
   openChat: () => void;
@@ -25,6 +26,7 @@ function AppShellInner() {
     <div className="min-h-screen bg-nutri-surface flex flex-col">
       <div ref={pageRef} className="flex flex-1 flex-col">
         <Navbar onOpenChat={openChat} />
+        <DraftBanner />
 
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
           {/* Banner gợi ý thiết lập mục tiêu nếu chưa có */}

@@ -46,35 +46,35 @@ export function setupMockIndexedDB() {
       const req = new MockIDBRequest();
       const key = this.keyPath ? value[this.keyPath] : value.id;
       this.storeMap.set(key, value);
-      setTimeout(() => req.triggerSuccess(key), 0);
+      queueMicrotask(() => req.triggerSuccess(key));
       return req;
     }
 
     get(key: any): MockIDBRequest {
       const req = new MockIDBRequest();
       const val = this.storeMap.get(key);
-      setTimeout(() => req.triggerSuccess(val), 0);
+      queueMicrotask(() => req.triggerSuccess(val));
       return req;
     }
 
     getAll(): MockIDBRequest {
       const req = new MockIDBRequest();
       const all = Array.from(this.storeMap.values());
-      setTimeout(() => req.triggerSuccess(all), 0);
+      queueMicrotask(() => req.triggerSuccess(all));
       return req;
     }
 
     delete(key: any): MockIDBRequest {
       const req = new MockIDBRequest();
       this.storeMap.delete(key);
-      setTimeout(() => req.triggerSuccess(undefined), 0);
+      queueMicrotask(() => req.triggerSuccess(undefined));
       return req;
     }
 
     clear(): MockIDBRequest {
       const req = new MockIDBRequest();
       this.storeMap.clear();
-      setTimeout(() => req.triggerSuccess(undefined), 0);
+      queueMicrotask(() => req.triggerSuccess(undefined));
       return req;
     }
   }
@@ -89,9 +89,9 @@ export function setupMockIndexedDB() {
       private dbMap: Map<string, Map<any, any>>,
       private objectStoreMeta: Map<string, string>
     ) {
-      setTimeout(() => {
+      queueMicrotask(() => {
         if (this.oncomplete) this.oncomplete();
-      }, 5);
+      });
     }
 
     objectStore(name: string): MockIDBObjectStore {
@@ -138,18 +138,23 @@ export function setupMockIndexedDB() {
       const dbMap = databases.get(name)!;
       const db = new MockIDBDatabase(name, dbMap);
 
-      setTimeout(() => {
+      queueMicrotask(() => {
         if (req.onupgradeneeded) {
           req.result = db;
           req.onupgradeneeded({ target: req } as any);
         }
         req.result = db;
         req.triggerSuccess(db);
-      }, 0);
+      });
 
       return req;
     },
   };
 
+  const originalIDB = (window as any).indexedDB;
   (window as any).indexedDB = mockFactory;
+
+  return () => {
+    (window as any).indexedDB = originalIDB;
+  };
 }
