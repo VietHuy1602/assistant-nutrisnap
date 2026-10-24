@@ -544,6 +544,8 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     expect(screen.getByRole('heading', { name: 'Trợ lý AI NutriSnap' })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Trợ lý AI NutriSnap' })).toHaveAttribute('aria-modal', 'true');
     const close = screen.getByRole('button', { name: 'Đóng trợ lý' });
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    for (let index = 0; index < 4; index++) await user.tab({ shift: true });
     expect(close).toHaveFocus();
     expect(document.querySelector('[inert]')).not.toBeNull();
     await user.tab({ shift: true });
@@ -581,7 +583,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
         } },
       } };
       if (outcome === 'failure') throw new ApiError('Rejected', { status: 400 });
-      return { status: 201, data: { success: outcome !== 'invalid', meal_id: 42, total_calories: 135, logged_at: '2026-10-23T12:00:00Z' } };
+      return { status: 201, data: { success: outcome !== 'invalid', status: 'logged', meal_id: 42, total_calories: 135, logged_at: '2026-10-23T12:00:00Z' } };
     });
     const user = userEvent.setup();
     render(<MemoryRouter><AuthProvider><Routes><Route element={<ProtectedRoute />}><Route element={<AppShell />}><Route path="/" element={<DashboardPage />} /></Route></Route></Routes></AuthProvider></MemoryRouter>);
@@ -589,10 +591,10 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(1));
     await user.click(screen.getByRole('button', { name: 'Mở trợ lý AI' }));
     await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
-    const confirm = await screen.findByRole('button', { name: 'Xác nhận lưu' });
+    const confirm = await screen.findByRole('button', { name: /^Xác nhận lưu/ });
     if (outcome === 'cancel') {
       await user.click(screen.getByRole('button', { name: 'Hủy' }));
-      expect(screen.getByText('Đã hủy · Bữa ăn chưa được lưu')).toBeInTheDocument();
+      expect(screen.getByText('Đã hủy thẻ ghi nhận bữa ăn.')).toBeInTheDocument();
       expect(postSpy).toHaveBeenCalledTimes(1);
     } else {
       await user.click(confirm);
@@ -628,6 +630,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
         </AuthProvider>
       </MemoryRouter>,
     );
+    await screen.findByTitle(mockUserNoGoal.user.username);
     const setupLink = await screen.findByRole('link', { name: 'Thiết lập ngay' });
     expect(setupLink).toHaveAttribute('href', '/goal-setup');
     // Exercise the real tab order instead of focusing the link programmatically.
@@ -648,14 +651,15 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     } });
     const user = userEvent.setup();
     render(<MemoryRouter><AuthProvider><Routes><Route element={<AppShell />}><Route path="/" element={<div>Trang kiểm thử</div>} /></Route></Routes></AuthProvider></MemoryRouter>);
+    await screen.findByTitle(mockUserNoGoal.user.username);
     await user.click(await screen.findByRole('button', { name: 'Trợ lý AI' }));
     await user.type(screen.getByRole('textbox', { name: 'Tin nhắn cho trợ lý' }), 'Kiểm thử');
     await user.click(screen.getByRole('button', { name: 'Gửi tin nhắn' }));
     await user.click(await screen.findByRole('button', { name: 'Hủy' }));
-    expect(screen.getByText('Đã hủy · Bữa ăn chưa được lưu')).toBeInTheDocument();
+    expect(screen.getByText('Đã hủy thẻ ghi nhận bữa ăn.')).toBeInTheDocument();
     expect(screen.queryByText('Đã xác nhận lưu vào nhật ký')).not.toBeInTheDocument();
     expect(postSpy).toHaveBeenCalledTimes(1);
-    expect(postSpy).toHaveBeenCalledWith('/assistant/chat', { session_id: 1, message: 'Kiểm thử' });
+    expect(postSpy).toHaveBeenCalledWith('/assistant/chat', { message: 'Kiểm thử' }, expect.objectContaining({ timeout: 45000, signal: expect.any(AbortSignal) }));
     await user.keyboard('{Escape}');
   });
 });

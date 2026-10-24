@@ -45,7 +45,7 @@ export function ChatComposer({
     void onSend(msg);
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Check IME composition status for safe Vietnamese typing
     if (isComposingRef.current || (e.nativeEvent as unknown as { isComposing?: boolean }).isComposing || e.keyCode === 229) {
       return;
@@ -53,7 +53,6 @@ export function ChatComposer({
 
     if (e.key === 'Enter') {
       if (e.shiftKey) {
-        e.preventDefault();
         return;
       }
       e.preventDefault();
@@ -67,7 +66,7 @@ export function ChatComposer({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-nutri-border/60 p-3 bg-nutri-panel">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t border-nutri-border/60 p-3 bg-nutri-panel">
       {text.length > MESSAGE_MAX_LENGTH * 0.8 && (
         <div className="flex justify-end pb-1 px-1">
           <span
@@ -83,9 +82,9 @@ export function ChatComposer({
         <label htmlFor="assistant-message" className="sr-only">
           Tin nhắn cho trợ lý
         </label>
-        <input
+        <textarea
           id="assistant-message"
-          type="text"
+          rows={2}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -99,10 +98,10 @@ export function ChatComposer({
           placeholder="Nhập câu hỏi hoặc món ăn..."
           disabled={isSending}
           autoComplete="off"
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-nutri-border px-3.5 py-2 text-base text-nutri-ink focus:outline-none focus:ring-2 focus:ring-nutri-focus disabled:opacity-75 disabled:bg-slate-50"
+          className="max-h-36 min-h-11 min-w-0 flex-1 resize-none rounded-xl border border-nutri-border px-3.5 py-2 text-base text-nutri-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus disabled:opacity-75 disabled:bg-slate-50"
         />
 
-        {isSending && onCancel ? (
+        {isSending && onCancel && (
           <button
             type="button"
             onClick={onCancel}
@@ -113,7 +112,7 @@ export function ChatComposer({
             <XCircle size={16} aria-hidden="true" />
             <span>Hủy</span>
           </button>
-        ) : (
+        )}
           <button
             type="submit"
             aria-label="Gửi tin nhắn"
@@ -122,7 +121,6 @@ export function ChatComposer({
           >
             <Send size={16} aria-hidden="true" />
           </button>
-        )}
       </div>
       {isSlow && (
         <p className="mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded-lg leading-5">

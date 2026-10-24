@@ -48,6 +48,7 @@ describe('ChatComposer (IME-safe & Accessibility)', () => {
     await user.type(input, 'Dòng 1{Shift>}{Enter}{/Shift}');
 
     expect(onSend).not.toHaveBeenCalled();
+    expect(input).toHaveValue('Dòng 1\n');
   });
 
   it('disables input and send button when isSending is true', () => {
