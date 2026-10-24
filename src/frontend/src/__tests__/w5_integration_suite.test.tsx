@@ -13,7 +13,7 @@ import { TrendStatusChip } from '../components/analytics/TrendStatusChip';
 import { WeeklyCaloriesChart } from '../components/analytics/WeeklyCaloriesChart';
 import { FoodSwapModal } from '../components/FoodSwapModal';
 import { VoiceNotePanel } from '../components/voice/VoiceNotePanel';
-import { mealDraftReducer, initialDraftState } from '../components/meal/mealDraftReducer';
+import { mealDraftReducer, initialDraftState, type MealDraftState } from '../components/meal/mealDraftReducer';
 import { trendStatus } from '../utils/trendStatus';
 import { swapApi } from '../api/swapApi';
 import { voiceApi } from '../api/voiceApi';
@@ -232,7 +232,7 @@ describe('W5 Track B Comprehensive Integration Suite', () => {
       });
 
       // Verify reducer state transitions
-      let state = {
+      let state: MealDraftState = {
         ...initialDraftState,
         items: [{ key: 'k1', food_id: 5, food_name: 'Phở bò tái', estimated_gram: 400, source: 'manual' as const }],
       };
