@@ -78,6 +78,13 @@ class ChatSessionResponse(BaseModel):
     started_at: datetime
 
 
+class AssistantHealthResponse(BaseModel):
+    mode: str = Field(..., description="Chế độ hoạt động: live hoặc fallback")
+    model: str = Field(..., description="Tên model Gemini đang dùng")
+    last_error_code: str | None = Field(default=None, description="Mã lỗi gần nhất nếu có")
+    last_error_at: str | None = Field(default=None, description="Thời gian xảy ra lỗi gần nhất")
+
+
 class AssistantChatResponse(BaseModel):
     session_id: int
     reply: str
@@ -90,11 +97,26 @@ class AssistantChatResponse(BaseModel):
     preview: dict[str, Any] | None = None
     expires_at: str | None = None
     disclaimer: str = DISCLAIMER_TEXT
+    engine: str = Field(default="fallback", description="Engine thực thi: llm hoặc fallback")
 
 
 # ==============================================================================
 # ROUTER ENDPOINTS
 # ==============================================================================
+
+
+@router.get("/health", response_model=AssistantHealthResponse)
+def get_assistant_health():
+    """Kiểm tra trạng thái sẵn sàng của AI Assistant (live hoặc fallback)."""
+    from src.ai.llm_client import get_llm_status
+
+    status_data = get_llm_status()
+    return AssistantHealthResponse(
+        mode=status_data.get("mode", "fallback"),
+        model=status_data.get("model", "gemini-2.5-flash"),
+        last_error_code=status_data.get("last_error_code"),
+        last_error_at=status_data.get("last_error_at"),
+    )
 
 
 @router.post(
@@ -157,6 +179,7 @@ def assistant_chat_endpoint(
     status_field: str | None = None
     preview: dict[str, Any] | None = None
     expires_at: str | None = None
+    engine: str = "fallback"
 
     # Tải lịch sử 10 tin nhắn gần nhất của phiên này để cung cấp ngữ cảnh hội thoại
     recent_history = get_chat_history(
@@ -198,7 +221,11 @@ def assistant_chat_endpoint(
             status_field = "pending_confirmation"
         if tool_result is not None and tool_result.get("error"):
             reply = f"Lỗi thực thi công cụ: {tool_result.get('detail', 'Tham số không hợp lệ')}"
+        engine = getattr(orch_res, "engine", "llm" if not orch_res.is_fallback else "fallback")
+        if orch_res.is_fallback and not reply.startswith("Trợ lý đang chạy chế độ cơ bản"):
+            reply = f"Trợ lý đang chạy chế độ cơ bản. {reply}"
     except Exception:
+        engine = "fallback"
         # Fallback khi LLM / Orchestrator gặp sự cố: giữ từ khóa làm fallback an toàn
         fallback_notice = "Trợ lý đang chạy chế độ cơ bản. "
         if req.tool_call:
@@ -357,6 +384,7 @@ def assistant_chat_endpoint(
         preview=preview,
         expires_at=expires_at,
         disclaimer=DISCLAIMER_TEXT,
+        engine=engine,
     )
 
 

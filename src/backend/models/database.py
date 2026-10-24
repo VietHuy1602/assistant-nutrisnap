@@ -73,13 +73,23 @@ def init_db(target_engine: Engine | None = None) -> None:
             if existing_cols:
                 if "full_name" not in existing_cols:
                     conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
-                    logger.warning("Đã tự động bổ sung cột 'full_name' vào bảng 'users'.")
                 if "is_active" not in existing_cols:
                     conn.exec_driver_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
                     logger.warning("Đã tự động bổ sung cột 'is_active' vào bảng 'users'.")
+
+            # Tự động đồng bộ các cột mới nếu bảng food_references đã tồn tại từ trước
+            res_food = conn.exec_driver_sql("PRAGMA table_info(food_references)")
+            existing_food_cols = {row[1] for row in res_food.fetchall()}
+            if existing_food_cols:
+                if "default_serving_g" not in existing_food_cols:
+                    conn.exec_driver_sql("ALTER TABLE food_references ADD COLUMN default_serving_g FLOAT DEFAULT 100.0 NOT NULL")
+                    logger.warning("Đã tự động bổ sung cột 'default_serving_g' vào bảng 'food_references'.")
+                if "serving_label" not in existing_food_cols:
+                    conn.exec_driver_sql("ALTER TABLE food_references ADD COLUMN serving_label VARCHAR(50) DEFAULT '100g' NOT NULL")
+                    logger.warning("Đã tự động bổ sung cột 'serving_label' vào bảng 'food_references'.")
             conn.commit()
         except SQLAlchemyError as exc:
-            logger.warning("Không thể tự động cập nhật schema bảng users: %s", exc)
+            logger.warning("Không thể tự động cập nhật schema bảng users/food_references: %s", exc)
 
 
 # Tự động đồng bộ schema CSDL khi module được nạp

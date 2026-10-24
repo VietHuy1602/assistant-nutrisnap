@@ -58,14 +58,18 @@ def seed_foods():
         protein_per_100g,
         carbs_per_100g,
         fat_per_100g,
-        avg_price_vnd
-    ) VALUES (?, ?, ?, ?, ?, ?)
+        avg_price_vnd,
+        default_serving_g,
+        serving_label
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(food_name) DO UPDATE SET
         calories_per_100g = excluded.calories_per_100g,
         protein_per_100g = excluded.protein_per_100g,
         carbs_per_100g = excluded.carbs_per_100g,
         fat_per_100g = excluded.fat_per_100g,
-        avg_price_vnd = excluded.avg_price_vnd;
+        avg_price_vnd = excluded.avg_price_vnd,
+        default_serving_g = excluded.default_serving_g,
+        serving_label = excluded.serving_label;
     """
 
     records = [
@@ -76,6 +80,8 @@ def seed_foods():
             float(row["carbs_per_100g"]),
             float(row["fat_per_100g"]),
             int(row["avg_price_vnd"]),
+            float(row.get("default_serving_g", 100.0)),
+            str(row.get("serving_label", "100g")),
         )
         for _, row in df.iterrows()
     ]

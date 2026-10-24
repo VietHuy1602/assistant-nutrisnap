@@ -26,6 +26,14 @@ os.environ.setdefault("JWT_SECRET_KEY", "nutrisnap_eval_secret_key_32_characters
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(ROOT_DIR))
 
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 from sqlmodel import Session, select
 
 from src.ai.guardrails import verify_number_consistency
@@ -125,6 +133,13 @@ def run_benchmark(mode: str = "mock", input_file: str | None = None) -> dict[str
             orch = AIOrchestrator(
                 api_key="mock",
                 llm_client=mock_client,
+                use_mock_fallback=True,
+            )
+        elif mode == "keyword":
+            # Chế độ keyword: đo độ chính xác thực nghiệm của Fallback NLU & Intent Classifier
+            orch = AIOrchestrator(
+                api_key="",
+                llm_client=None,
                 use_mock_fallback=True,
             )
         else:
@@ -239,9 +254,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run NutriSnap Chat Evaluation Benchmark")
     parser.add_argument(
         "--mode",
-        choices=["mock", "live"],
+        choices=["mock", "live", "keyword"],
         default="mock",
-        help="Evaluation mode: mock (offline without API key) or live (with real Gemini API)",
+        help="Evaluation mode: mock (offline canned client), keyword (pure deterministic fallback), or live (real Gemini API)",
     )
     parser.add_argument(
         "--input",

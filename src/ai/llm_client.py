@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 from abc import ABC, abstractmethod
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
@@ -17,9 +18,36 @@ from src.ai.tool_definitions import get_gemini_tool_declarations
 
 logger = logging.getLogger("nutrisnap.ai.llm_client")
 
-DEFAULT_MODEL_NAME = "gemini-1.5-flash"
+DEFAULT_MODEL_NAME = "gemini-2.5-flash"
 DEFAULT_TIMEOUT_SECONDS = 8
 DEFAULT_MAX_TOOL_ROUNDS = 3
+
+_last_error_code: Optional[str] = None
+_last_error_at: Optional[str] = None
+_last_error_msg: Optional[str] = None
+
+
+def record_llm_error(code: str, msg: str) -> None:
+    """Ghi nhận lỗi gần nhất của LLM Client để phục vụ endpoint health check."""
+    global _last_error_code, _last_error_at, _last_error_msg
+    _last_error_code = code
+    _last_error_msg = msg[:300]
+    _last_error_at = datetime.now(UTC).isoformat()
+
+
+def get_llm_status() -> dict[str, Any]:
+    """Lấy trạng thái vận hành của LLM cho endpoint health check."""
+    api_key = get_gemini_api_key()
+    configured = api_key is not None
+    model_name = (os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or DEFAULT_MODEL_NAME).strip()
+    return {
+        "mode": "live" if configured else "fallback",
+        "model": model_name,
+        "configured": configured,
+        "last_error_code": _last_error_code,
+        "last_error_at": _last_error_at,
+        "last_error_msg": _last_error_msg,
+    }
 
 
 class ToolCall(BaseModel):
@@ -101,6 +129,7 @@ class GeminiLLMClient(BaseLLMClient):
         timeout_seconds: Optional[int] = None,
     ) -> LLMResult:
         if not self.is_configured():
+            record_llm_error("API_KEY_NOT_CONFIGURED", "Khóa Gemini API chưa được cấu hình hoặc là giá trị mẫu.")
             logger.info("Gemini API key is not configured; using offline fallback.")
             return LLMResult(
                 text="Trợ lý đang chạy chế độ cơ bản (chưa cấu hình API Key).",
@@ -109,6 +138,12 @@ class GeminiLLMClient(BaseLLMClient):
 
         tools_to_use = tools if tools is not None else get_gemini_tool_declarations()
         timeout = timeout_seconds or self.timeout_seconds
+        candidate_models = [self.model_name]
+        for m_cand in ("gemini-2.5-flash", "gemini-2.0-flash"):
+            if m_cand not in candidate_models:
+                candidate_models.append(m_cand)
+
+        last_exc: Optional[Exception] = None
 
         # 1. Thử dùng google-genai nếu thư viện mới có mặt
         try:
@@ -116,25 +151,32 @@ class GeminiLLMClient(BaseLLMClient):
             from google.genai import types
 
             client = genai.Client(api_key=self.api_key)
-            # Chuyển messages sang dạng phù hợp
             contents = []
             for m in messages:
                 role = "model" if m.get("role") in ("assistant", "model") else "user"
                 contents.append(types.Content(role=role, parts=[types.Part.from_text(text=m.get("content", ""))]))
 
-            response = client.models.generate_content(
-                model=self.model_name,
-                contents=contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    tools=tools_to_use,
-                    temperature=0.2,
-                ),
-            )
-            return self._parse_genai_response(response)
+            for model_id in candidate_models:
+                try:
+                    response = client.models.generate_content(
+                        model=model_id,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            system_instruction=system_instruction,
+                            tools=tools_to_use,
+                            temperature=0.2,
+                        ),
+                    )
+                    return self._parse_genai_response(response)
+                except Exception as exc:
+                    last_exc = exc
+                    record_llm_error(type(exc).__name__, str(exc))
+                    logger.warning("google-genai model '%s' failed: %s", model_id, exc)
         except ImportError:
             pass
         except Exception as exc:
+            last_exc = exc
+            record_llm_error(type(exc).__name__, str(exc))
             logger.warning("Error with google-genai SDK: %s. Falling back to google.generativeai", exc)
 
         # 2. Dùng google.generativeai (ổn định)
@@ -142,30 +184,40 @@ class GeminiLLMClient(BaseLLMClient):
             import google.generativeai as gai
 
             gai.configure(api_key=self.api_key)
-            model = gai.GenerativeModel(
-                model_name=self.model_name,
-                system_instruction=system_instruction,
-                tools=tools_to_use,  # type: ignore
-                generation_config={"temperature": 0.2},
-            )
 
-            # Chuyển đổi lịch sử
-            chat = model.start_chat()
-            last_message = ""
-            for m in messages[:-1]:
-                role = "model" if m.get("role") in ("assistant", "model") else "user"
-                chat.history.append({"role": role, "parts": [m.get("content", "")]})
-            if messages:
-                last_message = messages[-1].get("content", "")
+            for model_id in candidate_models:
+                try:
+                    model = gai.GenerativeModel(
+                        model_name=model_id,
+                        system_instruction=system_instruction,
+                        tools=tools_to_use,  # type: ignore
+                        generation_config={"temperature": 0.2},
+                    )
 
-            response = chat.send_message(last_message, request_options={"timeout": timeout})
-            return self._parse_generativeai_response(response)
+                    chat = model.start_chat()
+                    last_message = ""
+                    for m in messages[:-1]:
+                        role = "model" if m.get("role") in ("assistant", "model") else "user"
+                        chat.history.append({"role": role, "parts": [m.get("content", "")]})
+                    if messages:
+                        last_message = messages[-1].get("content", "")
+
+                    response = chat.send_message(last_message, request_options={"timeout": timeout})
+                    return self._parse_generativeai_response(response)
+                except Exception as exc:
+                    last_exc = exc
+                    record_llm_error(type(exc).__name__, str(exc))
+                    logger.warning("google.generativeai model '%s' failed: %s", model_id, exc)
         except Exception as exc:
+            last_exc = exc
+            record_llm_error(type(exc).__name__, str(exc))
             logger.warning("Error calling Gemini API: %s. Returning fallback.", exc)
-            return LLMResult(
-                text=f"Trợ lý đang chạy chế độ cơ bản ({exc}).",
-                is_fallback=True,
-            )
+
+        err_msg = str(last_exc) if last_exc else "Kết nối AI không thành công"
+        return LLMResult(
+            text=f"Trợ lý đang chạy chế độ cơ bản ({err_msg}).",
+            is_fallback=True,
+        )
 
     def _parse_genai_response(self, response: Any) -> LLMResult:
         tool_calls: list[ToolCall] = []
