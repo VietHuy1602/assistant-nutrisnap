@@ -53,6 +53,7 @@ def _seed_foods():
                     count += 1
             session.commit()
     return count
+_seed_foods()
 
 def _create_user(username, email, budget=80000):
     with Session(_MEM_ENGINE) as session:
