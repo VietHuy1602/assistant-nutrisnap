@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
 
+    # Thời gian sống mặc định (TTL) cho hành động chờ xác nhận (PendingAction)
+    PENDING_ACTION_TTL_MINUTES: int = 10
+
     # Cấu hình CSDL và môi trường
     DATABASE_URL: str = "sqlite:///./nutrisnap.db"
     APP_ENV: str = "development"

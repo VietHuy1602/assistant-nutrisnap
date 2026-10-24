@@ -10,6 +10,8 @@ Router cung cấp các API endpoint cho phân hệ Trợ lý ảo AI NutriSnap:
 """
 
 import re
+import unicodedata  # noqa: F401
+import uuid
 from datetime import datetime
 from typing import Any
 
@@ -26,6 +28,8 @@ from src.backend.schemas.api_contract import (
     ChatHistoryResponse,
 )
 from src.backend.services.assistant_tools import (
+    cancel_pending_action,
+    confirm_pending_action,
     create_or_get_chat_session,
     dispatch_tool_call,
     get_chat_history,
@@ -38,6 +42,7 @@ from src.backend.services.auth_guard import (
     verify_csrf_protection,
 )
 from src.backend.services.nutrition_service import DISCLAIMER_TEXT
+from src.backend.services.tool_context import ToolContext
 
 router = APIRouter(prefix="/api/v1/assistant", tags=["Assistant Chat & Tools"])
 
@@ -80,6 +85,10 @@ class AssistantChatResponse(BaseModel):
     tool_result: dict[str, Any] | None = None
     pending_confirmation: bool = False
     action_card: dict[str, Any] | None = None
+    status: str | None = None
+    confirmation_id: str | None = None
+    preview: dict[str, Any] | None = None
+    expires_at: str | None = None
     disclaimer: str = DISCLAIMER_TEXT
 
 
@@ -134,11 +143,20 @@ def assistant_chat_endpoint(
         content=req.message,
     )
 
+    tool_ctx = ToolContext(
+        authenticated_user_id=verified_user_id,
+        caller="llm",
+        request_id=str(uuid.uuid4()),
+    )
     reply: str = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
     tool_result: dict[str, Any] | None = None
     used_tool_name: str | None = None
     pending_confirmation: bool = False
     action_card: dict[str, Any] | None = None
+    confirmation_id: str | None = None
+    status_field: str | None = None
+    preview: dict[str, Any] | None = None
+    expires_at: str | None = None
 
     # Tải lịch sử 10 tin nhắn gần nhất của phiên này để cung cấp ngữ cảnh hội thoại
     recent_history = get_chat_history(
@@ -172,6 +190,14 @@ def assistant_chat_endpoint(
             action_card = tool_result.get("action_card")
         if not pending_confirmation and tool_result:
             pending_confirmation = bool(tool_result.get("requires_confirmation", False))
+        if tool_result:
+            confirmation_id = tool_result.get("confirmation_id")
+            preview = tool_result.get("preview")
+            expires_at = tool_result.get("expires_at")
+        if pending_confirmation:
+            status_field = "pending_confirmation"
+        if tool_result is not None and tool_result.get("error"):
+            reply = f"Lỗi thực thi công cụ: {tool_result.get('detail', 'Tham số không hợp lệ')}"
     except Exception:
         # Fallback khi LLM / Orchestrator gặp sự cố: giữ từ khóa làm fallback an toàn
         fallback_notice = "Trợ lý đang chạy chế độ cơ bản. "
@@ -182,7 +208,7 @@ def assistant_chat_endpoint(
                 used_tool_name = str(t_name)
                 tool_result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=verified_user_id,
+                    authenticated_user_id=tool_ctx,
                     tool_name=used_tool_name,
                     tool_args=t_args,
                 )
@@ -199,14 +225,14 @@ def assistant_chat_endpoint(
                         date_arg = m_date.group(1)
                 tool_result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=verified_user_id,
+                    authenticated_user_id=tool_ctx,
                     tool_name=used_tool_name,
                     tool_args={"date_str": date_arg},
                 )
             elif used_tool_name == "recommend_meals":
                 tool_result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=verified_user_id,
+                    authenticated_user_id=tool_ctx,
                     tool_name=used_tool_name,
                     tool_args={},
                 )
@@ -219,7 +245,7 @@ def assistant_chat_endpoint(
                     days = 14
                 tool_result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=verified_user_id,
+                    authenticated_user_id=tool_ctx,
                     tool_name=used_tool_name,
                     tool_args={"days_range": days},
                 )
@@ -264,20 +290,25 @@ def assistant_chat_endpoint(
 
                 tool_result = dispatch_tool_call(
                     session=session,
-                    authenticated_user_id=verified_user_id,
+                    authenticated_user_id=tool_ctx,
                     tool_name=used_tool_name,
                     tool_args={
                         "meal_type": meal_type,
                         "items": [{"food_name": dish_name, "estimated_gram": dish_gram}],
-                        "is_confirmed": False,
                     },
                 )
 
         if tool_result is not None:
-            if used_tool_name == "log_meal":
+            if tool_result.get("error"):
+                reply = f"Lỗi thực thi công cụ: {tool_result.get('detail', 'Tham số không hợp lệ')}"
+            elif used_tool_name == "log_meal":
                 if tool_result.get("requires_confirmation"):
                     pending_confirmation = True
+                    status_field = "pending_confirmation"
                     action_card = tool_result.get("action_card")
+                    confirmation_id = tool_result.get("confirmation_id")
+                    preview = tool_result.get("preview")
+                    expires_at = tool_result.get("expires_at")
                     reply = (
                         "Mình đã ước tính xong bữa ăn của bạn! "
                         "Vui lòng kiểm tra lại số liệu bên dưới và nhấn Xác nhận để lưu nhé."
@@ -321,6 +352,10 @@ def assistant_chat_endpoint(
         tool_result=tool_result,
         pending_confirmation=pending_confirmation,
         action_card=action_card,
+        status=status_field,
+        confirmation_id=confirmation_id,
+        preview=preview,
+        expires_at=expires_at,
         disclaimer=DISCLAIMER_TEXT,
     )
 
@@ -334,19 +369,70 @@ def execute_tool_endpoint(
     current_user: AuthenticatedUser = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
-    """Thực thi công cụ trực tiếp (ví dụ xác nhận ghi nhận bữa ăn qua Action Confirmation Card)."""
+    """Thực thi công cụ trực tiếp (Kênh Legacy user_action để tương thích ngược bài test cũ).
+
+    Lưu ý bảo mật: Luồng xác nhận mới của Tuần 4 sử dụng POST /api/v1/assistant/confirmations/{id}/confirm
+    để xác nhận nguyên tử từ bản ghi lưu trên server (PendingAction).
+    """
+    user_action_ctx = ToolContext(
+        authenticated_user_id=current_user.id,
+        caller="user_action",
+        request_id=str(uuid.uuid4()),
+    )
     try:
-        return dispatch_tool_call(
+        res = dispatch_tool_call(
             session=session,
-            authenticated_user_id=current_user.id,
+            authenticated_user_id=user_action_ctx,
             tool_name=req.tool_name,
             tool_args=req.tool_args,
         )
+        if isinstance(res, dict) and res.get("error"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(res.get("detail", "Tham số công cụ không hợp lệ")),
+            )
+        return res
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
+
+
+@router.post(
+    "/confirmations/{confirmation_id}/confirm",
+    response_model=dict[str, Any],
+    dependencies=[Depends(verify_csrf_protection)],
+)
+def confirm_pending_action_endpoint(
+    confirmation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Xác nhận lưu bữa ăn từ yêu cầu chờ (PendingAction) an toàn, nguyên tử (README_04)."""
+    return confirm_pending_action(
+        session=session,
+        authenticated_user_id=current_user.id,
+        confirmation_id=confirmation_id,
+    )
+
+
+@router.post(
+    "/confirmations/{confirmation_id}/cancel",
+    response_model=dict[str, Any],
+    dependencies=[Depends(verify_csrf_protection)],
+)
+def cancel_pending_action_endpoint(
+    confirmation_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    """Hủy yêu cầu chờ ghi nhận bữa ăn (PendingAction) (README_04)."""
+    return cancel_pending_action(
+        session=session,
+        authenticated_user_id=current_user.id,
+        confirmation_id=confirmation_id,
+    )
 
 
 @router.get(
@@ -423,8 +509,24 @@ def get_session_messages_endpoint(
 def confirm_action_card_legacy(
     req: ActionCardConfirmRequest,
     current_user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
 ):
     """Xác nhận thực thi thẻ hành động từ Chatbot (Tương thích ngược)."""
+    conf_id = getattr(req, "confirmation_id", None) or (
+        req.action_data.get("confirmation_id") if isinstance(req.action_data, dict) else None
+    )
+    if conf_id:
+        res = confirm_pending_action(
+            session=session,
+            authenticated_user_id=current_user.id,
+            confirmation_id=str(conf_id),
+        )
+        return ActionCardConfirmResponse(
+            success=True,
+            message=res.get("message", f"Đã thực thi thẻ hành động '{req.action_type}' thành công."),
+            result=res,
+        )
+
     return ActionCardConfirmResponse(
         success=True,
         message=f"Đã thực thi thẻ hành động '{req.action_type}' thành công.",

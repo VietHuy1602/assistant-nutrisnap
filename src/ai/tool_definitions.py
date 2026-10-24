@@ -42,9 +42,8 @@ LOG_MEAL_DECLARATION: dict[str, Any] = {
     "name": "log_meal",
     "description": (
         "Ghi nhận (lưu) một bữa ăn vào nhật ký dinh dưỡng của người dùng. "
-        "Tuân thủ cơ chế Two-Step Confirmation: Khi AI nhận diện hoặc người dùng nêu món ăn lần đầu, "
-        "gọi với is_confirmed=False để tính nháp calo và trả về bản xem trước (pending_confirmation). "
-        "Chỉ khi người dùng đã bấm nút xác nhận lưu thì mới gọi với is_confirmed=True để ghi vào CSDL."
+        "Hệ thống tự động kích hoạt quy trình Xác nhận Thao tác (Two-Step Confirmation Flow): "
+        "công cụ sẽ tạo bản xem trước tính nháp calo và yêu cầu người dùng bấm nút xác nhận trên giao diện trước khi lưu vào CSDL."
     ),
     "parameters": {
         "type": "object",
@@ -83,14 +82,6 @@ LOG_MEAL_DECLARATION: dict[str, Any] = {
                     },
                     "required": ["food_name", "portion_size", "unit"],
                 },
-            },
-            "is_confirmed": {
-                "type": "boolean",
-                "description": (
-                    "Cờ xác nhận ghi nhận bữa ăn (Two-Step Confirmation Flow). "
-                    "False: Trả về bản xem trước tính nháp calo/macro (pending_confirmation). "
-                    "True: Người dùng đã bấm nút xác nhận lưu trên giao diện, Backend mới chính thức ghi vào CSDL."
-                ),
             },
             "logged_at": {
                 "type": "string",

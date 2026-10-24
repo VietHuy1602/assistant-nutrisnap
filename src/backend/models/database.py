@@ -90,3 +90,7 @@ def get_session() -> Generator[Session, None, None]:
     """Dependency cung cấp Session CSDL cho FastAPI endpoints."""
     with Session(engine) as session:
         yield session
+
+
+from src.backend.models.schema import PendingAction  # noqa: E402, F401
+

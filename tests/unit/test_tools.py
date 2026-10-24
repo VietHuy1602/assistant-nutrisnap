@@ -80,8 +80,7 @@ def test_log_meal_requires_meal_type_and_items():
 def test_log_meal_supports_two_step_confirmation_flag():
     tool = get_tool_by_name("log_meal")
     props = tool["function"]["parameters"]["properties"]
-    assert "is_confirmed" in props
-    assert props["is_confirmed"]["type"] == "boolean"
+    assert "is_confirmed" not in props
 
 
 def test_recommend_meals_requires_remaining_calories():

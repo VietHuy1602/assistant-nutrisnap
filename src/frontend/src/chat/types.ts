@@ -57,6 +57,7 @@ export interface ActionCardModel {
   items: ActionCardItemModel[];
   totals?: ActionCardTotalsModel;
   actionId?: string | number;
+  confirmation_id?: string;
   status?: string;
   expiresAt?: string;
   savedCalories?: number;

@@ -506,6 +506,7 @@ class ActionCardConfirmRequest(BaseModel):
     """Request xác nhận thực thi thẻ hành động từ Chatbot."""
     action_type: Literal["confirm_log_meal", "confirm_update_goal", "recommendation_preview"]
     session_id: int | None = None
+    confirmation_id: str | None = None
     action_data: dict[str, Any] = Field(default_factory=dict, description="Dữ liệu payload của action card")
 
 

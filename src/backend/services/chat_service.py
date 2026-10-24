@@ -6,6 +6,8 @@ Tương thích với mọi module của Cặp 2 (Frontend) và Cặp 3 (AI Intel
 
 from src.backend.models.schema import ChatMessage, ChatSession
 from src.backend.services.assistant_tools import (
+    cancel_pending_action,
+    confirm_pending_action,
     create_or_get_chat_session,
     delete_user_chat_session,
     get_chat_history,
@@ -13,6 +15,7 @@ from src.backend.services.assistant_tools import (
     list_user_chat_sessions,
     save_chat_message,
 )
+from src.backend.services.tool_context import ToolContext
 from src.backend.services.tool_security import (
     sanitize_llm_tool_arguments,
     verify_meal_ownership,
@@ -22,6 +25,9 @@ from src.backend.services.tool_security import (
 __all__ = [
     "ChatMessage",
     "ChatSession",
+    "ToolContext",
+    "cancel_pending_action",
+    "confirm_pending_action",
     "create_or_get_chat_session",
     "delete_user_chat_session",
     "get_chat_history",
