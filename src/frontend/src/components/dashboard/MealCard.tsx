@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Utensils, Trash2, Clock } from 'lucide-react';
-import type { DailyDashboardMeal } from '../../types/api';
+import type { DailyDashboardMeal, DailyDashboardMealItem } from '../../types/api';
 import { EstimatedBadge } from '../common/EstimatedBadge';
 import { getMealTypeLabel } from '../../constants/copy';
 import { formatKcal, formatGram } from '../../utils/format';
+import { FoodSwapModal } from '../FoodSwapModal';
 
 interface MealCardProps {
   meal: DailyDashboardMeal;
@@ -14,6 +15,7 @@ interface MealCardProps {
 export const MealCard: React.FC<MealCardProps> = ({ meal, onDelete, className = '' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [simulateItem, setSimulateItem] = useState<DailyDashboardMealItem | null>(null);
 
   // Format giờ hiển thị từ ISO string
   const formatTime = (isoString?: string) => {
@@ -113,11 +115,19 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onDelete, className = 
           {meal.items.map((item, idx) => (
             <div
               key={item.id ?? idx}
-              className="flex items-center justify-between text-xs py-1 px-2 rounded-lg bg-slate-50"
+              className="flex items-center justify-between text-xs py-1.5 px-2 rounded-lg bg-slate-50 gap-2"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-semibold text-slate-800 truncate">{item.food_name}</span>
-                <span className="text-slate-400">({formatGram(item.estimated_gram)})</span>
+                <span className="text-slate-400 shrink-0">({formatGram(item.estimated_gram)})</span>
+                <button
+                  type="button"
+                  onClick={() => setSimulateItem(item)}
+                  className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold underline shrink-0 focus-visible:outline-none"
+                  aria-label={`Mô phỏng đổi món cho ${item.food_name}`}
+                >
+                  Mô phỏng đổi món
+                </button>
               </div>
               <span className="font-semibold text-orange-600 shrink-0">
                 {formatKcal(item.calories ?? item.estimated_calories ?? 0)} kcal
@@ -125,6 +135,16 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onDelete, className = 
             </div>
           ))}
         </div>
+      )}
+
+      {simulateItem && (
+        <FoodSwapModal
+          context="logged"
+          foodId={simulateItem.food_id ?? undefined}
+          foodName={simulateItem.food_name}
+          portionGram={simulateItem.estimated_gram}
+          onClose={() => setSimulateItem(null)}
+        />
       )}
     </div>
   );
