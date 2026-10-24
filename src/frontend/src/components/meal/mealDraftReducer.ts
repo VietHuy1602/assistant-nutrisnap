@@ -12,7 +12,7 @@ export interface DraftMealItem {
   food_name: string;
   estimated_gram: number;
   confidence?: number;
-  source: 'ai' | 'manual';
+  source: 'ai' | 'manual' | 'voice';
   matched_name?: string | null;
 }
 
@@ -25,6 +25,11 @@ export interface MealDraftState {
   mealType: string;
   items: DraftMealItem[];
   deletedItem: DeletedItemInfo | null;
+  voiceNote?: string;
+  previousVoiceSnapshot?: {
+    items: DraftMealItem[];
+    voiceNote?: string;
+  } | null;
 }
 
 export type MealDraftAction =
@@ -36,6 +41,16 @@ export type MealDraftAction =
   | { type: 'UNDO_REMOVE' }
   | { type: 'CLEAR_UNDO' }
   | { type: 'ADD_ITEM'; food?: FoodReferenceItem }
+  | {
+      type: 'APPLY_VOICE_RESULT';
+      note: string;
+      adjustedItems?: Array<{
+        food_id?: number | null;
+        food_name: string;
+        estimated_gram: number;
+      }>;
+    }
+  | { type: 'UNDO_VOICE' }
   | { type: 'RESET' };
 
 let keyCounter = 0;
@@ -160,6 +175,43 @@ export function mealDraftReducer(state: MealDraftState, action: MealDraftAction)
       return {
         ...state,
         items: [...state.items, newItem],
+      };
+    }
+
+    case 'APPLY_VOICE_RESULT': {
+      const snapshot = {
+        items: [...state.items],
+        voiceNote: state.voiceNote,
+      };
+
+      const newItems =
+        action.adjustedItems && action.adjustedItems.length > 0
+          ? action.adjustedItems.map((adj, idx) => ({
+              key: generateDraftKey(`voice-${idx}`),
+              food_id: adj.food_id ?? null,
+              food_name: adj.food_name,
+              estimated_gram: Math.max(1, Math.min(3000, Math.round(adj.estimated_gram))),
+              confidence: 1.0,
+              source: 'voice' as const,
+              matched_name: adj.food_name,
+            }))
+          : state.items;
+
+      return {
+        ...state,
+        items: newItems,
+        voiceNote: action.note,
+        previousVoiceSnapshot: snapshot,
+      };
+    }
+
+    case 'UNDO_VOICE': {
+      if (!state.previousVoiceSnapshot) return state;
+      return {
+        ...state,
+        items: state.previousVoiceSnapshot.items,
+        voiceNote: state.previousVoiceSnapshot.voiceNote,
+        previousVoiceSnapshot: null,
       };
     }
 
