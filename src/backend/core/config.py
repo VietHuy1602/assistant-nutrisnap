@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     DEBUG: bool = True
 
+    # Cấu hình AI Orchestrator & LLM Client
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+    LLM_TIMEOUT_SECONDS: int = 8
+    LLM_MAX_TOOL_ROUNDS: int = 3
+    USE_LLM: bool = True
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
