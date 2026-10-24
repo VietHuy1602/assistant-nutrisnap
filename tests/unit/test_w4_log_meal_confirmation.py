@@ -543,6 +543,59 @@ def test_12_regression_manual_meal_logging_unaffected():
         assert saved_meal.user_id == user.id
 
 
+def test_14_action_card_shape_matches_frontend_contract():
+    """Kiểm tra action_card do exec_log_meal tạo ra thỏa mãn 100% điều kiện 'pending' của frontend chatContract.ts.
+
+    Điều kiện frontend (chatContract.ts):
+    1. type == 'confirm_log_meal'
+    2. status == 'pending_user_action'
+    3. expires_at KHÔNG nằm trong action_card (chỉ nằm ở root response) để tránh bị ép thành readonly
+    4. meal_type hợp lệ ('breakfast' | 'lunch' | 'dinner' | 'snack')
+    5. items không rỗng, items.food_id là số nguyên dương (> 0)
+    6. confirmation_id có mặt
+    """
+    client, user = create_test_user_client("conf_user_14", "conf_user_14@example.com")
+    resp = client.post(
+        "/api/v1/assistant/chat",
+        json={
+            "message": "Trưa nay tôi ăn 1 tô phở bò tái 400g",
+            "tool_call": {
+                "name": "log_meal",
+                "args": {
+                    "meal_type": "lunch",
+                    "items": [{"food_name": "Phở bò tái", "estimated_gram": 400.0}],
+                },
+            },
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "pending_confirmation"
+    assert data["confirmation_id"] is not None
+    assert data["expires_at"] is not None
+
+    card = data.get("action_card")
+    assert card is not None
+    assert card["type"] == "confirm_log_meal"
+    assert card["status"] == "pending_user_action"
+    assert "expires_at" not in card, "expires_at không được nằm trong action_card để tránh bị chatContract biến thành readonly"
+    assert card["confirmation_id"] == data["confirmation_id"]
+
+    card_data = card["data"]
+    assert card_data["meal_type"].lower() in [
+        "breakfast", "lunch", "dinner", "snack",
+        "trưa", "sáng", "tối", "phụ",
+        "bữa trưa", "bữa sáng", "bữa tối", "bữa phụ",
+    ]
+    assert len(card_data["items"]) > 0
+    for item in card_data["items"]:
+        assert isinstance(item["food_id"], int) and item["food_id"] > 0
+        assert isinstance(item["food_name"], str) and len(item["food_name"].strip()) > 0
+        assert item["estimated_gram"] > 0
+        assert item["calories"] >= 0
+
+
+
 # ==============================================================================
 # TEST 13: KHỞI TẠO BẢNG PENDING_ACTIONS AN TOÀN VÀ IDEMPOTENT
 # ==============================================================================

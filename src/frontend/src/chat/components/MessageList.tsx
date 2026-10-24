@@ -30,7 +30,7 @@ export function MessageList({
   renderCard,
 }: MessageListProps) {
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col">
+    <div className="relative flex-1 min-h-0 min-w-0 flex flex-col">
       <div
         ref={containerRef}
         role="log"
@@ -41,7 +41,12 @@ export function MessageList({
       >
         {messages.length === 0 && <ChatEmptyState username={username} />}
 
-        {messages.map((message) => {
+        {messages.map((message, index) => {
+          // SEND_FAILED also records a system note; the failed message already
+          // exposes this error as an alert next to its explicit retry control.
+          const previous = messages[index - 1];
+          if (message.sender === 'system' && previous?.sender === 'user' &&
+            previous.status === 'failed' && previous.error === message.text) return null;
           const isUser = message.sender === 'user';
           const isError = message.status === 'failed';
 
@@ -53,8 +58,7 @@ export function MessageList({
               {message.text && (
                 <div className="flex flex-col gap-1 max-w-[90%]">
                   <p
-                    role={isError ? 'alert' : undefined}
-                    className={`break-words rounded-2xl px-4 py-2.5 text-sm leading-6 ${
+                    className={`whitespace-pre-wrap break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
                       isUser
                         ? 'bg-nutri-primary text-white'
                         : isError
@@ -64,11 +68,13 @@ export function MessageList({
                   >
                     {message.text}
                   </p>
+                  {isError && message.error && <p role="alert" className="text-sm text-nutri-error">{message.error}</p>}
                   {isError && onRetry && (
                     <button
                       type="button"
-                      onClick={() => onRetry(message.id)}
-                      className={`inline-flex items-center gap-1 text-xs text-nutri-primary hover:underline font-medium self-end mt-0.5 ${focusStyle}`}
+                      onClick={() => onRetry(message.clientId)}
+                      disabled={isSending}
+                      className={`inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs text-nutri-primary hover:underline font-medium self-end mt-0.5 disabled:opacity-50 ${focusStyle}`}
                     >
                       <RotateCcw size={12} aria-hidden="true" />
                       <span>Gửi lại</span>

@@ -60,8 +60,9 @@ function AppShellInner() {
 }
 
 export const AppShell: React.FC = () => {
+  const { user } = useAuth();
   return (
-    <ChatProvider>
+    <ChatProvider key={user?.id ?? 'signed-out'}>
       <AppShellInner />
     </ChatProvider>
   );

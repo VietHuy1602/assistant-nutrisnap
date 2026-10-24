@@ -11,22 +11,26 @@ import {
   MIN_SEND_INTERVAL_MS,
 } from '../chat/config';
 import type { ChatAction, ChatState } from '../chat/chatReducer';
+import { isApiError, isContractError } from '../utils/apiError';
 
 export interface UseAssistantChatProps {
   state: ChatState;
   dispatch: React.Dispatch<ChatAction>;
   isAuthenticated: boolean;
+  userId?: number;
 }
 
 export function useAssistantChat({
   state,
   dispatch,
   isAuthenticated,
+  userId,
 }: UseAssistantChatProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSendTimeRef = useRef<number>(0);
   const historyLoadedRef = useRef<boolean>(false);
+  const historyControllerRef = useRef<AbortController | null>(null);
 
   const clearSlowTimer = useCallback(() => {
     if (slowTimerRef.current) {
@@ -34,6 +38,18 @@ export function useAssistantChat({
       slowTimerRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    historyLoadedRef.current = false;
+    lastSendTimeRef.current = 0;
+    return () => {
+      clearSlowTimer();
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = null;
+      historyControllerRef.current?.abort();
+      historyControllerRef.current = null;
+    };
+  }, [isAuthenticated, userId, clearSlowTimer]);
 
   // Hủy tin nhắn đang gửi
   const cancel = useCallback(() => {
@@ -49,7 +65,7 @@ export function useAssistantChat({
   const send = useCallback(
     async (text: string) => {
       const cleanText = text.trim();
-      if (!cleanText) return;
+      if (!cleanText || !isAuthenticated) return;
 
       if (cleanText.length > MESSAGE_MAX_LENGTH) {
         dispatch({
@@ -67,11 +83,16 @@ export function useAssistantChat({
       }
 
       // Khóa 1 tin nhắn chạy tại một thời điểm
-      if (state.status !== 'idle') {
+      if (state.status !== 'idle' || abortControllerRef.current) {
         return;
       }
 
       lastSendTimeRef.current = now;
+      if (historyControllerRef.current) {
+        historyControllerRef.current.abort();
+        historyControllerRef.current = null;
+        dispatch({ type: 'HISTORY_LOADED', sessionId: null, messages: [] });
+      }
       const clientId = `client-${now.toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 
       dispatch({
@@ -100,8 +121,10 @@ export function useAssistantChat({
           controller.signal,
         );
 
+        if (controller.signal.aborted || abortControllerRef.current !== controller) return;
         clearSlowTimer();
         abortControllerRef.current = null;
+        lastSendTimeRef.current = 0;
 
         dispatch({
           type: 'REPLY_OK',
@@ -109,7 +132,11 @@ export function useAssistantChat({
           text: turn.text,
           card: turn.card,
         });
+        if (turn.warnings.some(warning => warning.startsWith('card'))) {
+          dispatch({ type: 'SYSTEM_NOTE', text: 'Thẻ này chưa hỗ trợ lưu bữa ăn tại đây hoặc thiếu thông tin hợp lệ. Vui lòng yêu cầu trợ lý kiểm tra lại.', tone: 'info' });
+        }
       } catch (err: unknown) {
+        if (controller.signal.aborted || abortControllerRef.current !== controller) return;
         clearSlowTimer();
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null;
@@ -123,15 +150,27 @@ export function useAssistantChat({
           response?: { status?: number; data?: { detail?: string } };
           message?: string;
         };
-        const statusCode = errorObj?.response?.status;
+        const statusCode = isApiError(err) ? err.status : errorObj?.response?.status;
 
         let errorMsg = 'Chưa nhận được phản hồi từ trợ lý. Vui lòng thử lại.';
         if (statusCode === 429) {
           errorMsg = 'Bạn thao tác hơi nhanh, vui lòng thử lại sau ít phút.';
         } else if (statusCode === 403) {
           errorMsg = 'Phiên trò chuyện đã được làm mới. Vui lòng gửi lại tin nhắn.';
-          dispatch({ type: 'RESET' });
-        } else if (errorObj?.response?.data?.detail) {
+          // Preserve the failed user message so an explicit retry remains available.
+          dispatch({ type: 'RESET_SESSION' });
+        } else if (statusCode !== undefined && statusCode >= 500) {
+          // Do not expose server internals or guess which backend dependency failed.
+          errorMsg = `Trợ lý đang gặp lỗi máy chủ (HTTP ${statusCode}). Chưa nhận được thẻ xác nhận hợp lệ cho yêu cầu này. Vui lòng thử lại sau hoặc báo nhóm phụ trách.`;
+        } else if (isApiError(err) && err.isNetworkError) {
+          errorMsg = 'Không thể kết nối hoặc đã hết thời gian chờ phản hồi từ trợ lý. Vui lòng kiểm tra kết nối rồi gửi lại khi sẵn sàng.';
+        } else if (isContractError(err)) {
+          errorMsg = err.message;
+        } else if (statusCode === 401) {
+          errorMsg = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
+        } else if (isApiError(err) && statusCode !== undefined && statusCode >= 400 && statusCode < 500) {
+          errorMsg = err.message;
+        } else if (typeof errorObj?.response?.data?.detail === 'string') {
           errorMsg = errorObj.response.data.detail;
         }
 
@@ -142,7 +181,7 @@ export function useAssistantChat({
         });
       }
     },
-    [clearSlowTimer, dispatch, state.sessionId, state.status],
+    [clearSlowTimer, dispatch, state.sessionId, state.status, isAuthenticated],
   );
 
   // Thử lại tin nhắn đã thất bại
@@ -152,6 +191,7 @@ export function useAssistantChat({
       if (!failedMessage) return;
 
       const messageText = failedMessage.text;
+      lastSendTimeRef.current = 0;
       dispatch({ type: 'RETRY_PREPARE', clientId });
       void send(messageText);
     },
@@ -165,10 +205,13 @@ export function useAssistantChat({
     }
 
     historyLoadedRef.current = true;
+    const controller = new AbortController();
+    historyControllerRef.current = controller;
     dispatch({ type: 'HISTORY_LOADING' });
 
     try {
-      const sessions = await assistantApi.listSessions();
+      const sessions = await assistantApi.listSessions(controller.signal);
+      if (controller.signal.aborted) return;
       if (!sessions || sessions.length === 0) {
         dispatch({
           type: 'HISTORY_LOADED',
@@ -179,8 +222,9 @@ export function useAssistantChat({
       }
 
       // Lấy phiên chat mới nhất
-      const latestSession = sessions[sessions.length - 1];
-      const messages = await assistantApi.getSessionMessages(latestSession.id, 20);
+      const latestSession = sessions[0];
+      const messages = await assistantApi.getSessionMessages(latestSession.id, 20, controller.signal);
+      if (controller.signal.aborted) return;
 
       dispatch({
         type: 'HISTORY_LOADED',
@@ -193,6 +237,8 @@ export function useAssistantChat({
         })),
       });
     } catch {
+      if (controller.signal.aborted) return;
+      historyLoadedRef.current = false;
       dispatch({ type: 'HISTORY_FAILED' });
     }
   }, [dispatch, isAuthenticated, state.historyStatus]);

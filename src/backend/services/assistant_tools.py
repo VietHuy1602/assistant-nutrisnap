@@ -281,7 +281,6 @@ def exec_log_meal(
         "type": "confirm_log_meal",
         "status": "pending_user_action" if not is_confirmed else "confirmed",
         "confirmation_id": confirmation_id,
-        "expires_at": expires_at_iso,
         "data": {
             "meal_type": db_meal_type,
             "items": [
