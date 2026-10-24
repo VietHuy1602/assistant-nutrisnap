@@ -197,10 +197,19 @@ export const ConnectivityProvider: React.FC<ConnectivityProviderProps> = ({ chil
   );
 };
 
+const defaultConnectivityValue: ConnectivityContextValue = {
+  status: 'online',
+  isOnline: true,
+  isOffline: false,
+  isRateLimited: false,
+  isUnreachable: false,
+  rateLimitCountdown: 0,
+  triggerRateLimit: () => {},
+  triggerUnreachable: () => {},
+  resetStatus: () => {},
+};
+
 export function useConnectivity(): ConnectivityContextValue {
   const context = useContext(ConnectivityContext);
-  if (!context) {
-    throw new Error('useConnectivity must be used within a ConnectivityProvider');
-  }
-  return context;
+  return context || defaultConnectivityValue;
 }
