@@ -2,9 +2,12 @@ import React, { useRef, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { Sparkles } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
+import { BottomNav } from '../components/BottomNav';
 import { AssistantChatDrawer } from '../components/AssistantChatDrawer';
 import { ChatProvider, useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
+import { ConnectivityProvider } from '../app/ConnectivityProvider';
+import { DraftBanner } from '../offline/DraftBanner';
 
 export interface AppShellContext {
   openChat: () => void;
@@ -23,8 +26,9 @@ function AppShellInner() {
     <div className="min-h-screen bg-nutri-surface flex flex-col">
       <div ref={pageRef} className="flex flex-1 flex-col">
         <Navbar onOpenChat={openChat} />
+        <DraftBanner />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
           {/* Banner gợi ý thiết lập mục tiêu nếu chưa có */}
           {!hasGoal && location.pathname === '/' && (
             <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 shadow-xs">
@@ -48,6 +52,8 @@ function AppShellInner() {
         </main>
       </div>
 
+      <BottomNav />
+
       <AssistantChatDrawer
         isOpen={isOpen}
         onClose={closeChat}
@@ -62,8 +68,10 @@ function AppShellInner() {
 export const AppShell: React.FC = () => {
   const { user } = useAuth();
   return (
-    <ChatProvider key={user?.id ?? 'signed-out'}>
-      <AppShellInner />
-    </ChatProvider>
+    <ConnectivityProvider>
+      <ChatProvider key={user?.id ?? 'signed-out'}>
+        <AppShellInner />
+      </ChatProvider>
+    </ConnectivityProvider>
   );
 };

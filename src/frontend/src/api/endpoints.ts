@@ -43,6 +43,7 @@ export const ENDPOINTS = {
   FOOD_SWAP: '/analytics/food-swap',
   CALORIE_STABILITY: '/analytics/calorie-stability',
   REPORTS_MONTHLY: '/reports/monthly',
+  HABITS_STATUS: '/habits/status',
   WEIGHT_LOG: '/weight',
   WEIGHT_HISTORY: '/weight/history',
   MEAL_PREVIEW: '/meals/preview',

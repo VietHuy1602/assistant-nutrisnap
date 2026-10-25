@@ -514,4 +514,75 @@ Mọi API tuân thủ:
 ```
 > **Bảo mật & Quyền riêng tư:** Trình duyệt sử dụng Web Speech API phiên âm trực tiếp và chỉ gửi chuỗi văn bản (`voice_note`). Tuyệt đối không thu âm hay truyền tải dữ liệu âm thanh qua mạng.
 
+---
+
+### 4.7 Phân hệ Habit Tracker, Báo cáo Tháng & Lưu nháp Offline (Tuần 6)
+
+#### 1. `GET /api/v1/habits/status`
+* **Query Parameters:** Không tham số (Xác thực qua HttpOnly JWT Cookie).
+* **Response (200 OK):**
+```json
+{
+  "streak": 5,
+  "seven_day_challenge": {
+    "days_completed": 5,
+    "target_days": 7,
+    "completed": false,
+    "milestone_badge": "Khởi đầu vững chắc"
+  },
+  "back_on_track_active": false,
+  "disclaimer": "Thói quen được ghi nhận khi bạn lưu bữa ăn. Không có ngày nào bị tính là thất bại."
+}
+```
+> **Nguyên tắc Non-punitive & Zero-Math:** Toàn bộ streak và ngày hoàn thành thử thách do Backend tính toán (`habit_service.py`). Frontend tuyệt đối không tự đếm hay cộng trừ ngày. Khi `back_on_track_active = true`, hiển thị thông điệp tích cực *"Quay lại đường đua — mỗi ngày là một bước mới."* Tuyệt đối không dùng màu đỏ hoặc ngôn từ trừng phạt khi bỏ lỡ ngày.
+
+#### 2. `GET /api/v1/reports/monthly`
+* **Query Parameters:** `year: int`, `month: int` (1–12), `days: int` (mặc định 30).
+* **Response (200 OK):**
+```json
+{
+  "month": "2026-10",
+  "logging_summary": {
+    "days_logged": 22,
+    "total_meals": 66,
+    "logged_ratio": 0.73
+  },
+  "weight_summary": {
+    "start_weight_kg": 66.5,
+    "end_weight_kg": 65.2,
+    "net_change_kg": -1.3,
+    "trend_direction": "decreasing"
+  },
+  "nutrition_summary": {
+    "avg_calories": 1820.0,
+    "avg_protein_g": 78.5,
+    "avg_carbs_g": 210.0,
+    "avg_fat_g": 52.0
+  },
+  "strengths": [
+    "Duy trì thói quen ghi nhận bữa trưa rất đều đặn."
+  ],
+  "disclaimer": "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo."
+}
+```
+> **Trạng thái thiếu dữ liệu (`insufficient_data`):** Khi `days_logged == 0` hoặc dữ liệu chưa đủ kết luận, Backend trả `trend_direction = "insufficient_data"`. Frontend hiển thị giao diện trung tính: *"Chưa đủ dữ liệu để tổng kết tháng này. Hãy ghi nhận thêm bữa ăn trong tháng."*
+> **Chú thích minh bạch cố định:** Báo cáo luôn hiển thị 3 dòng chú thích bắt buộc:
+> 1. *Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo.*
+> 2. *Cân nặng hằng ngày dao động theo lượng nước, muối và thời điểm đo.*
+> 3. *Báo cáo không thay thế tư vấn y khoa.*
+
+#### 3. Xuất Ảnh PNG & In PDF
+* **Quy chuẩn kỹ thuật:** Trình duyệt thực hiện 100% phía client không thêm thư viện ngoài (ADR-W6-05).
+* **PNG Canvas:** Vẽ HTML5 Canvas nền trắng, độ phân giải x2, bắt buộc nhúng dòng chú thích ước tính và ngày xuất trong ảnh.
+* **In PDF:** CSS `@media print` thiết lập chuẩn khổ A4, ẩn thanh điều hướng và nút bấm thao tác, chống ngắt trang giữa chừng (`break-inside: avoid`).
+
+#### 4. Lưu nháp Offline & Đồng bộ có xác nhận
+* **Kho nháp mã hóa:** WebCrypto API sinh khóa `AES-GCM` 256-bit với thuộc tính `extractable: false`. Bản nháp lưu vào IndexedDB kèm IV 12-byte ngẫu nhiên và thời hạn TTL 7 ngày (`purgeExpired`).
+* **Đăng xuất bảo mật:** Khi người dùng bấm đăng xuất, toàn bộ khóa và bản nháp trong IndexedDB bị xóa sạch (`draftStore.clearAll()`).
+* **Quy tắc Zero Auto-Sync (S8):** Khi có kết nối mạng trở lại, hệ thống **tuyệt đối không tự động gửi request ghi dữ liệu lên máy chủ**. Giao diện hiển thị banner thông báo *"Có {n} bản nháp chưa lưu — Xem và lưu"*. Người dùng bắt buộc phải mở `DraftReviewDialog` duyệt từng bản ghi và bấm nút xác nhận mới được gửi đi.
+
+#### 5. Đón đầu HTTP 429 Rate Limiting
+* Khi nhận mã phản hồi HTTP `429 Too Many Requests`, `ConnectivityProvider` kích hoạt chế độ hàng đợi thân thiện với thông báo: *"Bạn thao tác hơi nhanh. Sẽ thử lại sau {n} giây."*
+* Tự động thử lại theo cơ chế Exponential Backoff (2s → 4s) tối đa 3 lần. Sau 3 lần nếu vẫn 429, chuyển sang nút *"Thử lại"* do người dùng chủ động bấm, không khóa giao diện đọc.
+
 

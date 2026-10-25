@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera, FileText, TrendingUp } from 'lucide-react';
+import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera, FileText, TrendingUp, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { draftStore } from '../storage/draftStore';
 
 interface NavbarProps {
   currentTab?: string;
@@ -14,6 +15,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    try {
+      await draftStore.clearAll();
+    } catch {
+      // ignore error during draft cleanup
+    }
     await logout();
     navigate('/login', { replace: true });
   };
@@ -24,6 +30,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
   const prefetchProgress = () => {
     import('../pages/ProgressAnalyticsPage');
+  };
+
+  const prefetchHabits = () => {
+    import('../pages/HabitPage');
+  };
+
+  const prefetchReports = () => {
+    import('../pages/MonthlyReportPage');
   };
 
   const initial = user?.username ? user.username.charAt(0).toUpperCase() : 'U';
@@ -111,13 +125,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
               }`
             }
           >
-            <TrendingUp className="w-4 h-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Tiến độ</span>
+            {({ isActive }) => (
+              <>
+                <TrendingUp className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline" aria-current={isActive ? 'page' : undefined}>Tiến độ</span>
+              </>
+            )}
           </NavLink>
 
           <NavLink
-            to="/monthly-report"
-            aria-label="Báo cáo tháng"
+            to="/habits"
+            aria-label="Thói quen"
+            onMouseEnter={prefetchHabits}
+            onFocus={prefetchHabits}
             className={({ isActive }) =>
               `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
                 isActive
@@ -126,8 +146,33 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
               }`
             }
           >
-            <FileText className="w-4 h-4" aria-hidden="true" />
-            <span className="hidden sm:inline">Báo cáo tháng</span>
+            {({ isActive }) => (
+              <>
+                <Flame className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline" aria-current={isActive ? 'page' : undefined}>Thói quen</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/monthly-report"
+            aria-label="Báo cáo tháng"
+            onMouseEnter={prefetchReports}
+            onFocus={prefetchReports}
+            className={({ isActive }) =>
+              `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
+                isActive
+                  ? 'bg-emerald-50 text-nutri-primary font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <FileText className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden sm:inline" aria-current={isActive ? 'page' : undefined}>Báo cáo tháng</span>
+              </>
+            )}
           </NavLink>
 
           {/* Quick Chat Assistant Trigger */}

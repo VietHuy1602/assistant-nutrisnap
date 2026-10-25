@@ -1,0 +1,50 @@
+/**
+ * src/frontend/src/styles/print.css
+ * Định dạng in A4 chuẩn cho Báo cáo Tháng (ADR-W6-05, ISC-10).
+ */
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+
+  /* Ẩn toàn bộ nút bấm, thanh điều hướng và banner */
+  .report-controls,
+  nav,
+  header:not(.nutri-monthly-report header),
+  button,
+  .sticky {
+    display: none !important;
+  }
+
+  /* Đảm bảo nội dung báo cáo chiếm trọn khổ in */
+  .nutri-monthly-report {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Chống bị cắt ngang biểu đồ hoặc thẻ chỉ số khi ngắt trang */
+  .report-chart,
+  .nutri-monthly-report > header,
+  .nutri-monthly-report .grid > div,
+  [role="note"] {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Biểu đồ rộng 100% khi in */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 250px !important;
+  }
+}
