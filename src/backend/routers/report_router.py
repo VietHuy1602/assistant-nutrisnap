@@ -1,17 +1,23 @@
 """
 src/backend/routers/report_router.py
-Router cung cấp các API endpoint cho Báo cáo Dinh dưỡng Tháng & Quản lý Thói quen (Tuần 6):
-1. GET /api/v1/reports/monthly: Báo cáo tháng (logging, cân nặng, dinh dưỡng, strengths, habit).
-2. GET /api/v1/habits/status: Tổng hợp trạng thái Habit Tracker (streak, 7-day challenge, back-on-track).
-Tất cả endpoints đều được bảo vệ an toàn theo nguyên tắc Zero-Trust bằng get_current_user (HttpOnly JWT Cookie).
+Router cung cấp các API endpoint cho Báo cáo Dinh dưỡng Tháng & Quản lý Thói quen & Hàng rào Bảo mật (Tuần 6):
+1. GET /api/v1/reports/monthly: Báo cáo tháng (logging, cân nặng, dinh dưỡng, strengths, habit) kèm Rate Limit (20 req/min).
+2. GET /api/v1/habits/status: Tổng hợp trạng thái Habit Tracker (streak, 7-day challenge, back-on-track) kèm Rate Limit (30 req/min).
+3. POST /api/v1/security/verify-guardrail: Endpoint kiểm tra rào chắn an toàn đầu vào kèm Rate Limit (5 req/min).
+Tất cả endpoints dữ liệu người dùng đều được bảo vệ an toàn theo nguyên tắc Zero-Trust bằng get_current_user (HttpOnly JWT Cookie).
 """
 
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from src.backend.models.database import get_session
+from src.backend.services.api_security import (
+    rate_limit_dependency,
+    validate_safe_api_payload,
+)
 from src.backend.services.auth_guard import (
     AuthenticatedUser,
     get_current_user,
@@ -24,9 +30,23 @@ from src.backend.services.habit_service import (
 router = APIRouter(prefix="/api/v1", tags=["Reports & Habits"])
 
 
+class GuardrailVerifyRequest(BaseModel):
+    """Schema yêu cầu kiểm tra nội dung đầu vào qua hàng rào bảo mật."""
+
+    content: str = Field(..., description="Nội dung chuỗi văn bản cần kiểm tra an toàn")
+
+
+class GuardrailVerifyResponse(BaseModel):
+    """Schema phản hồi khi nội dung vượt qua hàng rào an toàn."""
+
+    status: str = "safe"
+    verified: bool = True
+
+
 @router.get(
     "/reports/monthly",
     summary="Báo cáo Dinh dưỡng và Thói quen Tháng (Monthly Report)",
+    dependencies=[Depends(rate_limit_dependency("monthly_report", max_requests=20, window_seconds=60))],
 )
 def get_monthly_report_endpoint(
     year: int | None = Query(default=None, description="Năm báo cáo"),
@@ -62,6 +82,7 @@ def get_monthly_report_endpoint(
 @router.get(
     "/habits/status",
     summary="Trạng thái Chuỗi thói quen và Thử thách 7 ngày",
+    dependencies=[Depends(rate_limit_dependency("habit_status", max_requests=30, window_seconds=60))],
 )
 def get_habits_status_endpoint(
     current_user: AuthenticatedUser = Depends(get_current_user),
@@ -77,3 +98,27 @@ def get_habits_status_endpoint(
         session=session,
         authenticated_user_id=current_user.id,
     )
+
+
+@router.post(
+    "/security/verify-guardrail",
+    summary="Kiểm tra hàng rào bảo mật đầu vào & chống Prompt Injection / Extreme Diet",
+    response_model=GuardrailVerifyResponse,
+    dependencies=[Depends(rate_limit_dependency("security_guardrail", max_requests=5, window_seconds=60))],
+)
+def verify_guardrail_endpoint(
+    payload: GuardrailVerifyRequest,
+) -> GuardrailVerifyResponse:
+    """Kiểm tra chuỗi văn bản đầu vào qua hàng rào bảo mật 2 lớp:
+
+    - Chặn Prompt Injection, SQLi (drop table), XSS (<script>), System Prompt Tampering.
+    - Chặn yêu cầu kê đơn thuốc giảm cân và các chế độ nhịn ăn cực đoan (< 800 kcal).
+    Nếu vi phạm, trả về HTTP 400 Bad Request kèm lý do từ chối.
+    """
+    is_safe, reason = validate_safe_api_payload(payload.content)
+    if not is_safe:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=reason or "Yêu cầu bị từ chối bởi hàng rào bảo mật hệ thống.",
+        )
+    return GuardrailVerifyResponse(status="safe", verified=True)

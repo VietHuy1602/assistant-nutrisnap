@@ -33,6 +33,7 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
+from src.backend.services.api_security import SecurityHeadersMiddleware
 from src.backend.services.auth_guard import (
     AuthenticatedUser,
     get_current_user,
@@ -82,6 +83,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Gắn HTTP Security Headers Middleware bảo vệ toàn diện ứng dụng
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics + Reports
 app.include_router(auth_goal_router)

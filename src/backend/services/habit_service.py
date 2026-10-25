@@ -272,7 +272,8 @@ def evaluate_back_on_track_mode(
         else:
             yesterday_calories = 0.0
 
-        if yesterday_calories > tdee_calories:
+        # Kiểm tra nếu ngày hôm qua nạp vượt 115% mục tiêu calo (TDEE)
+        if yesterday_calories > (tdee_calories * 1.15):
             back_on_track_active = True
             trigger_reason = "over_target_calories"
         else:
