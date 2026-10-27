@@ -15,85 +15,134 @@ Hàng rào Bảo mật API & Quản trị Rủi ro (Tuần 6 - Pair Session 6 c�
    - Referrer-Policy: strict-origin-when-cross-origin
 """
 
-import collections
+import math
 import re
-import threading
 import time
 from collections.abc import Callable
 from typing import Any
 
 from fastapi import HTTPException, Request, Response, status
+from limits import parse
+from slowapi import Limiter
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.backend.core.config import settings
 
 # ==============================================================================
-# 1. BỘ GIỚI HẠN TẦN SUẤT YÊU CẦU (SLIDING WINDOW RATE LIMITER)
+# 1. BỘ GIỚI HẠN TẦN SUẤT YÊU CẦU (SLOWAPI ADAPTER RATE LIMITER)
 # ==============================================================================
 
 
-class SlidingWindowRateLimiter:
-    """Bộ giới hạn tần suất cửa sổ trượt (Sliding Window Rate Limiter) hoạt động hoàn toàn
+def get_rate_limit_key(request: Request) -> str:
+    """Xác định khóa định danh cho rate limiter:
 
-    in-memory với cấu trúc collections.deque, đảm bảo thread-safe và hỗ trợ reset phục vụ test.
+    - Nếu có HttpOnly Cookie JWT hợp lệ (xác thực chữ ký số): 'user:<user_id>'
+    - Ngược lại: 'ip:<client_host>' (hoặc IP từ header X-Forwarded-For nếu TRUSTED_PROXIES được bật).
+    """
+    token = request.cookies.get(settings.AUTH_COOKIE_NAME) or request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ", 1)[1]
+    if token and token.strip():
+        try:
+            from src.backend.services.auth_service import decode_access_token
+
+            payload = decode_access_token(token)
+            user_id = payload.get("sub")
+            if user_id:
+                return f"user:{user_id}"
+        except Exception:
+            # Token không hợp lệ, sai chữ ký hoặc hết hạn -> fallback về IP, không ném ngoại lệ
+            pass
+
+    client_ip = request.client.host if request.client else "unknown_client"
+
+    # Chỉ tin cậy X-Forwarded-For khi IP của proxy nằm trong danh sách TRUSTED_PROXIES
+    if settings.TRUSTED_PROXIES and client_ip in settings.TRUSTED_PROXIES:
+        forwarded = request.headers.get("X-Forwarded-For")
+        if forwarded:
+            first_ip = forwarded.split(",")[0].strip()
+            if first_ip:
+                client_ip = first_ip
+
+    return f"ip:{client_ip}"
+
+
+# Khởi tạo instance slowapi.Limiter duy nhất theo chiến lược moving-window
+limiter = Limiter(
+    key_func=get_rate_limit_key,
+    strategy="moving-window",
+    storage_uri=settings.RATE_LIMIT_STORAGE_URI,
+    swallow_errors=settings.RATE_LIMIT_FAIL_OPEN,
+)
+
+
+class SlidingWindowRateLimiter:
+    """Adapter bọc slowapi.Limiter với chiến lược moving-window,
+
+    giữ nguyên 100% chữ ký giao diện công khai cho các module và bài test cũ.
     """
 
-    def __init__(self) -> None:
-        self._records: dict[tuple[str, str], collections.deque[float]] = {}
-        self._lock = threading.Lock()
+    def __init__(self, slowapi_limiter: Limiter | None = None) -> None:
+        self._limiter = slowapi_limiter or limiter
 
     def _get_client_identifier(self, request: Request) -> str:
-        """Xác định danh tính client từ HttpOnly Cookie JWT hoặc IP address."""
-        # Ưu tiên lấy từ cookie xác thực nếu có
-        token = request.cookies.get(settings.AUTH_COOKIE_NAME) or request.cookies.get("access_token")
-        if token and token.strip():
-            # Sử dụng tiền tố token ngắn để cô lập theo từng phiên người dùng
-            return f"user:{token[:32]}"
-
-        # Nếu chưa đăng nhập, sử dụng IP client
-        client_host = request.client.host if request.client else "unknown_client"
-        return f"ip:{client_host}"
+        """Xác định danh tính client từ key_func an toàn."""
+        return get_rate_limit_key(request)
 
     def check_rate_limit(
         self,
         request: Request,
         scope: str = "default",
-        max_requests: int = 30,
+        max_requests: int | str = 30,
         window_seconds: int = 60,
     ) -> None:
-        """Kiểm tra tần suất gọi API trong cửa sổ trượt window_seconds.
+        """Kiểm tra tần suất gọi API bằng moving-window qua slowapi/limits.
 
-        Ném HTTPException(status_code=429) nếu số lượng yêu cầu vượt quá max_requests.
+        Ném HTTPException(status_code=429) nếu số lượng yêu cầu vượt quá ngưỡng.
         """
-        client_id = self._get_client_identifier(request)
-        key = (client_id, scope)
-        now = time.time()
-        window_start = now - window_seconds
+        key = get_rate_limit_key(request)
 
-        with self._lock:
-            queue = self._records.setdefault(key, collections.deque())
+        if isinstance(max_requests, str):
+            rate_item = parse(max_requests)
+            effective_window = rate_item.get_expiry()
+        else:
+            rate_item = parse(f"{max_requests}/{window_seconds} second")
+            effective_window = window_seconds
 
-            # Loại bỏ các mốc thời gian ngoài cửa sổ trượt
-            while queue and queue[0] < window_start:
-                queue.popleft()
+        try:
+            hit_success = self._limiter.limiter.hit(rate_item, key, scope)
+        except Exception as exc:
+            if settings.RATE_LIMIT_FAIL_OPEN:
+                return
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.",
+                headers={"Retry-After": "60"},
+            ) from exc
 
-            if len(queue) >= max_requests:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Quá nhiều yêu cầu (Rate limit exceeded). Vui lòng thử lại sau ít phút.",
-                    headers={"Retry-After": str(window_seconds)},
-                )
+        if not hit_success:
+            retry_after = effective_window
+            try:
+                stats = self._limiter.limiter.get_window_stats(rate_item, key, scope)
+                retry_after = max(1, math.ceil(stats.reset_time - time.time()))
+            except Exception:
+                pass
 
-            queue.append(now)
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Quá nhiều yêu cầu (Rate limit exceeded). Vui lòng thử lại sau ít phút.",
+                headers={"Retry-After": str(retry_after)},
+            )
 
     def reset(self) -> None:
         """Xóa toàn bộ bản ghi rate limit (phục vụ kiểm thử cô lập)."""
-        with self._lock:
-            self._records.clear()
+        self._limiter.reset()
 
 
-# Singleton Rate Limiter
-_global_rate_limiter = SlidingWindowRateLimiter()
+# Singleton Rate Limiter Adapter giữ nguyên tương thích
+_global_rate_limiter = SlidingWindowRateLimiter(limiter)
 
 
 def reset_rate_limiter() -> None:
@@ -103,12 +152,13 @@ def reset_rate_limiter() -> None:
 
 def rate_limit_dependency(
     scope: str = "default",
-    max_requests: int = 30,
+    max_requests: int | str = 30,
     window_seconds: int = 60,
 ) -> Callable[[Request], None]:
     """FastAPI Dependency factory gắn bộ đếm rate limit vào từng endpoint."""
 
     def _dependency(request: Request) -> None:
+        request.state._rate_limited = True
         _global_rate_limiter.check_rate_limit(
             request=request,
             scope=scope,
@@ -117,6 +167,7 @@ def rate_limit_dependency(
         )
 
     return _dependency
+
 
 
 # ==============================================================================

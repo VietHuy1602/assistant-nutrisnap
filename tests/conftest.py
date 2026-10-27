@@ -28,3 +28,14 @@ def setup_test_database():
 
     seed_demo_data()
 
+
+@pytest.fixture(autouse=True)
+def reset_rate_limit_before_test():
+    """Tự động reset bộ đếm rate limiter trước và sau mỗi test case để tránh nghẽn IP TestClient."""
+    from src.backend.services.api_security import reset_rate_limiter
+
+    reset_rate_limiter()
+    yield
+    reset_rate_limiter()
+
+

@@ -42,6 +42,23 @@ class Settings(BaseSettings):
     LLM_MAX_TOOL_ROUNDS: int = 3
     USE_LLM: bool = True
 
+    # Cấu hình Rate Limiting (slowapi / limits)
+    RATE_LIMIT_STORAGE_URI: str = "memory://"
+    RATE_LIMIT_FAIL_OPEN: bool = True
+    TRUSTED_PROXIES: list[str] = []
+
+    # Ngưỡng giới hạn tần suất API (W6 Rate Limiting)
+    AUTH_RATE_LIMIT: str = "10/minute"
+    AUTH_LOGOUT_RATE_LIMIT: str = "30/minute"
+    ASSISTANT_CHAT_RATE_LIMIT: str = "15/minute"
+    AI_VISION_RATE_LIMIT: str = "10/minute"
+    FOODS_SEARCH_RATE_LIMIT: str = "30/minute"
+    DATA_MUTATION_RATE_LIMIT: str = "20/minute"
+    DEFAULT_GET_RATE_LIMIT: str = "120/minute"
+    REPORT_MONTHLY_RATE_LIMIT: str = "20/minute"
+    HABIT_STATUS_RATE_LIMIT: str = "30/minute"
+    SECURITY_GUARDRAIL_RATE_LIMIT: str = "5/minute"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
