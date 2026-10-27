@@ -14,11 +14,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
+from src.backend.core.config import settings
 from src.backend.models.database import get_session
 from src.backend.services.analytics_service import (
     analyze_user_patterns,
     simulate_food_swap,
 )
+from src.backend.services.api_security import rate_limit_dependency
 from src.backend.services.auth_guard import (
     AuthenticatedUser,
     get_current_user,
@@ -89,6 +91,7 @@ def get_user_patterns_endpoint(
 @router.post(
     "/food-swap",
     summary="Mô phỏng đổi món ăn (Food Swap Simulator)",
+    dependencies=[Depends(rate_limit_dependency("analytics_food_swap", settings.DATA_MUTATION_RATE_LIMIT))],
 )
 def food_swap_endpoint(
     req: FoodSwapRequest,
@@ -150,6 +153,7 @@ def get_weight_trend_endpoint(
 @router.post(
     "/calorie-stability",
     summary="Kiểm tra khóa an toàn hạn mức calo",
+    dependencies=[Depends(rate_limit_dependency("analytics_calorie_stability", settings.DATA_MUTATION_RATE_LIMIT))],
 )
 def verify_calorie_stability_endpoint(
     req: CalorieStabilityRequest,

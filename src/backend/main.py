@@ -11,11 +11,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
-from fastapi import Depends, FastAPI, Query, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
 from sqlmodel import Session
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.ai.config import is_live_ai_available
+from src.backend.core.config import settings
 from src.backend.models.database import get_session, init_db
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
@@ -33,7 +36,12 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
-from src.backend.services.api_security import SecurityHeadersMiddleware
+from src.backend.services.api_security import (
+    SecurityHeadersMiddleware,
+    _global_rate_limiter,
+    limiter,
+    rate_limit_dependency,
+)
 from src.backend.services.auth_guard import (
     AuthenticatedUser,
     get_current_user,
@@ -70,6 +78,61 @@ API Backend cho hệ thống Trợ lý ảo Dinh dưỡng NutriSnap (Đồ án C
     lifespan=lifespan,
 )
 
+# Gắn slowapi limiter vào app.state
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    return Response(
+        content='{"detail": "Quá nhiều yêu cầu (Rate limit exceeded). Vui lòng thử lại sau ít phút."}',
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        media_type="application/json",
+        headers={"Retry-After": "60"},
+    )
+
+
+class DefaultGetRateLimitMiddleware(BaseHTTPMiddleware):
+    """Áp dụng default GET rate limit (120 req/phút) cho các GET endpoint chưa có annotation riêng."""
+
+    EXEMPT_PATHS = {
+        "/health",
+        "/api/v1/health",
+        "/api/v1/ping",
+        "/docs",
+        "/redoc",
+        "/openapi.json",
+        "/favicon.ico",
+    }
+    EXPLICIT_PATHS = {
+        "/api/v1/foods/search",
+        "/api/v1/reports/monthly",
+        "/api/v1/reports/habit-status",
+        "/api/v1/reports/security-guardrail",
+    }
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        path = request.url.path.rstrip("/")
+        if request.method == "GET":
+            if path in self.EXEMPT_PATHS:
+                return await call_next(request)
+            if path not in self.EXPLICIT_PATHS:
+                try:
+                    _global_rate_limiter.check_rate_limit(
+                        request=request,
+                        scope="get_default",
+                        max_requests=settings.DEFAULT_GET_RATE_LIMIT,
+                    )
+                except HTTPException as exc:
+                    return Response(
+                        status_code=exc.status_code,
+                        content=f'{{"detail": "{exc.detail}"}}',
+                        media_type="application/json",
+                        headers=dict(exc.headers or {}),
+                    )
+        return await call_next(request)
+
+
 # Cấu hình CORS chặt chẽ: Bắt buộc allow_credentials=True để trình duyệt gửi HttpOnly Cookie
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +147,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gắn HTTP Security Headers Middleware bảo vệ toàn diện ứng dụng
+# Gắn Default GET Rate Limit Middleware và Security Headers Middleware
+app.add_middleware(DefaultGetRateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # Nối toàn bộ router Auth + Goal + Weight + Food references + Assistant + Analytics + Reports
@@ -126,7 +190,10 @@ def health_check():
     "/api/v1/meals/preview",
     response_model=MealPreviewResponse,
     tags=["Meal Logging"],
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("meal_preview", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def preview_meal(req: MealPreviewRequest):
     """Bước 1 (Two-Step Confirmation): Phân tích ảnh/giọng nói để tạo bản nháp.
@@ -182,7 +249,10 @@ def get_daily_dashboard_legacy(
     response_model=WeightLogResponse,
     status_code=status.HTTP_201_CREATED,
     tags=["Weight Tracking"],
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("weight_mutation", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def log_weight(
     req: WeightLogRequest,
@@ -233,11 +303,13 @@ def get_weight_history(
     "/api/v1/ai/recognize-food",
     response_model=RecognizeFoodResponse,
     tags=["AI Vision & Recognition"],
+    dependencies=[Depends(rate_limit_dependency("ai_vision", settings.AI_VISION_RATE_LIMIT))],
 )
 @app.post(
     "/api/v1/ai/analyze-dish",
     response_model=RecognizeFoodResponse,
     tags=["AI Vision & Recognition"],
+    dependencies=[Depends(rate_limit_dependency("ai_vision", settings.AI_VISION_RATE_LIMIT))],
 )
 async def recognize_food_endpoint(request: Request):
     """

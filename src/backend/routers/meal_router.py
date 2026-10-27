@@ -9,7 +9,9 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlmodel import Session
 
+from src.backend.core.config import settings
 from src.backend.models.database import get_session
+from src.backend.services.api_security import rate_limit_dependency
 from src.backend.services.auth_guard import AuthenticatedUser, get_current_user
 from src.backend.services.nutrition_service import (
     MealLogRequest,
@@ -25,6 +27,7 @@ router = APIRouter(prefix="/api/v1/meals", tags=["Meal Logging & Nutrition"])
     "/log",
     response_model=MealLogResponse,
     summary="Ghi nhận hoặc xem trước bữa ăn (Two-Step Confirmation)",
+    dependencies=[Depends(rate_limit_dependency("meal_log", settings.DATA_MUTATION_RATE_LIMIT))],
 )
 def log_meal_endpoint(
     req: MealLogRequest,
@@ -101,6 +104,7 @@ def get_today_meals(
 @router.delete(
     "/{meal_id}",
     summary="Xóa một bữa ăn đã ghi nhận khỏi CSDL",
+    dependencies=[Depends(rate_limit_dependency("meal_delete", settings.DATA_MUTATION_RATE_LIMIT))],
 )
 def delete_meal(
     meal_id: int,

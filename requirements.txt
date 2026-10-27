@@ -8,7 +8,7 @@ uvicorn[standard]>=0.28.0
 sqlmodel>=0.0.16
 pydantic>=2.6.0
 python-multipart>=0.0.9
-slowapi>=0.1.9
+slowapi==0.1.9
 pytest>=8.0.0
 ruff>=0.3.0
 pandas>=2.2.0

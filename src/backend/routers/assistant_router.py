@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from src.ai.intent_classifier import classify_user_intent
+from src.backend.core.config import settings
 from src.backend.models.database import get_session
 from src.backend.schemas.api_contract import (
     ActionCardConfirmRequest,
@@ -27,6 +28,7 @@ from src.backend.schemas.api_contract import (
     ChatHistoryItem,
     ChatHistoryResponse,
 )
+from src.backend.services.api_security import rate_limit_dependency
 from src.backend.services.assistant_tools import (
     cancel_pending_action,
     confirm_pending_action,
@@ -122,7 +124,10 @@ def get_assistant_health():
 @router.post(
     "/chat",
     response_model=AssistantChatResponse,
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("assistant_chat", settings.ASSISTANT_CHAT_RATE_LIMIT)),
+    ],
 )
 def assistant_chat_endpoint(
     req: AssistantChatRequest,
@@ -390,7 +395,10 @@ def assistant_chat_endpoint(
 
 @router.post(
     "/tools/execute",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("tools_execute", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def execute_tool_endpoint(
     req: ToolExecuteRequest,
@@ -430,7 +438,10 @@ def execute_tool_endpoint(
 @router.post(
     "/confirmations/{confirmation_id}/confirm",
     response_model=dict[str, Any],
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("confirm_action", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def confirm_pending_action_endpoint(
     confirmation_id: str,
@@ -448,7 +459,10 @@ def confirm_pending_action_endpoint(
 @router.post(
     "/confirmations/{confirmation_id}/cancel",
     response_model=dict[str, Any],
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("cancel_action", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def cancel_pending_action_endpoint(
     confirmation_id: str,
@@ -532,7 +546,10 @@ def get_session_messages_endpoint(
 @router.post(
     "/action-card/confirm",
     response_model=ActionCardConfirmResponse,
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("action_card_confirm", settings.DATA_MUTATION_RATE_LIMIT)),
+    ],
 )
 def confirm_action_card_legacy(
     req: ActionCardConfirmRequest,

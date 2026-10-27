@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from src.backend.core.config import settings
 from src.backend.exceptions.auth import (
     EmailAlreadyExistsError,
     InactiveUserError,
@@ -32,6 +33,7 @@ from src.backend.schemas.api_contract import (
     WeightLogRequest,
     WeightLogResponse,
 )
+from src.backend.services.api_security import rate_limit_dependency
 from src.backend.services.auth_guard import (
     AuthenticatedUser,
     get_current_active_user,
@@ -88,7 +90,10 @@ class AuthWithGoalResponse(BaseModel):
     response_model=AuthWithGoalResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản kèm mục tiêu dinh dưỡng ban đầu trong 1 Transaction duy nhất",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(rate_limit_dependency("auth_register_goal", settings.AUTH_RATE_LIMIT)),
+        Depends(verify_csrf_protection),
+    ],
 )
 def register_user_with_initial_goal(
     req: UserRegisterWithGoalRequest,
@@ -128,7 +133,10 @@ def register_user_with_initial_goal(
     response_model=AuthResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Đăng ký tài khoản người dùng chuẩn",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(rate_limit_dependency("auth_register", settings.AUTH_RATE_LIMIT)),
+        Depends(verify_csrf_protection),
+    ],
 )
 def register_user(
     req: UserRegisterRequest,
@@ -170,7 +178,10 @@ def register_user(
     "/auth/login",
     response_model=AuthResponse,
     summary="Đăng nhập và cấp phát HttpOnly Cookie JWT",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(rate_limit_dependency("auth_login", settings.AUTH_RATE_LIMIT)),
+        Depends(verify_csrf_protection),
+    ],
 )
 def login_user(
     req: UserLoginRequest,
@@ -238,7 +249,10 @@ def get_current_user_profile(
     "/auth/logout",
     response_model=BaseResponse,
     summary="Đăng xuất và xóa HttpOnly Cookie",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(verify_csrf_protection),
+        Depends(rate_limit_dependency("auth_logout", settings.AUTH_LOGOUT_RATE_LIMIT)),
+    ],
 )
 def logout_user(response: Response):
     """Đăng xuất, xóa HttpOnly Cookie khỏi trình duyệt."""
@@ -291,7 +305,10 @@ def get_user_goal(
     "/goals",
     response_model=GoalResponse,
     summary="Thiết lập hoặc cập nhật mục tiêu dinh dưỡng cá nhân",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(rate_limit_dependency("goals_mutation", settings.DATA_MUTATION_RATE_LIMIT)),
+        Depends(verify_csrf_protection),
+    ],
 )
 def create_or_update_goal_endpoint(
     req: GoalCreateRequest,
@@ -355,7 +372,10 @@ def create_or_update_goal_endpoint(
     response_model=WeightLogResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Ghi nhận chỉ số cân nặng hàng ngày",
-    dependencies=[Depends(verify_csrf_protection)],
+    dependencies=[
+        Depends(rate_limit_dependency("weight_mutation", settings.DATA_MUTATION_RATE_LIMIT)),
+        Depends(verify_csrf_protection),
+    ],
 )
 def log_weight_endpoint(
     req: WeightLogRequest,
@@ -443,6 +463,7 @@ def get_weight_history_endpoint(
     "/foods/search",
     response_model=FoodSearchResponse,
     summary="Tìm kiếm món ăn trong CSDL tham chiếu",
+    dependencies=[Depends(rate_limit_dependency("foods_search", settings.FOODS_SEARCH_RATE_LIMIT))],
 )
 def search_foods(
     q: str = Query(..., min_length=1, description="Từ khóa tên món ăn"),
