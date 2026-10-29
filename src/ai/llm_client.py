@@ -13,14 +13,19 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
-from src.ai.config import get_gemini_api_key
+from src.ai.config import (
+    check_gemini_live_health,
+    get_gemini_api_key,
+    get_gemini_model_name,
+    get_gemini_timeout_seconds,
+)
 from src.ai.tool_definitions import get_gemini_tool_declarations
 
 logger = logging.getLogger("nutrisnap.ai.llm_client")
 
 DEFAULT_MODEL_NAME = "gemini-2.5-flash"
-DEFAULT_TIMEOUT_SECONDS = 8
-DEFAULT_MAX_TOOL_ROUNDS = 3
+DEFAULT_TIMEOUT_SECONDS = 15
+DEFAULT_MAX_TOOL_ROUNDS = 5
 
 _last_error_code: Optional[str] = None
 _last_error_at: Optional[str] = None
@@ -36,17 +41,18 @@ def record_llm_error(code: str, msg: str) -> None:
 
 
 def get_llm_status() -> dict[str, Any]:
-    """Lấy trạng thái vận hành của LLM cho endpoint health check."""
-    api_key = get_gemini_api_key()
-    configured = api_key is not None
-    model_name = (os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or DEFAULT_MODEL_NAME).strip()
+    """Lấy trạng thái vận hành của LLM cho endpoint health check (trung thực, có cache 60s)."""
+    health = check_gemini_live_health()
+    configured = health.get("configured", False)
+    status_val = health.get("status", "fallback")
     return {
-        "mode": "live" if configured else "fallback",
-        "model": model_name,
+        "status": status_val,
+        "mode": status_val,
+        "model": health.get("model", get_gemini_model_name()),
         "configured": configured,
-        "last_error_code": _last_error_code,
+        "last_error_code": _last_error_code or (None if status_val == "online" else "FALLBACK_MODE"),
         "last_error_at": _last_error_at,
-        "last_error_msg": _last_error_msg,
+        "last_error_msg": _last_error_msg or health.get("detail"),
     }
 
 
@@ -99,12 +105,10 @@ class GeminiLLMClient(BaseLLMClient):
         self.model_name = (
             model_name or os.getenv("GEMINI_MODEL") or os.getenv("GEMINI_MODEL_NAME") or DEFAULT_MODEL_NAME
         ).strip()
-        try:
-            self.timeout_seconds = int(
-                os.getenv("LLM_TIMEOUT_SECONDS", str(timeout_seconds or DEFAULT_TIMEOUT_SECONDS))
-            )
-        except ValueError:
-            self.timeout_seconds = DEFAULT_TIMEOUT_SECONDS
+        if timeout_seconds is not None:
+            self.timeout_seconds = timeout_seconds
+        else:
+            self.timeout_seconds = get_gemini_timeout_seconds()
 
     def is_configured(self) -> bool:
         """Kiểm tra xem API key có hợp lệ không."""

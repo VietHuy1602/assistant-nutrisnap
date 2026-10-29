@@ -26,6 +26,8 @@ class LogMealLLMArgs(BaseModel):
     Pydantic sẽ từ chối ngay lập tức (extra='forbid') để ngăn chặn bypass Two-Step Confirmation.
     """
     meal_type: str = Field(..., min_length=1, description="Loại bữa ăn: Sáng, Trưa, Tối, Phụ hoặc breakfast, lunch, dinner, snack")
+    food_name: str | None = None
+    grams: float | None = None
     items: list[dict[str, Any]] | None = None
     items_list: list[dict[str, Any]] | None = None
     image_path: str | None = None
@@ -42,6 +44,8 @@ class LogMealUserActionArgs(BaseModel):
     Cho phép nhận is_confirmed=True để chính thức ghi vào CSDL.
     """
     meal_type: str = Field(..., min_length=1, description="Loại bữa ăn")
+    food_name: str | None = None
+    grams: float | None = None
     items: list[dict[str, Any]] | None = None
     items_list: list[dict[str, Any]] | None = None
     is_confirmed: bool = False
@@ -56,9 +60,12 @@ class LogMealUserActionArgs(BaseModel):
 class RecommendMealsArgs(BaseModel):
     """Tham số công cụ recommend_meals."""
     remaining_calories: float | None = None
+    remaining_kcal: float | None = None
     budget_vnd: int | None = None
+    max_price: int | None = None
     meal_type: str | None = None
     min_protein_g: float | None = None
+    min_protein: float | None = None
     dietary_preferences: list[str] | None = None
     meal_portion_gram: float = 250.0
     limit: int = Field(default=5, ge=1, le=50)
@@ -69,7 +76,29 @@ class RecommendMealsArgs(BaseModel):
 class GetProgressSummaryArgs(BaseModel):
     """Tham số công cụ get_progress_summary."""
     days_range: int = Field(default=7, ge=1, le=90)
+    days: int | None = None
     start_date: str | None = None
     end_date: str | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class SearchFoodsArgs(BaseModel):
+    """Tham số công cụ search_foods."""
+    query: str = Field(..., min_length=1, description="Từ khóa tìm kiếm món ăn")
+    limit: int = Field(default=5, ge=1, le=10, description="Số lượng món tối đa trả về")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GetUserProfileArgs(BaseModel):
+    """Tham số công cụ get_user_profile (không cần tham số)."""
+    model_config = ConfigDict(extra="forbid")
+
+
+class SuggestFoodSwapArgs(BaseModel):
+    """Tham số công cụ suggest_food_swap."""
+    food_name: str = Field(..., min_length=1, description="Tên món ăn muốn thay thế")
+    goal: str | None = Field(default=None, description="Mục tiêu đổi món: lower_kcal, higher_protein, hoặc cheaper")
 
     model_config = ConfigDict(extra="forbid")

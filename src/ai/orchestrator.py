@@ -274,6 +274,12 @@ CÁC NGUYÊN TẮC BẮT BUỘC (STRICT POLICIES):
 
 6. TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM:
    - Luôn ghi nhớ số liệu dinh dưỡng mang tính ước tính tham khảo, không thay thế chẩn đoán y khoa.
+
+7. HƯỚNG DẪN TÍNH NĂNG ỨNG DỤNG NUTRISNAP:
+   - Khi người dùng hỏi cách chụp ảnh/quét món ăn: Hướng dẫn nhấn nút Camera ở thanh điều hướng dưới hoặc biểu tượng máy ảnh trên màn hình để nhận diện tự động bằng AI Vision.
+   - Khi hỏi cách nhập bằng giọng nói: Hướng dẫn nhấn và giữ nút Micro để nói chi tiết món ăn (ví dụ: "cơm sườn ít mỡ, thêm trứng").
+   - Khi hỏi đồ thị tiến độ / biểu đồ cân nặng: Hướng dẫn mở tab "Tiến độ" để xem biểu đồ cân nặng EMA và xu hướng calo.
+   - Khi hỏi báo cáo tháng / xuất báo cáo: Hướng dẫn mở mục "Cài đặt" / "Báo cáo" để xem và xuất dữ liệu dinh dưỡng chi tiết.
 """
 
 
@@ -539,8 +545,8 @@ def synthesize_tool_output(
             f"💡 **Nhận xét nhanh:** {analysis}"
         )
 
-    if tool_name == "get_goal_summary":
-        g_type = tool_result.get("goal_type_vn", "Duy trì cân nặng")
+    if tool_name in ("get_goal_summary", "get_user_profile"):
+        g_type = tool_result.get("goal_type_vn") or tool_result.get("goal_type", "Duy trì cân nặng")
         bmr = float(tool_result.get("bmr_calories", 0.0))
         tdee = float(tool_result.get("tdee_calories", 0.0))
         target_c = float(tool_result.get("target_calories", 0.0))
@@ -548,17 +554,19 @@ def synthesize_tool_output(
         target_carb = float(tool_result.get("target_carbs_g", 0.0))
         target_fat = float(tool_result.get("target_fat_g", 0.0))
         target_w = float(tool_result.get("target_weight_kg", 0.0))
+        cur_w = tool_result.get("current_weight_kg")
+        w_str = f" (Cân nặng hiện tại: {cur_w:.1f} kg | Mục tiêu: {target_w:.1f} kg)" if cur_w else f" (Cân nặng đích: {target_w:.1f} kg)"
         budget = int(tool_result.get("daily_budget_vnd", 0))
         return (
-            f"Mục tiêu dinh dưỡng hiện tại của bạn:\n\n"
-            f"- **Mục tiêu chính:** {g_type} (Cân nặng đích: {target_w:.1f} kg)\n"
+            f"Hồ sơ & mục tiêu dinh dưỡng hiện tại của bạn:\n\n"
+            f"- **Mục tiêu:** {g_type}{w_str}\n"
             f"- **BMR / TDEE:** ~{bmr:.0f} / ~{tdee:.0f} kcal/ngày\n"
             f"- **Mục tiêu nạp hàng ngày:** ~{target_c:.0f} kcal\n"
             f"- **Phân bổ Macros:** Đạm {target_p:.0f}g | Đường bột {target_carb:.0f}g | Béo {target_fat:.0f}g\n"
             f"- **Ngân sách ăn uống:** {budget:,} VNĐ/ngày"
         )
 
-    if tool_name == "suggest_swap":
+    if tool_name in ("suggest_swap", "suggest_food_swap"):
         orig = tool_result.get("original_food", "Món ăn")
         swaps = tool_result.get("healthy_swaps", [])
         if not swaps:
@@ -571,8 +579,35 @@ def synthesize_tool_output(
             s_name = s.get("food_name")
             s_cal = float(s.get("calories", 0.0))
             s_p = float(s.get("protein_g", 0.0))
-            s_label = s.get("serving_label", "khẩu phần")
-            lines.append(f"{idx}. **{s_name}** ({s_label}) – ~{s_cal:.0f} kcal | Protein: {s_p:.1f}g")
+            s_label = s.get("serving_label", "100g")
+            saved_cal = s.get("saved_calories_per_100g")
+            delta_p = s.get("delta_protein_per_100g")
+            delta_price = s.get("delta_price_vnd")
+            extra = []
+            if saved_cal is not None and saved_cal > 0:
+                extra.append(f"tiết kiệm ~{saved_cal:.0f} kcal/100g")
+            if delta_p is not None and delta_p > 0:
+                extra.append(f"+{delta_p:.1f}g protein/100g")
+            if delta_price is not None and delta_price < 0:
+                extra.append(f"tiết kiệm ~{abs(delta_price):,}đ")
+            extra_str = f" ({', '.join(extra)})" if extra else ""
+            lines.append(f"{idx}. **{s_name}** ({s_label}) – ~{s_cal:.0f} kcal | Protein: {s_p:.1f}g{extra_str}")
+        return "\n".join(lines)
+
+    if tool_name == "search_foods":
+        q = tool_result.get("query", "")
+        count = tool_result.get("count", 0)
+        foods = tool_result.get("foods", [])
+        if not foods:
+            return f"Không tìm thấy món ăn nào phù hợp với từ khóa '{q}' trong CSDL NutriSnap."
+        lines = [f"Tìm thấy **{count} món ăn** phù hợp với '{q}':\n"]
+        for idx, f in enumerate(foods, 1):
+            name = f.get("name_vi", "Món ăn")
+            cal = float(f.get("calories_per_100g", 0.0))
+            p = float(f.get("protein_per_100g", 0.0))
+            price = f.get("avg_price_vnd")
+            price_str = f" | Giá: ~{int(price):,}đ" if price else ""
+            lines.append(f"{idx}. **{name}**: ~{cal:.0f} kcal/100g | Protein: {p:.1f}g{price_str}")
         return "\n".join(lines)
 
     if tool_name == "recommend_meals":
@@ -1093,101 +1128,113 @@ class AIOrchestrator:
         # Khởi tạo phiên chat với lịch sử nếu có
         chat = model.start_chat(enable_automatic_function_calling=False)
 
-        # Gửi tin nhắn của người dùng
-        response = chat.send_message(message)
+        # Vòng lặp gọi Tool tối đa LLM_MAX_TOOL_ROUNDS (mặc định 5 vòng)
+        max_rounds = int(os.getenv("LLM_MAX_TOOL_ROUNDS", "5"))
+        current_message: Any = message
+        executed_calls: set[str] = set()
 
-        # Kiểm tra xem LLM có gọi Function Call nào không
-        candidate = response.candidates[0] if response.candidates else None
-        if not candidate:
-            return None
+        last_fn_name: Optional[str] = None
+        last_fn_args: dict[str, Any] = {}
+        last_tool_result: Optional[dict[str, Any]] = None
+        synthesized_reply = ""
+        final_reply = ""
 
-        # Trích xuất function call nếu có
-        function_calls = []
-        for part in candidate.content.parts:
-            fn = getattr(part, "function_call", None)
-            if fn:
-                function_calls.append(fn)
+        for _round_idx in range(max_rounds):
+            response = chat.send_message(current_message)
+            candidate = response.candidates[0] if response.candidates else None
+            if not candidate:
+                break
 
-        if not function_calls:
-            raw_reply = response.text or ""
-            out_guard = check_output(raw_reply, None, message)
-            cleaned_reply = out_guard.sanitized_text or raw_reply
-            return OrchestratorResponse(
-                reply=cleaned_reply,
-                reply_text=cleaned_reply,
-                is_fallback=False,
-                engine="llm",
+            function_calls = []
+            for part in candidate.content.parts:
+                fn = getattr(part, "function_call", None)
+                if fn:
+                    function_calls.append(fn)
+
+            if not function_calls:
+                raw_reply = getattr(response, "text", "") or ""
+                if isinstance(raw_reply, str) and raw_reply.strip():
+                    if last_tool_result:
+                        consistent, unverified = verify_number_consistency(raw_reply, last_tool_result, message)
+                        if consistent:
+                            final_reply = raw_reply.strip()
+                        else:
+                            logger.warning("Gemini generated mismatched numbers: %s. Using synthesized fallback.", unverified)
+                    else:
+                        final_reply = raw_reply.strip()
+                break
+
+            first_call = function_calls[0]
+            fn_name = first_call.name
+            fn_args = dict(first_call.args) if hasattr(first_call, "args") else {}
+            call_sig = f"{fn_name}:{json.dumps(fn_args, sort_keys=True)}"
+
+            # Nếu lặp lại chính xác cùng một tool call (ví dụ Mock fixed return), dừng vòng lặp
+            if call_sig in executed_calls:
+                break
+            executed_calls.add(call_sig)
+
+            # Kiểm tra lại Clarification trước khi gọi Backend
+            needs_clarify, clarify_msg = check_clarification_needed(
+                message=message,
+                tool_name=fn_name,
+                tool_args=fn_args,
+            )
+            if needs_clarify and clarify_msg:
+                return OrchestratorResponse(
+                    reply=clarify_msg,
+                    reply_text=clarify_msg,
+                    clarification_needed=True,
+                    is_fallback=False,
+                    engine="llm",
+                )
+
+            # Thực thi công cụ với user_id khoá cứng (Zero-Trust)
+            fn_args = sanitize_llm_tool_arguments(fn_args)
+            tool_result = dispatch_tool_call(
+                session=session,
+                authenticated_user_id=ToolContext(
+                    authenticated_user_id=user_id,
+                    caller="llm",
+                    request_id=str(uuid.uuid4()),
+                ),
+                tool_name=fn_name,
+                tool_args=fn_args,
             )
 
-        # Xử lý function call đầu tiên
-        first_call = function_calls[0]
-        fn_name = first_call.name
-        fn_args = dict(first_call.args) if hasattr(first_call, "args") else {}
+            last_fn_name = fn_name
+            last_fn_args = fn_args
+            last_tool_result = tool_result
+            synthesized_reply = synthesize_tool_output(fn_name, tool_result, profile)
+            if not final_reply:
+                final_reply = synthesized_reply
 
-        # Kiểm tra lại Clarification trước khi gọi Backend
-        needs_clarify, clarify_msg = check_clarification_needed(
-            message=message,
-            tool_name=fn_name,
-            tool_args=fn_args,
-        )
-        if needs_clarify and clarify_msg:
-            return OrchestratorResponse(
-                reply=clarify_msg,
-                reply_text=clarify_msg,
-                clarification_needed=True,
-                is_fallback=False,
-                engine="llm",
-            )
-
-        # Thực thi công cụ với user_id khoá cứng (Zero-Trust)
-        fn_args = sanitize_llm_tool_arguments(fn_args)
-
-        tool_result = dispatch_tool_call(
-            session=session,
-            authenticated_user_id=ToolContext(
-                authenticated_user_id=user_id,
-                caller="llm",
-                request_id=str(uuid.uuid4()),
-            ),
-            tool_name=fn_name,
-            tool_args=fn_args,
-        )
-
-        # Tổng hợp số liệu thật 100% từ DB (Zero Hallucination)
-        synthesized_reply = synthesize_tool_output(fn_name, tool_result, profile)
-        requires_confirm = tool_result.get("requires_confirmation", False)
-        action_card = tool_result.get("action_card")
-
-        final_reply = synthesized_reply
-        try:
-            # Turn 2: Feed tool output to Gemini chat to write natural response
-            tool_followup = (
+            # Chuẩn bị thông tin phản hồi cho lượt tiếp theo
+            current_message = (
                 f"Kết quả thực thi công cụ '{fn_name}' từ CSDL NutriSnap:\n"
                 f"{json.dumps(tool_result, ensure_ascii=False)}\n\n"
                 "Dựa trên 100% số liệu trên, hãy viết câu trả lời tự nhiên, thân thiện và ấm áp gửi tới người dùng. "
                 "TUYỆT ĐỐI không bịa đặt số liệu dinh dưỡng khác với số liệu trên. Luôn kèm từ 'ước tính'."
             )
-            followup_resp = chat.send_message(tool_followup)
-            candidate_text = getattr(followup_resp, "text", None)
-            if candidate_text:
-                candidate_text = candidate_text.strip()
-                consistent, unverified = verify_number_consistency(candidate_text, tool_result, message)
-                if consistent:
-                    final_reply = candidate_text
-                else:
-                    logger.warning("Gemini generated mismatched numbers: %s. Using synthesized fallback.", unverified)
-        except Exception as exc:
-            logger.warning("Error getting Gemini natural response in turn 2: %s", exc)
 
-        out_guard = check_output(final_reply, tool_result, message)
+        if not last_fn_name and not final_reply:
+            return None
+
+        if not final_reply:
+            final_reply = synthesized_reply or "Mình đã xử lý thông tin từ hệ thống thành công!"
+
+        out_guard = check_output(final_reply, last_tool_result, message)
         final_reply = out_guard.sanitized_text or final_reply
+
+        requires_confirm = bool(last_tool_result.get("requires_confirmation", False)) if last_tool_result else False
+        action_card = last_tool_result.get("action_card") if last_tool_result else None
 
         return OrchestratorResponse(
             reply=final_reply,
             reply_text=final_reply,
-            tool_called=fn_name,
-            tool_args=fn_args,
-            tool_result=tool_result,
+            tool_called=last_fn_name,
+            tool_args=last_fn_args,
+            tool_result=last_tool_result,
             pending_confirmation=requires_confirm,
             action_card=action_card,
             is_fallback=False,

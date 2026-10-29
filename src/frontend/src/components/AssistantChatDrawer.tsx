@@ -34,7 +34,7 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
     fetch(`${baseUrl}/assistant/health`)
       .then(res => res.json())
       .then(data => {
-        if (data?.mode === 'live') setAiMode('live');
+        if (data?.mode === 'live' || data?.status === 'online') setAiMode('live');
         else setAiMode('fallback');
       })
       .catch(() => setAiMode('fallback'));
@@ -80,10 +80,10 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
             <div>
               <div className="flex items-center gap-1.5">
                 <h2 id="assistant-title" className="text-sm font-semibold">Trợ lý AI NutriSnap</h2>
-                <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium border ${
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                   aiMode === 'live' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'
                 }`}>
-                  {aiMode === 'live' ? 'AI trực tuyến' : 'Chế độ cơ bản'}
+                  {aiMode === 'live' ? 'API: online ✓' : 'Chế độ cơ bản'}
                 </span>
               </div>
               <p className="text-xs text-nutri-muted">Dinh dưỡng · Thông tin tham khảo</p>

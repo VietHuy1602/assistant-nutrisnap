@@ -35,6 +35,7 @@ from src.backend.models.schema import (
     Meal,
     MealItem,
     PendingAction,
+    User,
     WeightLog,
     get_vn_today,
     utc_now,
@@ -42,9 +43,12 @@ from src.backend.models.schema import (
 from src.backend.schemas.assistant_tools import (
     GetDailyNutritionArgs,
     GetProgressSummaryArgs,
+    GetUserProfileArgs,
     LogMealLLMArgs,
     LogMealUserActionArgs,
     RecommendMealsArgs,
+    SearchFoodsArgs,
+    SuggestFoodSwapArgs,
 )
 from src.backend.services.nutrition_service import (
     DISCLAIMER_TEXT,
@@ -154,10 +158,12 @@ def exec_log_meal(
     session: Session,
     authenticated_user_id: ToolContext | int,
     meal_type: str,
-    items_list: list[dict[str, Any]],
+    items_list: list[dict[str, Any]] | None = None,
     is_confirmed: bool = False,
     image_path: str | None = None,
     logged_at: datetime | str | None = None,
+    food_name: str | None = None,
+    grams: float | None = None,
 ) -> dict[str, Any]:
     """Ghi nhận hoặc xem trước bữa ăn tuân thủ Two-step Confirmation.
 
@@ -174,6 +180,9 @@ def exec_log_meal(
             raise ValueError(
                 f"Loại bữa ăn không hợp lệ: '{meal_type}'. Hỗ trợ: Sáng, Trưa, Tối, Phụ."
             )
+
+    if not items_list and food_name:
+        items_list = [{"food_name": food_name, "estimated_gram": grams or 100.0}]
 
     if not items_list:
         raise ValueError("Danh sách món ăn không được để trống.")
@@ -552,11 +561,23 @@ def exec_recommend_meals(
     budget_vnd: int | None = None,
     meal_portion_gram: float | None = None,
     limit: int = 5,
+    min_protein_g: float | None = None,
+    min_protein: float | None = None,
+    max_price: int | None = None,
+    remaining_kcal: float | None = None,
+    meal_type: str | None = None,
+    dietary_preferences: list[str] | None = None,
 ) -> dict[str, Any]:
     """Gợi ý các món ăn Việt Nam từ food_references thỏa mãn hạn mức calo và ngân sách VNĐ."""
     uid = _extract_user_id(authenticated_user_id)
     gentle_note: str | None = None
     budget_exceeded = False
+
+    if remaining_calories is None and remaining_kcal is not None:
+        remaining_calories = remaining_kcal
+    if budget_vnd is None and max_price is not None:
+        budget_vnd = max_price
+    effective_min_protein = min_protein_g if min_protein_g is not None else min_protein
 
     if remaining_calories is None or budget_vnd is None:
         dash = get_daily_dashboard_data(session, uid)
@@ -608,7 +629,24 @@ def exec_recommend_meals(
         dish_price = round(f.avg_price_vnd * factor)
 
         if dish_calo <= effective_max_calo and dish_price <= effective_budget_vnd:
+            dish_prot = round(f.protein_per_100g * factor, 2)
+            if effective_min_protein is not None and dish_prot < effective_min_protein:
+                continue
             eligible.append((f, dish_calo, dish_price, portion, label))
+
+    # Nếu lọc min_protein quá chặt không có món nào, nới lỏng điều kiện min_protein
+    if not eligible and effective_min_protein is not None:
+        for f in all_foods:
+            name_lower = f.food_name.lower()
+            if "(usda)" in name_lower or "dầu ăn" in name_lower:
+                continue
+            portion = float(meal_portion_gram if meal_portion_gram is not None else (getattr(f, "default_serving_g", 100.0) or 100.0))
+            label = str(getattr(f, "serving_label", "100g") or f"{portion:.0f}g")
+            factor = portion / 100.0
+            dish_calo = round(f.calories_per_100g * factor, 2)
+            dish_price = round(f.avg_price_vnd * factor)
+            if dish_calo <= effective_max_calo and dish_price <= effective_budget_vnd:
+                eligible.append((f, dish_calo, dish_price, portion, label))
 
     # Ưu tiên món giàu đạm (protein_per_100g giảm dần) và calo cân bằng
     eligible.sort(
@@ -799,28 +837,147 @@ def exec_get_goal_summary(
     }
 
 
+def exec_get_user_profile(
+    session: Session,
+    authenticated_user_id: ToolContext | int,
+) -> dict[str, Any]:
+    """Tra cứu hồ sơ thể trạng và mục tiêu cá nhân từ CSDL (Goal/User)."""
+    uid = _extract_user_id(authenticated_user_id)
+    user = session.get(User, uid)
+    goal = session.exec(select(Goal).where(Goal.user_id == uid)).first()
+    if not goal:
+        return {
+            "tool_name": "get_user_profile",
+            "user_id": uid,
+            "has_goal": False,
+            "username": user.username if user else "Bạn",
+            "message": "Người dùng chưa thiết lập hồ sơ mục tiêu dinh dưỡng.",
+            "disclaimer": DISCLAIMER_TEXT,
+        }
+    target_w = getattr(goal, "target_weight_kg", getattr(goal, "target_weight", 65.0))
+    return {
+        "tool_name": "get_user_profile",
+        "user_id": uid,
+        "has_goal": True,
+        "username": user.username if user else "Bạn",
+        "gender": goal.gender,
+        "age": goal.age,
+        "height_cm": float(goal.height_cm),
+        "current_weight_kg": float(goal.current_weight_kg),
+        "target_weight_kg": float(target_w),
+        "activity_level": goal.activity_level,
+        "goal_type": goal.goal_type,
+        "bmr_calories": float(goal.bmr_calories),
+        "tdee_calories": float(goal.tdee_calories),
+        "target_calories": float(goal.target_calories or goal.tdee_calories),
+        "target_protein_g": float(goal.target_protein_g),
+        "target_carbs_g": float(goal.target_carbs_g),
+        "target_fat_g": float(goal.target_fat_g),
+        "daily_budget_vnd": int(goal.daily_budget_vnd),
+        "disclaimer": DISCLAIMER_TEXT,
+    }
+
+
+def exec_search_foods(
+    session: Session,
+    query: str,
+    limit: int = 5,
+) -> dict[str, Any]:
+    """Tìm kiếm món ăn từ CSDL food_references (500+ món ăn Việt Nam)."""
+    if limit <= 0:
+        limit = 5
+    if limit > 10:
+        limit = 10
+
+    clean_q = query.strip().lower()
+    all_refs = session.exec(select(FoodReference)).all()
+    matches = []
+    for f in all_refs:
+        name_lower = f.food_name.lower()
+        if "(usda)" in name_lower or "dầu ăn" in name_lower:
+            continue
+        if clean_q in name_lower:
+            matches.append(f)
+
+    if not matches and len(clean_q) >= 2:
+        words = clean_q.split()
+        for f in all_refs:
+            name_lower = f.food_name.lower()
+            if any(w in name_lower for w in words):
+                matches.append(f)
+
+    unique_matches = list({f.id: f for f in matches}.values())
+    results = []
+    for f in unique_matches[:limit]:
+        results.append({
+            "food_id": f.id,
+            "food_name": f.food_name,
+            "calories_per_100g": f.calories_per_100g,
+            "protein_per_100g": f.protein_per_100g,
+            "carbs_per_100g": f.carbs_per_100g,
+            "fat_per_100g": f.fat_per_100g,
+            "avg_price_vnd": f.avg_price_vnd,
+            "default_serving_g": f.default_serving_g,
+            "serving_label": f.serving_label,
+        })
+    return {
+        "tool_name": "search_foods",
+        "query": query,
+        "results_count": len(results),
+        "foods": results,
+        "disclaimer": DISCLAIMER_TEXT,
+    }
+
+
 def exec_suggest_swap(
     session: Session,
     food_name: str,
+    goal: str | None = None,
 ) -> dict[str, Any]:
-    """Gợi ý món ăn thay thế ít calo / lành mạnh hơn từ CSDL food_references."""
+    """Gợi ý món ăn thay thế ít calo / giàu đạm hơn / rẻ hơn từ CSDL food_references."""
     orig = resolve_food_reference(session, food_name=food_name)
     all_foods = session.exec(select(FoodReference)).all()
-    candidates = [
-        f for f in all_foods
-        if f.id != orig.id
-        and "(usda)" not in f.food_name.lower()
-        and "dầu ăn" not in f.food_name.lower()
-        and f.calories_per_100g < orig.calories_per_100g * 0.85
-    ]
-    candidates.sort(key=lambda x: (x.protein_per_100g, -x.calories_per_100g), reverse=True)
+
+    clean_goal = (goal or "").lower().strip()
+    if clean_goal in ("higher_protein", "giau_dam", "nhieu_dam"):
+        candidates = [
+            f for f in all_foods
+            if f.id != orig.id
+            and "(usda)" not in f.food_name.lower()
+            and "dầu ăn" not in f.food_name.lower()
+            and f.protein_per_100g > orig.protein_per_100g
+        ]
+        candidates.sort(key=lambda x: (x.protein_per_100g, -x.calories_per_100g), reverse=True)
+    elif clean_goal in ("cheaper", "re_hon", "tiet_kiem"):
+        candidates = [
+            f for f in all_foods
+            if f.id != orig.id
+            and "(usda)" not in f.food_name.lower()
+            and "dầu ăn" not in f.food_name.lower()
+            and f.avg_price_vnd < orig.avg_price_vnd
+        ]
+        candidates.sort(key=lambda x: (x.avg_price_vnd, -x.protein_per_100g))
+    else:  # lower_kcal or default
+        candidates = [
+            f for f in all_foods
+            if f.id != orig.id
+            and "(usda)" not in f.food_name.lower()
+            and "dầu ăn" not in f.food_name.lower()
+            and f.calories_per_100g < orig.calories_per_100g * 0.85
+        ]
+        candidates.sort(key=lambda x: (x.protein_per_100g, -x.calories_per_100g), reverse=True)
+
     swaps = []
     for c in candidates[:3]:
         swaps.append({
             "food_id": c.id,
             "food_name": c.food_name,
             "calories_per_100g": c.calories_per_100g,
+            "protein_per_100g": c.protein_per_100g,
+            "avg_price_vnd": c.avg_price_vnd,
             "saved_calories_per_100g": round(orig.calories_per_100g - c.calories_per_100g, 1),
+            "delta_protein_per_100g": round(c.protein_per_100g - orig.protein_per_100g, 1),
+            "delta_price_vnd": c.avg_price_vnd - orig.avg_price_vnd,
             "serving_label": getattr(c, "serving_label", "100g"),
         })
 
@@ -828,6 +985,9 @@ def exec_suggest_swap(
         "tool_name": "suggest_swap",
         "original_food": orig.food_name,
         "original_calories_per_100g": orig.calories_per_100g,
+        "original_protein_per_100g": orig.protein_per_100g,
+        "original_price_vnd": orig.avg_price_vnd,
+        "goal": goal or "lower_kcal",
         "suggested_swaps": swaps,
         "disclaimer": DISCLAIMER_TEXT,
     }
@@ -925,6 +1085,26 @@ def exec_get_progress_summary(
         else 0.0
     )
 
+    # 3. Tính chuỗi ngày duy trì (Streak) từ habit_service
+    streak_info: dict[str, Any] = {}
+    try:
+        from src.backend.services.habit_service import calculate_user_streak
+
+        streak_info = calculate_user_streak(session=session, authenticated_user_id=uid)
+    except Exception as exc:
+        logger.debug("Không thể tính habit streak: %s", exc)
+
+    # 4. Mẫu hành vi 14 ngày từ analytics_service
+    patterns_info: list[dict[str, Any]] = []
+    try:
+        from src.backend.services.analytics_service import analyze_user_patterns
+
+        p_res = analyze_user_patterns(session=session, authenticated_user_id=uid, days_range=min(days_range, 14))
+        if p_res.get("status") == "analyzed":
+            patterns_info = p_res.get("patterns", [])
+    except Exception as exc:
+        logger.debug("Không thể phân tích mẫu hành vi: %s", exc)
+
     return {
         "tool_name": "get_progress_summary",
         "user_id": uid,
@@ -939,6 +1119,10 @@ def exec_get_progress_summary(
         "weight_change_kg": weight_change_kg,
         "latest_ema_weight_kg": latest_ema_weight_kg,
         "weight_logs": ema_list,
+        "streak": streak_info,
+        "current_streak": streak_info.get("current_streak", 0),
+        "longest_streak": streak_info.get("longest_streak", 0),
+        "behavioral_patterns": patterns_info,
         "disclaimer": "Số liệu dinh dưỡng chỉ mang tính chất ước tính tham khảo, không thay thế chỉ định y khoa.",
     }
 
@@ -957,7 +1141,10 @@ TOOL_REGISTRY: frozenset[str] = frozenset({
     "get_food_info",
     "compare_foods",
     "get_goal_summary",
+    "get_user_profile",
+    "search_foods",
     "suggest_swap",
+    "suggest_food_swap",
 })
 
 
@@ -1018,6 +1205,12 @@ def dispatch_tool_call(
             RecommendMealsArgs.model_validate(safe_args)
         elif clean_name == "get_progress_summary":
             GetProgressSummaryArgs.model_validate(safe_args)
+        elif clean_name == "search_foods":
+            SearchFoodsArgs.model_validate(safe_args)
+        elif clean_name in ("get_goal_summary", "get_user_profile"):
+            GetUserProfileArgs.model_validate(safe_args)
+        elif clean_name in ("suggest_swap", "suggest_food_swap"):
+            SuggestFoodSwapArgs.model_validate(safe_args)
     except ValidationError as val_err:
         logger.warning(
             "Cảnh báo an ninh: Tham số không hợp lệ cho tool '%s' bởi user_id=%s (caller=%s): %s",
@@ -1089,11 +1282,24 @@ def dispatch_tool_call(
         return res
 
     if clean_name == "recommend_meals":
+        rem_c = safe_args.get("remaining_calories")
+        if rem_c is None:
+            rem_c = safe_args.get("remaining_kcal")
+        b_vnd = safe_args.get("budget_vnd")
+        if b_vnd is None:
+            b_vnd = safe_args.get("max_price")
+        min_p = safe_args.get("min_protein_g")
+        if min_p is None:
+            min_p = safe_args.get("min_protein")
+
         call_kwargs = {
-            "remaining_calories": safe_args.get("remaining_calories"),
-            "budget_vnd": safe_args.get("budget_vnd"),
+            "remaining_calories": rem_c,
+            "budget_vnd": b_vnd,
             "meal_portion_gram": safe_args.get("meal_portion_gram"),
             "limit": safe_args.get("limit", 5),
+            "min_protein_g": min_p,
+            "meal_type": safe_args.get("meal_type"),
+            "dietary_preferences": safe_args.get("dietary_preferences"),
         }
         filtered_kwargs = {k: v for k, v in call_kwargs.items() if v is not None}
         res = exec_recommend_meals(
@@ -1105,11 +1311,32 @@ def dispatch_tool_call(
         return res
 
     if clean_name == "get_progress_summary":
-        days = safe_args.get("days_range", 7)
+        days = safe_args.get("days_range")
+        if days is None:
+            days = safe_args.get("days", 7)
         res = exec_get_progress_summary(
             session=session,
             authenticated_user_id=ctx.authenticated_user_id,
             days_range=days,
+        )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
+
+    if clean_name == "search_foods":
+        q = safe_args.get("query", "")
+        limit_val = safe_args.get("limit", 5)
+        res = exec_search_foods(
+            session=session,
+            query=str(q),
+            limit=int(limit_val),
+        )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
+
+    if clean_name == "get_user_profile":
+        res = exec_get_user_profile(
+            session=session,
+            authenticated_user_id=ctx.authenticated_user_id,
         )
         log_tool_audit(ctx, clean_name, "ok")
         return res
@@ -1146,11 +1373,13 @@ def dispatch_tool_call(
         log_tool_audit(ctx, clean_name, "ok")
         return res
 
-    if clean_name == "suggest_swap":
+    if clean_name in ("suggest_swap", "suggest_food_swap"):
         fname = safe_args.get("food_name") or safe_args.get("food") or "trà sữa"
+        goal_val = safe_args.get("goal")
         res = exec_suggest_swap(
             session=session,
             food_name=str(fname),
+            goal=goal_val,
         )
         log_tool_audit(ctx, clean_name, "ok")
         return res

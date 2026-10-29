@@ -5,9 +5,11 @@ export interface PromptItem {
 }
 
 export const DEFAULT_PROMPTS: PromptItem[] = [
-  { label: '💡 Calo còn lại?', message: 'Hôm nay tôi còn bao nhiêu calo?' },
-  { label: '🍲 Ghi nhận phở bò', message: 'Trưa nay tôi ăn 1 tô phở bò tái' },
-  { label: '🥗 Gợi ý món 40k', message: 'Gợi ý bữa tối 40k đủ đạm' },
+  { label: '💡 Calo & Đạm hôm nay', message: 'Hôm nay mình đã ăn bao nhiêu calo và còn thiếu bao nhiêu đạm?' },
+  { label: '🍱 Gợi ý thực đơn', message: 'Gợi ý thực đơn vừa ngân sách hôm nay' },
+  { label: '🔄 Đổi món giàu đạm', message: 'Gợi ý đổi món giàu Protein hơn' },
+  { label: '📈 Xu hướng & Thói quen', message: 'Phân tích xu hướng cân nặng & thói quen của tôi' },
+  { label: '🍜 Ghi nhận bữa ăn', message: 'Ghi nhận nhanh bữa ăn vừa dùng' },
 ];
 
 const focusStyle = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';
