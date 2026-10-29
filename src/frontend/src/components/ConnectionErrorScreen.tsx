@@ -14,6 +14,7 @@ export interface ConnectionErrorScreenProps {
 
 export const ConnectionErrorScreen: React.FC<ConnectionErrorScreenProps> = ({ onRetry }) => {
   const auth = useContext(AuthContext);
+  const httpStatus = auth?.failureStatus;
   const [retrying, setRetrying] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -46,11 +47,12 @@ export const ConnectionErrorScreen: React.FC<ConnectionErrorScreenProps> = ({ on
 
         <div className="space-y-2">
           <h1 className="text-xl font-bold tracking-tight text-slate-900">
-            Không thể kết nối máy chủ
+            {httpStatus ? 'Máy chủ trả về lỗi' : 'Không thể kết nối máy chủ'}
           </h1>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Hệ thống máy chủ hiện không phản hồi hoặc kết nối mạng của bạn bị gián đoạn.
-            Vui lòng kiểm tra lại đường truyền và nhấn nút bên dưới để thử lại.
+            {httpStatus
+              ? `Đã nhận phản hồi HTTP ${httpStatus} từ máy chủ. Vui lòng thử lại sau.`
+              : 'Chưa nhận được phản hồi từ máy chủ. Vui lòng kiểm tra kết nối và thử lại.'}
           </p>
         </div>
 
@@ -77,7 +79,7 @@ export const ConnectionErrorScreen: React.FC<ConnectionErrorScreenProps> = ({ on
         </div>
 
         <p className="text-[11px] text-slate-400">
-          Mã lỗi: <span className="font-mono text-slate-500">ERR_SERVER_UNREACHABLE</span>
+          Mã lỗi: <span className="font-mono text-slate-500">{httpStatus ? `ERR_HTTP_${httpStatus}` : 'ERR_SERVER_UNREACHABLE'}</span>
         </p>
       </div>
     </div>
