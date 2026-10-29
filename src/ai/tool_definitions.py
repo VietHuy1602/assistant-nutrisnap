@@ -280,6 +280,67 @@ SUGGEST_SWAP_DECLARATION: dict[str, Any] = {
     },
 }
 
+SUGGEST_FOOD_SWAP_DECLARATION: dict[str, Any] = {
+    "name": "suggest_food_swap",
+    "description": (
+        "Gợi ý món ăn thay thế kèm chênh lệch calo, protein và chi phí (VNĐ) theo mục tiêu: "
+        "'lower_kcal' (ít calo hơn), 'higher_protein' (giàu đạm hơn) hoặc 'cheaper' (tiết kiệm hơn). "
+        "KHI NÀO DÙNG: Người dùng muốn đổi món hoặc hỏi món thay thế. "
+        "Ví dụ: 'có món nào thay cho cơm tấm mà ít calo hơn không', 'đổi phở bò sang món nào nhiều đạm hơn'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "food_name": {
+                "type": "string",
+                "description": "Tên món ăn muốn thay thế (ví dụ: 'Cơm tấm sườn nướng', 'Phở bò tái').",
+            },
+            "goal": {
+                "type": "string",
+                "enum": ["lower_kcal", "higher_protein", "cheaper"],
+                "description": "Mục tiêu đổi món: lower_kcal (ít calo), higher_protein (nhiều đạm), cheaper (rẻ hơn). Mặc định là lower_kcal.",
+            },
+        },
+        "required": ["food_name"],
+    },
+}
+
+SEARCH_FOODS_DECLARATION: dict[str, Any] = {
+    "name": "search_foods",
+    "description": (
+        "Tìm kiếm các món ăn khớp từ CSDL món ăn Việt Nam (food_references) kèm thành phần dinh dưỡng trên 100g và giá tiền ước tính. "
+        "KHI NÀO DÙNG: Người dùng muốn tra cứu danh sách món ăn, tìm kiếm món ăn theo từ khóa. "
+        "Ví dụ: 'tìm các món gà', 'tra cứu các món canh', 'các món từ đậu hũ'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "query": {
+                "type": "string",
+                "description": "Từ khóa tìm kiếm món ăn (ví dụ: 'ức gà', 'canh chua', 'đậu hũ').",
+            },
+            "limit": {
+                "type": "integer",
+                "description": "Số lượng món tối đa trả về (tối đa 10). Mặc định là 5.",
+            },
+        },
+        "required": ["query"],
+    },
+}
+
+GET_USER_PROFILE_DECLARATION: dict[str, Any] = {
+    "name": "get_user_profile",
+    "description": (
+        "Tra cứu hồ sơ thể trạng, mục tiêu cá nhân, BMR, TDEE, hạn mức calo, protein, carbs, fat và ngân sách hàng ngày của người dùng từ CSDL. "
+        "KHI NÀO DÙNG: Người dùng hỏi về thể trạng, mục tiêu hoặc hạn mức calo/đạm/ngân sách của bản thân."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+    },
+}
+
 # ==============================================================================
 # 2. WRAPPERS DÀNH CHO CÁC MÔ HÌNH CHUẨN OPENAPI / OPENAI
 # ==============================================================================
@@ -329,6 +390,21 @@ SUGGEST_SWAP_SCHEMA: dict[str, Any] = {
     "function": SUGGEST_SWAP_DECLARATION,
 }
 
+SUGGEST_FOOD_SWAP_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": SUGGEST_FOOD_SWAP_DECLARATION,
+}
+
+SEARCH_FOODS_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": SEARCH_FOODS_DECLARATION,
+}
+
+GET_USER_PROFILE_SCHEMA: dict[str, Any] = {
+    "type": "function",
+    "function": GET_USER_PROFILE_DECLARATION,
+}
+
 CORE_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
     GET_DAILY_NUTRITION_SCHEMA,
     LOG_MEAL_SCHEMA,
@@ -342,6 +418,9 @@ EXTENDED_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
     COMPARE_FOODS_SCHEMA,
     GET_GOAL_SUMMARY_SCHEMA,
     SUGGEST_SWAP_SCHEMA,
+    SUGGEST_FOOD_SWAP_SCHEMA,
+    SEARCH_FOODS_SCHEMA,
+    GET_USER_PROFILE_SCHEMA,
 ]
 
 ALL_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
@@ -354,6 +433,9 @@ ALL_NUTRISNAP_TOOLS: list[dict[str, Any]] = [
     COMPARE_FOODS_SCHEMA,
     GET_GOAL_SUMMARY_SCHEMA,
     SUGGEST_SWAP_SCHEMA,
+    SUGGEST_FOOD_SWAP_SCHEMA,
+    SEARCH_FOODS_SCHEMA,
+    GET_USER_PROFILE_SCHEMA,
 ]
 
 NUTRISNAP_TOOLS: list[dict[str, Any]] = CORE_NUTRISNAP_TOOLS
@@ -446,5 +528,8 @@ def get_gemini_tool_declarations(include_extended: bool = False) -> list[dict[st
             COMPARE_FOODS_DECLARATION,
             GET_GOAL_SUMMARY_DECLARATION,
             SUGGEST_SWAP_DECLARATION,
+            SUGGEST_FOOD_SWAP_DECLARATION,
+            SEARCH_FOODS_DECLARATION,
+            GET_USER_PROFILE_DECLARATION,
         ]
     return [sanitize_schema_for_gemini(copy.deepcopy(decl)) for decl in raw_declarations]

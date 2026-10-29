@@ -81,7 +81,8 @@ class ChatSessionResponse(BaseModel):
 
 
 class AssistantHealthResponse(BaseModel):
-    mode: str = Field(..., description="Chế độ hoạt động: live hoặc fallback")
+    mode: str = Field(..., description="Chế độ hoạt động: online hoặc fallback")
+    status: str = Field(default="fallback", description="Trạng thái kết nối trung thực: online hoặc fallback")
     model: str = Field(..., description="Tên model Gemini đang dùng")
     last_error_code: str | None = Field(default=None, description="Mã lỗi gần nhất nếu có")
     last_error_at: str | None = Field(default=None, description="Thời gian xảy ra lỗi gần nhất")
@@ -109,12 +110,15 @@ class AssistantChatResponse(BaseModel):
 
 @router.get("/health", response_model=AssistantHealthResponse)
 def get_assistant_health():
-    """Kiểm tra trạng thái sẵn sàng của AI Assistant (live hoặc fallback)."""
+    """Kiểm tra trạng thái sẵn sàng của AI Assistant (online hoặc fallback, có cache 60s)."""
     from src.ai.llm_client import get_llm_status
 
     status_data = get_llm_status()
+    mode_val = status_data.get("mode", "fallback")
+    status_val = status_data.get("status", mode_val)
     return AssistantHealthResponse(
-        mode=status_data.get("mode", "fallback"),
+        mode=mode_val,
+        status=status_val,
         model=status_data.get("model", "gemini-2.5-flash"),
         last_error_code=status_data.get("last_error_code"),
         last_error_at=status_data.get("last_error_at"),
