@@ -5,6 +5,8 @@ Thực thi chính sách Fail-fast: ứng dụng không thể khởi động nế
 hoặc JWT_SECRET_KEY có độ dài nhỏ hơn 32 ký tự.
 """
 
+from urllib.parse import urlsplit
+
 from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -34,6 +36,7 @@ class Settings(BaseSettings):
     # Cấu hình CSDL và môi trường
     DATABASE_URL: str = "sqlite:///./nutrisnap.db"
     APP_ENV: str = "development"
+    DEV_MOBILE_ORIGIN: str = ""
     DEBUG: bool = True
 
     # Cấu hình AI Orchestrator & LLM Client
@@ -64,6 +67,25 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @field_validator("DEV_MOBILE_ORIGIN")
+    @classmethod
+    def validate_mobile_origin(cls, value: str) -> str:
+        value = value.strip().rstrip("/")
+        if not value:
+            return ""
+        origin = urlsplit(value)
+        if (origin.scheme != "http" or not origin.hostname or "*" in value
+                or origin.username or origin.password or origin.port
+                or origin.path or origin.query or origin.fragment):
+            raise ValueError("DEV_MOBILE_ORIGIN must be an exact http://host origin without port or path")
+        return value
+
+    @property
+    def mobile_dev_origins(self) -> list[str]:
+        if self.APP_ENV != "development":
+            return []
+        return ["https://localhost"] + ([self.DEV_MOBILE_ORIGIN] if self.DEV_MOBILE_ORIGIN else [])
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod

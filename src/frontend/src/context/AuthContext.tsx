@@ -15,6 +15,7 @@ export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unre
 
 export interface AuthContextType {
   status: AuthStatus;
+  failureStatus?: number;
   user: UserPublic | null;
   hasGoal: boolean;
   sessionExpired: boolean;
@@ -49,6 +50,7 @@ function isUnauthorizedError(err: unknown): boolean {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [status, setStatus] = useState<AuthStatus>('loading');
+  const [failureStatus, setFailureStatus] = useState<number>();
   const [user, setUser] = useState<UserPublic | null>(null);
   const [hasGoal, setHasGoal] = useState<boolean>(false);
   const [sessionExpired, setSessionExpired] = useState<boolean>(false);
@@ -68,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStatus('unauthenticated');
       } else {
         // Lỗi mạng / timeout / 5xx -> unreachable (SAC-3: không chuyển /login)
+        setFailureStatus(isApiError(err) ? err.status : undefined);
         setStatus('unreachable');
       }
     }
@@ -93,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setStatus('unauthenticated');
           } else {
             // Lỗi mạng / timeout / 5xx -> unreachable
+            setFailureStatus(isApiError(err) ? err.status : undefined);
             setStatus('unreachable');
           }
         }
@@ -147,9 +151,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isUnauthorizedError(err)) {
         setStatus('unauthenticated');
       } else {
+        setFailureStatus(isApiError(err) ? err.status : undefined);
         setStatus('unreachable');
       }
-      throw new Error('Không thể thiết lập phiên đăng nhập. Hãy kiểm tra cookie của trình duyệt.');
+      if (isUnauthorizedError(err)) {
+        throw new Error('Đăng nhập thành công nhưng phiên chưa được lưu. Hãy kiểm tra cấu hình cookie của ứng dụng.');
+      }
+      // Preserve network/server errors: they do not prove that cookie storage failed.
+      throw err;
     }
   }, []);
 
@@ -191,6 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isUnauthorizedError(err)) {
         setStatus('unauthenticated');
       } else {
+        setFailureStatus(isApiError(err) ? err.status : undefined);
         setStatus('unreachable');
       }
     }
@@ -202,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: AuthContextType = {
     status,
+    failureStatus,
     user,
     hasGoal,
     sessionExpired,

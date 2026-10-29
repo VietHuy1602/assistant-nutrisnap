@@ -30,6 +30,9 @@ ALLOWED_ORIGINS = {
     "http://testserver",
 }
 
+# Capacitor Android's bundled WebView origin for local development.
+ALLOWED_ORIGINS.update(settings.mobile_dev_origins)
+
 
 def get_current_user(
     request: Request,
