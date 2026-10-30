@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static nutrition-camera mark. Artwork stays inside the system splash safe circle. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp" android:height="288dp"
+    android:viewportWidth="288" android:viewportHeight="288">
+    <path android:fillColor="#9ADA26" android:pathData="M145,109 C119,103 111,84 117,68 C139,71 153,86 145,109 Z" />
+    <path android:fillColor="#DDF49A" android:pathData="M147,110 C143,85 158,69 180,68 C181,90 168,107 147,110 Z" />
+    <path android:fillColor="#F56585" android:pathData="M88,108 L111,108 L119,95 L160,95 L168,108 L202,108 Q218,108 218,124 L218,192 Q218,208 202,208 L86,208 Q70,208 70,192 L70,124 Q70,108 88,108 Z" />
+    <path android:fillColor="#FFAA50" android:pathData="M86,117 L202,117 Q209,117 209,125 L209,192 Q209,199 202,199 L86,199 Q79,199 79,192 L79,125 Q79,117 86,117 Z" />
+    <path android:fillColor="#07152F" android:pathData="M144,117 A40,40 0,1 0,144,197 A40,40 0,1 0,144,117 Z" />
+    <path android:fillColor="#9ADA26" android:pathData="M144,124 A33,33 0,1 0,144,190 A33,33 0,1 0,144,124 Z" />
+    <path android:fillColor="#EAF8B8" android:pathData="M144,143 A14,14 0,1 0,144,171 A14,14 0,1 0,144,143 Z" />
+    <path android:fillColor="#173727" android:pathData="M141,130 L146,130 L146,138 L141,138 Z M141,177 L146,177 L146,185 L141,185 Z M117,154 L125,154 L125,159 L117,159 Z M163,154 L171,154 L171,159 L163,159 Z M125,136 L129,133 L134,140 L130,143 Z M157,173 L161,170 L166,177 L162,180 Z M124,177 L130,170 L134,173 L128,180 Z M156,140 L162,133 L166,136 L160,143 Z" />
+    <path android:fillColor="#FFF3DC" android:pathData="M184,125 L199,125 L199,135 L184,135 Z" />
+</vector>

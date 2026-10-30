@@ -13,7 +13,7 @@
 @layer components {
   /* Opt-in foundations: existing pages keep their current presentation. */
   .nutri-input {
-    @apply min-h-11 w-full rounded-xl border border-nutri-border bg-nutri-panel px-3.5 py-2.5 text-base text-nutri-ink;
+    @apply min-h-12 w-full rounded-xl border border-nutri-border bg-nutri-panel px-3.5 py-2.5 text-base text-nutri-ink;
     @apply placeholder:text-nutri-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2;
     @apply disabled:cursor-not-allowed disabled:bg-nutri-surface disabled:text-nutri-muted;
   }
@@ -23,7 +23,7 @@
   }
 
   .nutri-choice {
-    @apply flex min-h-11 min-w-0 cursor-pointer items-start gap-3 rounded-xl border border-nutri-border bg-nutri-panel p-3 text-nutri-ink sm:p-4;
+    @apply flex min-h-12 min-w-0 cursor-pointer items-start gap-3 rounded-xl border border-nutri-border bg-nutri-panel p-3 text-nutri-ink sm:p-4;
     @apply transition-colors hover:border-nutri-primary focus-within:ring-2 focus-within:ring-nutri-focus focus-within:ring-offset-2 motion-reduce:transition-none;
   }
 

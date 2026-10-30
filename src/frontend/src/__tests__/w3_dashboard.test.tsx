@@ -91,8 +91,9 @@ describe('W3 Dashboard — BasicDashboard Component', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText(/Chưa thiết lập mục tiêu cá nhân/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Thiết lập mục tiêu/ })).toHaveAttribute('href', '/goal-setup');
+    expect(await screen.findByRole('heading', { name: 'Giá trị tham khảo' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Thiết lập mục tiêu/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/chưa phải mục tiêu dinh dưỡng cá nhân/)).toBeInTheDocument();
   });
 
   it('4. Hiển thị trạng thái rỗng (DashboardEmpty) khi chưa có bữa ăn nào trong ngày', async () => {

@@ -28,7 +28,7 @@ export const RecognitionProgress: React.FC<RecognitionProgressProps> = ({
       <div className="flex flex-col gap-1.5">
         <h3 className="text-lg font-bold text-slate-900">Đang nhận diện món ăn...</h3>
         <p className="text-xs text-slate-500">
-          AI Vision đang bóc tách món ăn và ước lượng khẩu phần từ hình ảnh đĩa ăn của bạn.
+          Đang tìm món ăn và ước lượng khẩu phần từ ảnh. Bạn sẽ kiểm tra kết quả trước khi lưu.
         </p>
       </div>
 

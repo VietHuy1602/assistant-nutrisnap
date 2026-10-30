@@ -57,7 +57,7 @@ export function MessageList({
               className={`flex min-w-0 flex-col ${isUser ? 'items-end' : 'items-start'}`}
             >
               {message.text && (
-                <div className="flex flex-col gap-1 max-w-[90%]">
+                <div className="min-w-0 flex flex-col gap-2 max-w-full sm:max-w-[95%]">
                   <div
                     className={`break-words [overflow-wrap:anywhere] rounded-2xl px-4 py-2.5 text-sm leading-6 ${
                       isUser
@@ -90,7 +90,7 @@ export function MessageList({
               ) : null}
 
               {message.disclaimer && (
-                <p className="mt-2 text-xs leading-5 text-nutri-muted">
+                <p className="mt-2 text-sm leading-6 text-nutri-muted">
                   {message.disclaimer}
                 </p>
               )}
@@ -111,7 +111,7 @@ export function MessageList({
           type="button"
           onClick={onScrollToBottom}
           aria-label="Cuộn xuống tin nhắn mới nhất"
-          className="absolute bottom-3 right-4 flex items-center gap-1 rounded-full bg-nutri-dark/80 backdrop-blur text-white px-3 py-1.5 text-xs shadow-lg hover:bg-nutri-dark transition-all duration-200 animate-fade-in z-10"
+          className={`absolute bottom-3 right-4 flex min-h-12 min-w-12 items-center gap-2 rounded-full bg-nutri-dark text-white px-4 py-2 text-sm shadow-lg hover:bg-nutri-primary z-10 ${focusStyle}`}
         >
           <span>Tin nhắn mới</span>
           <ArrowDown size={14} aria-hidden="true" />

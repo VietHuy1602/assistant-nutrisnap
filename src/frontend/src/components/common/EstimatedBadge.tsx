@@ -14,8 +14,8 @@ export const EstimatedBadge: React.FC<EstimatedBadgeProps> = ({
 }) => {
   const sizeClasses =
     size === 'sm'
-      ? 'text-[11px] px-1.5 py-0.5 gap-1'
-      : 'text-xs px-2.5 py-1 gap-1.5';
+      ? 'text-sm leading-6 px-2 py-0.5 gap-1'
+      : 'text-sm leading-6 px-2.5 py-1 gap-1.5';
 
   return (
     <span

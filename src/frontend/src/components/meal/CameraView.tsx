@@ -57,7 +57,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
         />
 
         {isRequesting && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/80">
+          <div role="status" className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/80">
             <div className="w-10 h-10 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin mb-3" />
             <p className="text-sm font-medium text-slate-200">Đang khởi động máy ảnh...</p>
           </div>
@@ -79,7 +79,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
 
         {/* Trạng thái lỗi hoặc từ chối */}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 z-10">
+          <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-900/90 z-10">
             <AlertTriangle className="w-10 h-10 text-amber-400 mb-2" aria-hidden="true" />
             <p className="text-sm font-medium text-slate-200 mb-4">{error}</p>
             <button

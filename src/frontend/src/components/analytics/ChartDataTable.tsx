@@ -26,8 +26,8 @@ export const ChartDataTable: React.FC<ChartDataTableProps> = (props) => {
   if (props.type === 'weight') {
     const { points, masked = false } = props;
     return (
-      <div className="overflow-x-auto rounded-xl border border-slate-200">
-        <table className="w-full text-left text-xs border-collapse">
+      <div tabIndex={0} role="region" aria-label="Bảng cân nặng, có thể cuộn ngang" className="max-w-full overflow-x-auto rounded-xl border border-slate-200">
+        <table className="w-full min-w-[28rem] text-left text-sm tabular-nums border-collapse">
           <caption className="sr-only">Bảng số liệu cân nặng và xu hướng EMA</caption>
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
@@ -64,8 +64,8 @@ export const ChartDataTable: React.FC<ChartDataTableProps> = (props) => {
 
   const { bars } = props;
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200">
-      <table className="w-full text-left text-xs border-collapse">
+    <div tabIndex={0} role="region" aria-label="Bảng năng lượng, có thể cuộn ngang" className="max-w-full overflow-x-auto rounded-xl border border-slate-200">
+      <table className="w-full min-w-[28rem] text-left text-sm tabular-nums border-collapse">
         <caption className="sr-only">Bảng số liệu năng lượng calo theo kỳ</caption>
         <thead>
           <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">

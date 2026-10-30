@@ -38,7 +38,7 @@ export const ConfirmBar: React.FC<ConfirmBarProps> = ({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="capture-action-row flex items-center gap-3">
         <button
           type="button"
           onClick={onCancel}

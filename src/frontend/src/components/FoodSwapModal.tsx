@@ -14,7 +14,7 @@ import type { NormalizedSwapResponse } from '../api/swapContract';
 import { demoSwapProvider, type SwapFood, type SwapPreview, type SwapProvider } from './foodSwapDemo';
 
 const control =
-  'min-h-11 rounded-xl border border-nutri-border px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus disabled:opacity-50 transition-colors';
+  'min-h-12 min-w-12 rounded-xl border border-nutri-border px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus disabled:opacity-50 transition-colors';
 
 const validFood = (food: SwapFood) =>
   food &&
@@ -171,7 +171,7 @@ export function FoodSwapModal({
   const liveData = !isDemo && data ? (data as NormalizedSwapResponse) : null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-3">
       <div
         ref={dialog}
         role="dialog"
@@ -252,7 +252,7 @@ export function FoodSwapModal({
               {demoData.alternatives.map((food) => (
                 <label
                   key={food.key}
-                  className="flex min-h-11 cursor-pointer gap-3 rounded-xl border border-nutri-border bg-nutri-selected/50 p-3 focus-within:ring-2 focus-within:ring-nutri-focus"
+                  className="flex min-h-12 min-w-12 cursor-pointer gap-3 rounded-xl border border-nutri-border bg-nutri-selected/50 p-3 focus-within:ring-2 focus-within:ring-nutri-focus"
                 >
                   <input
                     type="radio"
@@ -299,7 +299,7 @@ export function FoodSwapModal({
                   return (
                     <label
                       key={key}
-                      className="flex min-h-11 cursor-pointer gap-3 rounded-xl border border-nutri-border bg-nutri-selected/50 p-3 focus-within:ring-2 focus-within:ring-nutri-focus"
+                      className="flex min-h-12 min-w-12 cursor-pointer gap-3 rounded-xl border border-nutri-border bg-nutri-selected/50 p-3 focus-within:ring-2 focus-within:ring-nutri-focus"
                     >
                       <input
                         type="radio"

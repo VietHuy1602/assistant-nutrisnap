@@ -8,14 +8,13 @@ import { z } from 'zod';
 
 const num = (label: string) =>
   z.number({
-    required_error: `Vui lòng nhập ${label}`,
-    invalid_type_error: `Vui lòng nhập ${label}`,
+    error: `Vui lòng nhập ${label}`,
   });
 
 export const goalSchema = z
   .object({
     gender: z.enum(['male', 'female', 'other'], {
-      required_error: 'Vui lòng chọn giới tính',
+      error: 'Vui lòng chọn giới tính',
     }),
     age: num('tuổi')
       .int('Tuổi phải là số nguyên')
@@ -31,10 +30,10 @@ export const goalSchema = z
       .min(25, 'Cân nặng mục tiêu tối thiểu là 25 kg')
       .max(300, 'Cân nặng mục tiêu tối đa là 300 kg'),
     activity_level: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active'], {
-      required_error: 'Vui lòng chọn mức độ vận động',
+      error: 'Vui lòng chọn mức độ vận động',
     }),
     goal_type: z.enum(['lose_weight', 'maintain', 'gain_muscle'], {
-      required_error: 'Vui lòng chọn loại mục tiêu',
+      error: 'Vui lòng chọn loại mục tiêu',
     }),
     weekly_pace_kg: num('tốc độ thay đổi'),
     daily_budget_vnd: num('ngân sách')

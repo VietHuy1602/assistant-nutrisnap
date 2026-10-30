@@ -32,11 +32,11 @@ export const ManualEntryPanel: React.FC<ManualEntryPanelProps> = ({
     <div
       className={`w-full max-w-xl mx-auto p-6 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-6 ${className}`}
     >
-      <div className="flex items-center justify-between">
+      <div className="capture-entry-heading flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Nhập món ăn thủ công</h2>
           <p className="text-xs text-slate-500">
-            {reason || 'Tìm và chọn món từ CSDL 500 món ăn Việt Nam tham chiếu chuẩn.'}
+            {reason || 'Tìm món ăn, chọn khẩu phần rồi kiểm tra trước khi lưu.'}
           </p>
         </div>
 
@@ -62,6 +62,7 @@ export const ManualEntryPanel: React.FC<ManualEntryPanelProps> = ({
               <button
                 key={type.id}
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => dispatch({ type: 'SET_MEAL_TYPE', mealType: type.id })}
                 className={`flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold border transition-all ${
                   isSelected
@@ -94,12 +95,13 @@ export const ManualEntryPanel: React.FC<ManualEntryPanelProps> = ({
           <p className="text-xs font-semibold text-slate-700">Các món đã chọn ({items.length}):</p>
           <div className="divide-y divide-slate-100">
             {items.map((it) => (
-              <div key={it.key} className="flex items-center justify-between py-2 text-sm">
-                <span className="font-medium text-slate-800">{it.food_name}</span>
+              <div key={it.key} className="capture-item-controls flex items-center justify-between py-2 text-sm">
+                <span className="capture-item-name font-medium text-slate-800">{it.food_name}</span>
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
+                      aria-label={`Khối lượng ${it.food_name} (gam)`}
                       min="1"
                       max="3000"
                       step="5"

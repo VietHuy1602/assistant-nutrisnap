@@ -25,6 +25,7 @@ import { useConnectivity } from '../app/ConnectivityProvider';
 import { draftStore } from '../storage/draftStore';
 import { useDraftAutosave } from '../offline/useDraftAutosave';
 import { Check } from 'lucide-react';
+import styles from '../components/meal/CaptureSurface.module.css';
 
 export type CaptureMode =
   | 'idle'
@@ -237,7 +238,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-6">
+    <div className={styles.capture}>
       {/* Nút quay lại hoặc đóng */}
       {onClose && mode !== 'saved' && (
         <div className="mb-4">
@@ -267,10 +268,10 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       {/* Trạng thái 2: Tải ảnh từ thiết bị (hoặc idle ban đầu) */}
       {(mode === 'filePicker' || mode === 'idle') && (
         <div className="w-full max-w-lg mx-auto bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col gap-5">
-          <div className="flex items-center justify-between">
+          <div className="capture-entry-heading flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-900">Tải ảnh đĩa ăn</h2>
-              <p className="text-xs text-slate-500">Chọn ảnh món ăn có sẵn từ thiết bị của bạn</p>
+              <p className="text-xs text-slate-500">Chọn ảnh rõ nét, có đầy đủ món ăn trong khung hình.</p>
             </div>
             <button
               type="button"
@@ -369,7 +370,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       {mode === 'review' && (
         <div className="flex flex-col gap-4">
           {saveError && (
-            <div className="flex items-center gap-2 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800">
+            <div role="alert" className="flex items-center gap-2 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-800">
               <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" aria-hidden="true" />
               <span>{saveError}</span>
             </div>

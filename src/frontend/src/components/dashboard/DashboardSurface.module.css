@@ -1,0 +1,32 @@
+.dashboard {
+  @apply min-w-0;
+  color: #171717;
+}
+:global(body):has(.dashboard) :global(.bg-nutri-surface) { background-color: #f7f8f5; }
+.dashboard :global(.dashboard-summary) { @apply grid grid-cols-1 gap-4; }
+.dashboard :global(.calorie-summary) {
+  @apply flex flex-row flex-wrap items-center justify-between gap-4 rounded-[28px] border-0 p-5 shadow-none sm:p-7;
+  background: #e0f1b8;
+}
+.dashboard :global(.calorie-ring) { @apply h-40 w-40 shrink-0; }
+.dashboard :global(.calorie-ring) :global(.text-3xl) { @apply text-2xl; }
+.dashboard :global(.calorie-total) { @apply flex min-w-0 flex-1 flex-col gap-3; }
+.dashboard :global(.calorie-total) strong { @apply text-4xl font-semibold tracking-tight tabular-nums; }
+.dashboard :global(.calorie-caption) { @apply mt-0 flex w-full flex-wrap gap-2 text-sm leading-6; }
+.dashboard :global(.macro-summary) { @apply border-0 bg-transparent p-0 shadow-none; }
+.dashboard :global(.macro-summary) > :first-child { @apply flex-wrap gap-2; }
+.dashboard :global(.macro-summary) h3 { @apply text-base normal-case tracking-normal; }
+.dashboard :global(.macro-grid) { @apply grid grid-cols-1 gap-3 min-[390px]:grid-cols-3; }
+.dashboard :global(.macro-item) { @apply min-w-0 rounded-[24px] bg-white p-4; }
+.dashboard :global(.macro-item) > :first-child { @apply flex-col items-start gap-2; }
+.dashboard :global(.macro-item) > :first-child > span { @apply break-words text-sm leading-6; }
+.dashboard :global(.macro-item) strong { @apply text-lg font-semibold; }
+.dashboard :global(.diary-meal) { @apply rounded-[24px] border-0 p-4 shadow-none sm:p-5; }
+.dashboard :global(.diary-list) { @apply border-0 pl-0; }
+.dashboard :global(.diary-marker) { @apply hidden; }
+.dashboard :global(.diary-meal) h4 { @apply text-lg font-semibold; }
+@media (min-width: 768px) {
+  .dashboard :global(.calorie-summary) { @apply min-h-60; }
+  .dashboard :global(.calorie-total) strong { @apply text-5xl; }
+  .dashboard :global(.macro-item) { @apply p-5; }
+}

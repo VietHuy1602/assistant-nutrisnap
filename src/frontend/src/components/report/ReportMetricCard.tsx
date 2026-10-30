@@ -24,14 +24,14 @@ export const ReportMetricCard: React.FC<ReportMetricCardProps> = ({
   isEstimated = false,
 }) => {
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
+    <div className="min-w-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col justify-between">
       <div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs uppercase font-bold tracking-wider text-slate-500">{title}</span>
+        <div className="flex items-start justify-between gap-3">
+          <span className="text-sm leading-6 font-semibold text-nutri-muted">{title}</span>
           {icon && <div className="text-slate-400">{icon}</div>}
         </div>
         <div className="mt-3 flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{value}</span>
+          <span className="break-words tabular-nums text-2xl sm:text-3xl font-extrabold text-slate-900">{value}</span>
           {unit && <span className="text-xs sm:text-sm font-semibold text-slate-500">{unit}</span>}
           {isEstimated && <EstimatedBadge size="sm" showIcon={false} className="ml-1" />}
         </div>

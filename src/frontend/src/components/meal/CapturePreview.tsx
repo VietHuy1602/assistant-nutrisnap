@@ -45,7 +45,7 @@ export const CapturePreview: React.FC<CapturePreviewProps> = ({
           <img
             src={previewUrl}
             alt="Đĩa thức ăn đã chụp"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
@@ -84,7 +84,7 @@ export const CapturePreview: React.FC<CapturePreviewProps> = ({
       </div>
 
       {/* Nút hành động */}
-      <div className="flex items-center gap-3 pt-2">
+      <div className="capture-action-row flex items-center gap-3 pt-2">
         <button
           type="button"
           onClick={onRetake}

@@ -93,7 +93,7 @@ export function ActionConfirmationCard({
       role="region"
       aria-label="Thẻ xác nhận bữa ăn"
       aria-busy={isConfirming}
-      className="mt-3 w-full min-w-0 space-y-3 rounded-2xl border border-nutri-border bg-nutri-selected/50 p-4 shadow-sm"
+      className="mt-3 w-full min-w-0 space-y-4 rounded-2xl border border-nutri-border bg-nutri-selected/50 p-3 sm:p-4 shadow-sm"
     >
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-nutri-ink">
@@ -113,7 +113,7 @@ export function ActionConfirmationCard({
             <span className="min-w-0 break-words font-medium text-nutri-ink">
               {item.food_name}
             </span>
-            <div className="flex items-center gap-1.5 text-nutri-muted">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-nutri-muted">
               <span>
                 {display(item.estimated_gram)} g · {item.calories === undefined ? 'Chưa có dữ liệu kcal' : `${display(item.calories)} kcal`}
               </span>
@@ -125,15 +125,15 @@ export function ActionConfirmationCard({
 
       {/* Calories and macros totals */}
       <div className="space-y-1">
-        <p className="text-sm font-semibold text-nutri-ink flex items-center justify-between">
+        <p className="text-sm leading-6 font-semibold tabular-nums text-nutri-ink flex flex-wrap items-center justify-between gap-2">
           <span>Tổng ước tính trước khi lưu:</span>
           <span>{card.totals?.calories === undefined ? 'Chưa có dữ liệu kcal' : `${display(card.totals.calories)} kcal`}</span>
         </p>
 
         {(card.totals?.protein || card.totals?.carbs || card.totals?.fat) && (
-          <div className="flex justify-between text-xs text-nutri-muted pt-1 border-t border-nutri-border/40">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 justify-between text-sm tabular-nums text-nutri-muted pt-2 border-t border-nutri-border/40">
             {card.totals?.protein ? <span>Đạm: {display(card.totals.protein)}g</span> : null}
-            {card.totals?.carbs ? <span>Carbs: {display(card.totals.carbs)}g</span> : null}
+            {card.totals?.carbs ? <span>Tinh bột: {display(card.totals.carbs)}g</span> : null}
             {card.totals?.fat ? <span>Béo: {display(card.totals.fat)}g</span> : null}
           </div>
         )}
@@ -221,7 +221,7 @@ export function ActionConfirmationCard({
         isConfirming ||
         phase === 'failed' ||
         (phase === 'uncertain' && checkedDashboard && onConfirm)) && (
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-col min-[390px]:flex-row min-[390px]:flex-wrap gap-3 pt-1">
           <button
             type="button"
             disabled={isConfirming}
