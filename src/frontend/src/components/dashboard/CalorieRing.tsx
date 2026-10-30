@@ -8,6 +8,8 @@ interface CalorieRingProps {
   remaining: number;
   progressPercent: number;
   className?: string;
+  personalized?: boolean;
+  dateLabel?: string;
 }
 
 const R = 54;
@@ -19,6 +21,8 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
   remaining,
   progressPercent,
   className = '',
+  personalized = true,
+  dateLabel = 'Hôm nay',
 }) => {
   const isOver = remaining < 0;
   // Kẹp tỷ lệ hiển thị cung từ 0 đến 1 cho nét vẽ SVG
@@ -35,11 +39,15 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
 
   return (
     <div
-      className={`flex flex-col items-center justify-center p-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm relative ${className}`}
+      className={`calorie-summary flex flex-col items-center justify-center p-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm relative ${className}`}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={personalized ? ariaLabel : `Đã nạp ${formatKcal(consumed)} kilocalo. Mức tham khảo ${formatKcal(target)} kilocalo, chưa phải mục tiêu cá nhân.`}
     >
-      <div className="relative w-48 h-48 flex items-center justify-center">
+      <div className="calorie-total hidden">
+        <span className="text-base font-medium">Tổng calo đã nạp</span>
+        <div className="flex flex-wrap items-baseline gap-2"><strong>{formatKcal(consumed)}</strong><span className="text-sm">kcal</span></div>
+      </div>
+      <div className="calorie-ring relative w-48 h-48 flex items-center justify-center">
         <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 128 128">
           {/* Vòng nền mờ */}
           <circle
@@ -67,28 +75,28 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
 
         {/* Nội dung số ở tâm vòng tròn */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {isOver ? 'Vượt hạn mức' : 'Calo còn lại'}
+          <span className="text-sm font-semibold uppercase tracking-wider text-nutri-muted">
+            {!personalized ? 'Mức tham khảo' : isOver ? 'Vượt hạn mức' : 'Calo còn lại'}
           </span>
-          <span className="text-3xl font-extrabold tracking-tight text-slate-900 mt-0.5">
-            {isOver ? `+${formatKcal(Math.abs(remaining))}` : formatKcal(remaining)}
+          <span className="text-3xl tabular-nums font-extrabold tracking-tight text-slate-900 mt-0.5">
+            {!personalized ? formatKcal(target) : isOver ? `+${formatKcal(Math.abs(remaining))}` : formatKcal(remaining)}
           </span>
-          <span className="text-xs text-slate-400 font-medium">kcal</span>
+          <span className="text-sm text-nutri-muted font-medium">kcal</span>
         </div>
       </div>
 
       {/* Dòng tóm tắt bên dưới */}
-      <div className="mt-4 flex items-center gap-2 text-sm text-slate-600 font-medium">
+      <div className="calorie-caption mt-4 flex items-center gap-2 text-sm text-slate-600 font-medium">
         <span>
-          Đã nạp <strong className="text-slate-800">{formatKcal(consumed)}</strong> / {formatKcal(target)} kcal
+          {personalized ? 'Mục tiêu ngày' : 'Mức tham khảo'}: {formatKcal(target)} kcal
         </span>
         <EstimatedBadge size="sm" showIcon={false} />
       </div>
 
       {/* Thông điệp tích cực, không phán xét khi vượt hạn mức (N6) */}
-      {isOver && (
-        <div className="mt-3 p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 text-center max-w-xs">
-          Hôm nay bạn đã nạp vượt mục tiêu khoảng {formatKcal(Math.abs(remaining))} kcal (ước tính). Không sao cả — hạn mức các ngày sau vẫn giữ nguyên theo kế hoạch.
+      {personalized && isOver && (
+        <div className="mt-3 p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-sm text-amber-800 text-center max-w-xs">
+          {dateLabel} bạn đã nạp vượt mục tiêu khoảng {formatKcal(Math.abs(remaining))} kcal (ước tính). Không sao cả — hạn mức các ngày sau vẫn giữ nguyên theo kế hoạch.
         </div>
       )}
     </div>

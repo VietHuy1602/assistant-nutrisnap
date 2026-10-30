@@ -54,8 +54,8 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({ report, disabled = false
   };
 
   return (
-    <div className="report-controls flex flex-col items-end gap-2">
-      <div className="flex items-center gap-2">
+    <div className="report-controls min-w-0 flex flex-col items-start sm:items-end gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
           disabled={disabled || isExporting}

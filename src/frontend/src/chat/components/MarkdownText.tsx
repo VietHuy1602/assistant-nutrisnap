@@ -79,7 +79,7 @@ export function MarkdownText({ content, isUser }: MarkdownTextProps) {
       elements.push(
         <ListTag
           key={`list-${elements.length}`}
-          className={`my-1 space-y-0.5 pl-4 ${
+          className={`my-2 space-y-1 pl-5 ${
             currentList.type === 'ul' ? 'list-disc' : 'list-decimal'
           }`}
         >
@@ -139,5 +139,5 @@ export function MarkdownText({ content, isUser }: MarkdownTextProps) {
 
   flushList();
 
-  return <div className="space-y-0.5 break-words [overflow-wrap:anywhere]">{elements}</div>;
+  return <div className="space-y-2 break-words [overflow-wrap:anywhere]">{elements}</div>;
 }

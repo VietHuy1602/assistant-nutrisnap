@@ -1,0 +1,20 @@
+.assistant {
+  @apply min-w-0;
+}
+.assistant :global(button), .assistant :global(select), .assistant :global(input) {
+  @apply min-h-12 min-w-12;
+}
+.assistant :global(button:focus-visible), .assistant :global(input:focus-visible),
+.assistant :global(select:focus-visible), .assistant :global(textarea:focus-visible) {
+  @apply outline-none ring-2 ring-nutri-focus ring-offset-2;
+}
+.assistant :global(.text-xs), .assistant :global(.text-\[11px\]), .assistant :global(.text-\[10px\]) {
+  @apply text-sm leading-6;
+}
+.assistant :global(input[type='number']) { @apply text-base tabular-nums; }
+.assistant :global(p), .assistant :global(li) { overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) {
+  .assistant :global(.animate-pulse), .assistant :global(.animate-bounce), .assistant :global(.animate-spin) {
+    animation: none;
+  }
+}

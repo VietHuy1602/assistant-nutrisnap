@@ -1,0 +1,24 @@
+@media screen {
+  .reports.reports { @apply min-w-0 text-nutri-ink; padding-inline: 0; }
+  .reports :global(button), .reports :global(select), .reports :global(input) { @apply min-h-12 min-w-12; }
+  .reports :global(button:focus-visible), .reports :global(select:focus-visible),
+  .reports :global(input:focus-visible), .reports :global([tabindex='0']:focus-visible) {
+    @apply outline-none ring-2 ring-nutri-focus ring-offset-2;
+  }
+  .reports :global(.text-xs), .reports :global(.text-\[11px\]) { @apply text-sm leading-6; }
+  .reports :global(.text-slate-400), .reports :global(.text-slate-500) { @apply text-nutri-muted; }
+  .reports :global(p), .reports :global(td), .reports :global(th) { overflow-wrap: anywhere; }
+  .reports :global(input), .reports :global(select) { @apply text-base; }
+  .reports :global(table), .reports :global(.text-2xl), .reports :global(.text-3xl) { @apply tabular-nums; }
+  .reports :global([role='dialog']) > div { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+  .reports :global([role='dialog']) input { @apply pr-12; }
+  .reports :global([role='dialog']) input + span { @apply right-4 top-3 text-sm; }
+  .reports :global([role='dialog']) form > :last-child { @apply flex-wrap gap-3; }
+}
+@media screen and (max-width: 639px) {
+  .reports :global([role='dialog']) > div { @apply p-4; }
+  .reports :global([role='dialog']) h3 { @apply min-w-0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reports :global(.animate-pulse), .reports :global(.animate-spin) { animation: none; }
+}

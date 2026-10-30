@@ -28,10 +28,10 @@ export const ChartCard: React.FC<ChartCardProps> = ({
 
   return (
     <section
-      className={`rounded-2xl bg-white border border-slate-200/80 shadow-xs p-5 flex flex-col gap-4 ${className}`}
+      className={`min-w-0 rounded-2xl bg-white border border-slate-200/80 shadow-xs p-4 sm:p-5 flex flex-col gap-4 ${className}`}
     >
       <div className="flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2.5 flex-wrap">
+        <div className="flex min-w-0 items-center gap-2.5 flex-wrap">
           <h3 className="text-base font-bold text-slate-900">{title}</h3>
           {chip}
         </div>
@@ -41,6 +41,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
           onClick={() => setShowTable((prev) => !prev)}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:text-slate-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           aria-label={showTable ? `Xem dạng biểu đồ cho ${title}` : `Xem dạng bảng cho ${title}`}
+          aria-pressed={showTable}
         >
           {showTable ? (
             <>
@@ -56,7 +57,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
         </button>
       </div>
 
-      <div className="w-full min-h-[300px]">
+      <div className="w-full min-w-0 min-h-[300px]">
         {showTable ? tableComponent : children}
       </div>
 

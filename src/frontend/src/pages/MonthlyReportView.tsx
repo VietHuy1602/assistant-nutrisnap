@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { MonthlyReportViewProps } from '../types/monthlyReport';
 import { nutritionValue, prepareReportRows, reportMonthLength, validReportDate } from '../utils/monthlyReport';
+import styles from '../components/report/ReportSurface.module.css';
 
 const control = 'min-h-11 rounded-xl border border-nutri-border bg-nutri-panel px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 disabled:opacity-50';
 const panel = 'min-w-0 rounded-2xl border border-nutri-border bg-nutri-panel p-4 sm:p-6';
@@ -35,7 +36,7 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
   };
 
   return (
-    <section className="nutri-monthly-report mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-8 text-nutri-ink" aria-label="Báo cáo tháng">
+    <section className={`${styles.reports} nutri-monthly-report mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 px-4 py-8 text-nutri-ink`} aria-label="Báo cáo tháng">
       <style>{`
         @media print {
           @page { size: A4 landscape; margin: 12mm; }
@@ -86,10 +87,9 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
       `}</style>
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-nutri-primary">NutriSnap · Dinh dưỡng mỗi ngày</p>
           <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Báo cáo tháng</h1>
           <h2 className="mt-2 text-lg font-semibold" aria-live="polite">{title}</h2>
-          {valid && <p className="mt-1 text-sm text-nutri-muted">Phạm vi tháng: 01/{month.slice(5)}/{month.slice(0, 4)} – {monthLength}/{month.slice(5)}/{month.slice(0, 4)} · Asia/Ho_Chi_Minh</p>}
+          {valid && <p className="mt-1 text-sm leading-6 text-nutri-muted">Dinh dưỡng từng ngày · 01/{month.slice(5)}/{month.slice(0, 4)} – {monthLength}/{month.slice(5)}/{month.slice(0, 4)} · giờ Việt Nam</p>}
           {matching && data?.source === 'demo' && <p className="mt-3 inline-block rounded-lg border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">Dữ liệu minh họa</p>}
         </div>
         <button type="button" className={`${control} report-controls shrink-0 bg-nutri-primary text-white`} disabled={!showReport} onClick={print}>In / Lưu PDF</button>
@@ -120,7 +120,7 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
         </label>
       </div>
 
-      <div aria-live="polite" aria-atomic="true">
+      <div className="rounded-2xl border border-nutri-border bg-nutri-surface p-4 text-sm leading-6" aria-live="polite" aria-atomic="true">
         {!valid ? <p role="alert">Tháng hoặc ngày hiện tại không hợp lệ. Vui lòng kiểm tra dữ liệu đầu vào.</p>
           : future ? <p>Tháng tương lai chưa có báo cáo.</p>
           : loadState === 'loading' ? <p role="status">Đang tải báo cáo tháng…</p>
@@ -145,8 +145,8 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rows} margin={{ top: 12, right: 16, bottom: 0, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={date => String(Number(String(date).slice(8)))} minTickGap={18} />
-                <YAxis width={48} />
+                <XAxis dataKey="date" tickFormatter={date => String(Number(String(date).slice(8)))} minTickGap={18} tick={{fontSize: 13, fill: '#475569'}} />
+                <YAxis width={52} tick={{fontSize: 13, fill: '#475569'}} />
                 <Tooltip labelFormatter={label => dateLabel(String(label))} formatter={value => [formatNumber(nutritionValue(value)), 'kcal']} />
                 <Line type="linear" dataKey="calories" stroke="currentColor" strokeWidth={2} connectNulls={false} isAnimationActive={false} dot={false} />
               </LineChart>
@@ -157,7 +157,7 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
           <div className="report-table overflow-x-auto rounded-xl border border-nutri-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus" tabIndex={0} role="region" aria-label="Bảng dinh dưỡng theo ngày, có thể cuộn ngang">
             <table className="w-full min-w-[36rem] text-left text-sm">
               <caption className="p-3 text-left font-semibold">Dinh dưỡng từng ngày · {title}</caption>
-              <thead className="bg-nutri-surface"><tr>{['Ngày', 'Trạng thái', 'kcal', ...(hasMacros ? ['Protein (g)', 'Carbohydrate (g)', 'Fat (g)'] : [])].map(label => <th scope="col" className="px-3 py-3" key={label}>{label}</th>)}</tr></thead>
+              <thead className="bg-nutri-surface"><tr>{['Ngày', 'Trạng thái', 'kcal', ...(hasMacros ? ['Đạm (g)', 'Tinh bột (g)', 'Chất béo (g)'] : [])].map(label => <th scope="col" className="px-3 py-3" key={label}>{label}</th>)}</tr></thead>
               <tbody>{rows.map(row => <tr key={row.date} className="border-t border-nutri-border"><th scope="row" className="whitespace-nowrap px-3 py-3 font-medium">{dateLabel(row.date)}</th><td className="px-3 py-3">{stateLabels[row.state]}</td><td className="px-3 py-3">{formatNumber(row.calories)}</td>{hasMacros && [row.proteinG, row.carbsG, row.fatG].map((value, i) => <td key={i} className="px-3 py-3">{formatNumber(value)}</td>)}</tr>)}</tbody>
             </table>
           </div>

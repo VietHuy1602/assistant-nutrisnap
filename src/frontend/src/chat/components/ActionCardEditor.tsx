@@ -92,7 +92,7 @@ export function ActionCardEditor({
       aria-label="Chỉnh sửa khẩu phần bữa ăn"
       className="space-y-4 rounded-2xl border border-nutri-border bg-nutri-panel p-4 shadow-sm"
     >
-      <div className="flex items-center justify-between border-b border-nutri-border/60 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-nutri-border/60 pb-3">
         <h3 className="text-sm font-semibold text-nutri-ink">Chỉnh sửa khẩu phần</h3>
         <select
           disabled={isSaving}
@@ -123,7 +123,7 @@ export function ActionCardEditor({
               className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-nutri-surface p-2.5 text-sm"
             >
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-nutri-ink">{item.food_name}</p>
+                <p className="break-words [overflow-wrap:anywhere] font-medium text-nutri-ink">{item.food_name}</p>
                 {previewItem && (
                   <p className="text-xs text-nutri-muted">
                     {Math.round(previewItem.calories)} kcal
@@ -131,7 +131,7 @@ export function ActionCardEditor({
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-1">
                   <input
                     disabled={isSaving}
@@ -175,7 +175,7 @@ export function ActionCardEditor({
 
       {/* Backend preview totals */}
       <div className="rounded-xl bg-nutri-selected/40 p-3 space-y-1 text-xs">
-        <div className="flex items-center justify-between font-semibold text-nutri-ink">
+        <div className="flex flex-wrap items-center justify-between gap-2 font-semibold text-nutri-ink">
           <span className="flex items-center gap-1">
             <span>Tổng calo ước tính:</span>
             <EstimatedBadge size="sm" showIcon={false} />
@@ -195,16 +195,16 @@ export function ActionCardEditor({
         </div>
 
         {previewCurrent && preview && (
-          <div className="flex justify-between text-nutri-muted pt-1 border-t border-nutri-border/40">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 justify-between text-nutri-muted pt-1 border-t border-nutri-border/40">
             <span>Đạm: {Math.round(preview.total_protein_g)}g</span>
-            <span>Carbs: {Math.round(preview.total_carbs_g)}g</span>
+            <span>Tinh bột: {Math.round(preview.total_carbs_g)}g</span>
             <span>Béo: {Math.round(preview.total_fat_g)}g</span>
           </div>
         )}
       </div>
 
       {previewError && (
-        <p className="text-xs text-red-600">
+        <p role="alert" className="text-xs text-red-600">
           Không thể tính toán trước: {previewError}. Vui lòng thử lại.
         </p>
       )}

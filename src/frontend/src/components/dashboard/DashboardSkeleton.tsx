@@ -3,7 +3,7 @@ import React from 'react';
 export const DashboardSkeleton: React.FC = () => {
   return (
     <div
-      className="w-full max-w-5xl mx-auto flex flex-col gap-6 animate-pulse"
+      className="w-full min-w-0 max-w-5xl mx-auto flex flex-col gap-6 animate-pulse motion-reduce:animate-none"
       aria-busy="true"
       aria-label="Đang tải dữ liệu Dashboard..."
       role="status"
@@ -46,7 +46,7 @@ export const DashboardSkeleton: React.FC = () => {
       <div className="flex flex-col gap-3 mt-2">
         <div className="h-4 w-40 bg-slate-200 rounded" />
         {[1, 2].map((i) => (
-          <div key={i} className="h-20 bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between">
+          <div key={i} className="min-h-28 bg-white rounded-2xl border border-slate-200 p-4 flex flex-wrap gap-3 items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-slate-200" />
               <div className="flex flex-col gap-2">

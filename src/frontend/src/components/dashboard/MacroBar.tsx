@@ -9,6 +9,7 @@ interface MacroBarProps {
     fat: MacroDetail;
   };
   className?: string;
+  personalized?: boolean;
 }
 
 interface SingleMacroItemProps {
@@ -30,12 +31,12 @@ const SingleMacroItem: React.FC<SingleMacroItemProps> = ({
   const clampedWidth = Math.min(100, Math.max(0, percent));
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between text-xs">
+    <div className="macro-item flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className={`font-semibold ${labelColor}`}>{label}</span>
-        <span className="text-slate-600 font-medium">
+        <span className="text-nutri-muted font-medium tabular-nums">
           <strong className="text-slate-800">{formatGram(detail.consumed)}</strong> / {formatGram(detail.target)}
-          <span className="ml-1 text-slate-400">({Math.round(percent)}%)</span>
+          <span className="ml-1 text-nutri-muted">({Math.round(percent)}%)</span>
         </span>
       </div>
 
@@ -56,17 +57,17 @@ const SingleMacroItem: React.FC<SingleMacroItemProps> = ({
   );
 };
 
-export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '' }) => {
+export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '', personalized = true }) => {
   return (
-    <div className={`p-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4 ${className}`}>
+    <div className={`macro-summary p-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4 ${className}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
           Chất đa lượng (Macronutrients)
         </h3>
-        <span className="text-xs text-slate-400">Hạn mức ngày</span>
+        <span className="text-sm text-nutri-muted">{personalized ? 'Mục tiêu ngày' : 'Giá trị tham khảo'}</span>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="macro-grid flex flex-col gap-4">
         {/* Đạm / Protein - Màu xanh dương */}
         <SingleMacroItem
           label="Đạm (Protein)"

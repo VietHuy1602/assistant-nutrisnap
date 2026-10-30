@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Salad, User, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
+import { User, ArrowRight, AlertCircle, ShieldCheck } from 'lucide-react';
 import { DisclaimerBadge } from '../components/DisclaimerBadge';
 import { FormField } from '../components/FormField';
 import { PasswordField } from '../components/PasswordField';
@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { loginSchema, LoginFormValues } from '../schemas/authSchemas';
 import { safeRedirect } from '../utils/safeRedirect';
 import { isApiError } from '../utils/apiError';
+import styles from './LoginSurface.module.css';
 
 export interface LoginPageProps {
   onLoginSuccess?: (hasGoal: boolean) => void;
@@ -69,14 +70,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center items-center px-4 py-8">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+    <div className={styles.surface}>
+      <aside className={styles.brand} aria-label="NutriSnap — Chụp phát biết liền, ăn ngon bớt phiền"><img src="/branding/nutrisnap-launch.png" alt="NutriSnap — Chụp phát biết liền, ăn ngon bớt phiền" /></aside>
+      <div className={styles.panel}>
+      <div className="w-full space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex w-12 h-12 rounded-2xl bg-emerald-50 text-nutri-primary items-center justify-center mb-2">
-            <Salad className="w-7 h-7" />
-          </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Chào mừng đến với <span className="text-nutri-primary">NutriSnap</span>
+            Đăng nhập
           </h1>
           <p className="text-xs text-slate-500">
             Trợ lý AI Dinh dưỡng Cá nhân & Quản lý Hành trình Vóc dáng
@@ -176,6 +176,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
       <div className="mt-6 max-w-md w-full">
         <DisclaimerBadge />
+      </div>
       </div>
     </div>
   );

@@ -79,15 +79,15 @@ describe('VoiceNoteFlow (Speech, Privacy & Fallback)', () => {
 
   describe('Mocked Web Speech API in browser', () => {
     let originalSpeech: unknown;
-    let mockStart: ReturnType<typeof vi.fn>;
-    let mockStop: ReturnType<typeof vi.fn>;
-    let mockAbort: ReturnType<typeof vi.fn>;
+    let mockStart: ReturnType<typeof vi.fn<() => void>>;
+    let mockStop: ReturnType<typeof vi.fn<() => void>>;
+    let mockAbort: ReturnType<typeof vi.fn<() => void>>;
     let instanceRef: any;
 
     beforeEach(() => {
-      mockStart = vi.fn();
-      mockStop = vi.fn();
-      mockAbort = vi.fn();
+      mockStart = vi.fn<() => void>();
+      mockStop = vi.fn<() => void>();
+      mockAbort = vi.fn<() => void>();
 
       class MockSpeechRecognition {
         lang = 'vi-VN';

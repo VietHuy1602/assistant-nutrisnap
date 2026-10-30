@@ -3,6 +3,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera, FileText, TrendingUp, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { draftStore } from '../storage/draftStore';
+import { MobileAccountMenu } from './MobileAccountMenu';
 
 interface NavbarProps {
   currentTab?: string;
@@ -46,7 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
     <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-wrap items-center justify-between gap-3 py-3 lg:flex-nowrap lg:py-0">
         {/* Brand Logo */}
-        <Link to="/" className="flex min-h-11 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
+        <Link to="/" className="flex min-h-12 min-w-0 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 lg:min-h-11">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-nutri-primary">
             <Salad className="w-6 h-6" />
           </div>
@@ -60,8 +61,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           </div>
         </Link>
 
-        {/* Navigation Tabs */}
-        <nav aria-label="Điều hướng chính" className="flex w-full flex-wrap items-center justify-between gap-1 lg:w-auto sm:gap-2">
+        <div className="flex shrink-0 items-center gap-2 lg:hidden">
+          <button type="button" onClick={onOpenChat} aria-label="Mở trợ lý ảo AI" aria-haspopup="dialog" aria-controls="assistant-title"
+            className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-nutri-primary text-white hover:bg-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
+            <MessageSquareText aria-hidden="true" className="h-5 w-5" />
+          </button>
+          <MobileAccountMenu username={user?.username} onLogout={handleLogout} />
+        </div>
+
+        {/* Desktop destinations stay in the header; compact layouts use BottomNav. */}
+        <nav aria-label="Điều hướng chính" className="hidden w-full flex-wrap items-center justify-between gap-1 lg:flex lg:w-auto sm:gap-2">
           <NavLink
             to="/"
             aria-label="Tổng quan"

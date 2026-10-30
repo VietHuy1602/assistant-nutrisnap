@@ -104,7 +104,7 @@ describe('authSchemas validation', () => {
       });
       expect(res.success).toBe(false);
       if (!res.success) {
-        expect(res.error.errors[0].message).toBe('Mật khẩu xác nhận không khớp');
+        expect(res.error.issues[0].message).toBe('Mật khẩu xác nhận không khớp');
       }
     });
   });
