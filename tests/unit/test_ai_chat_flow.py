@@ -103,7 +103,8 @@ def test_get_daily_nutrition_matches_backend_math(chat_test_user: int):
     assert resp.tool_result is not None
     # Check numbers in reply match backend math
     expected_target = f"{real_result['target_calories']:.0f}"
-    assert expected_target in resp.reply
+    vn_target = f"{int(real_result['target_calories']):,}".replace(",", ".")
+    assert (expected_target in resp.reply) or (vn_target in resp.reply)
 
 
 def test_zero_trust_strips_forged_user_id_in_tool_call(chat_test_user: int):

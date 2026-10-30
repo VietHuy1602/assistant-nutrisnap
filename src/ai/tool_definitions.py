@@ -533,3 +533,21 @@ def get_gemini_tool_declarations(include_extended: bool = False) -> list[dict[st
             GET_USER_PROFILE_DECLARATION,
         ]
     return [sanitize_schema_for_gemini(copy.deepcopy(decl)) for decl in raw_declarations]
+
+def get_genai_sdk_tools(include_extended: bool = True) -> list[Any]:
+    """Trả về danh sách Tool đối tượng chuẩn kiểu google.genai.types.Tool (chống lỗi Pydantic GenerateContentConfig)."""
+    try:
+        from google.genai import types
+
+        declarations = get_gemini_tool_declarations(include_extended=include_extended)
+        func_decls = [
+            types.FunctionDeclaration(
+                name=d["name"],
+                description=d.get("description", ""),
+                parameters=d.get("parameters"),
+            )
+            for d in declarations
+        ]
+        return [types.Tool(function_declarations=func_decls)]
+    except ImportError:
+        return get_gemini_tool_declarations(include_extended=include_extended)

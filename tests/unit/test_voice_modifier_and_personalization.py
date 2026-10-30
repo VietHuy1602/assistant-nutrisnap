@@ -67,6 +67,12 @@ def setup_database():
             seed_foods()
 
 
+@pytest.fixture(autouse=True)
+def force_offline_voice_modifier(monkeypatch):
+    """Đảm bảo kiểm thử tự động unit test chạy chế độ offline tất định, không gọi Gemini trực tiếp."""
+    monkeypatch.setattr("src.ai.voice_modifier.VoiceModifier._is_api_key_valid", lambda self: False)
+
+
 def create_w5_test_user(username: str, email: str) -> User:
     """Helper tạo tài khoản người dùng kiểm thử sạch có Goal."""
     rand = uuid.uuid4().hex[:6]

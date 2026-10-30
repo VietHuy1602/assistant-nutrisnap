@@ -643,7 +643,8 @@ class VoiceModifier:
             )
 
         # 1. Thử gọi LLM nếu có API Key và không ép Fallback
-        if not force_fallback and self._is_api_key_valid():
+        use_llm = os.getenv("USE_LLM", "true").lower() in ("true", "1", "yes")
+        if not force_fallback and self._is_api_key_valid() and use_llm:
             try:
                 import google.generativeai as genai
 

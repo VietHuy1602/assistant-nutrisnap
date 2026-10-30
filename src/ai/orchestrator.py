@@ -755,7 +755,8 @@ class AIOrchestrator:
             from google.genai import types
 
             client = genai.Client(api_key=self.api_key)
-            tools = get_gemini_tool_declarations(include_extended=True)
+            from src.ai.tool_definitions import get_genai_sdk_tools
+            tools = get_genai_sdk_tools(include_extended=True)
 
             class GenAIModelWrapper:
                 def __init__(self, client, model_name, sys_instruction, tools):
@@ -765,18 +766,29 @@ class AIOrchestrator:
                     self.tools = tools
 
                 def start_chat(self, enable_automatic_function_calling: bool = False):
-                    return self.client.chats.create(
-                        model=self.model_name,
-                        config=types.GenerateContentConfig(
-                            system_instruction=self.sys_instruction,
-                            tools=self.tools,
-                            temperature=0.2,
-                        ),
-                    )
+                    candidate_models = [self.model_name]
+                    for cand in ["gemini-flash-lite-latest", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]:
+                        if cand not in candidate_models:
+                            candidate_models.append(cand)
+                    last_err = None
+                    for m_cand in candidate_models:
+                        try:
+                            return self.client.chats.create(
+                                model=m_cand,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=self.sys_instruction,
+                                    tools=self.tools,
+                                    temperature=0.2,
+                                ),
+                            )
+                        except Exception as exc:
+                            last_err = exc
+                    if last_err:
+                        raise last_err
 
             return GenAIModelWrapper(client, self.model_name, system_instruction, tools)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Không thể khởi tạo Google GenAI SDK (google.genai): %s. Thử sang google.generativeai.", exc)
 
         # 2. Fallback sang google.generativeai nếu cần
         try:
@@ -938,7 +950,7 @@ class AIOrchestrator:
                 if gemini_resp is not None:
                     return gemini_resp
             except Exception as exc:
-                logger.warning(f"Lỗi khi gọi Gemini Pipeline: {exc}. Chuyển sang Fallback.")
+                logger.exception("Lỗi khi gọi Gemini Pipeline: %s. Chuyển sang Fallback.", exc)
                 if not self.use_mock_fallback:
                     raise
 
@@ -1146,10 +1158,13 @@ class AIOrchestrator:
                 break
 
             function_calls = []
-            for part in candidate.content.parts:
-                fn = getattr(part, "function_call", None)
-                if fn:
-                    function_calls.append(fn)
+            if hasattr(response, "function_calls") and response.function_calls:
+                function_calls = list(response.function_calls)
+            elif candidate and getattr(candidate, "content", None) and getattr(candidate.content, "parts", None):
+                for part in candidate.content.parts:
+                    fn = getattr(part, "function_call", None)
+                    if fn:
+                        function_calls.append(fn)
 
             if not function_calls:
                 raw_reply = getattr(response, "text", "") or ""
@@ -1210,12 +1225,16 @@ class AIOrchestrator:
                 final_reply = synthesized_reply
 
             # Chuẩn bị thông tin phản hồi cho lượt tiếp theo
-            current_message = (
-                f"Kết quả thực thi công cụ '{fn_name}' từ CSDL NutriSnap:\n"
-                f"{json.dumps(tool_result, ensure_ascii=False)}\n\n"
-                "Dựa trên 100% số liệu trên, hãy viết câu trả lời tự nhiên, thân thiện và ấm áp gửi tới người dùng. "
-                "TUYỆT ĐỐI không bịa đặt số liệu dinh dưỡng khác với số liệu trên. Luôn kèm từ 'ước tính'."
-            )
+            try:
+                from google.genai import types as genai_types
+                current_message = genai_types.Part.from_function_response(name=fn_name, response=tool_result)
+            except Exception:
+                current_message = (
+                    f"Kết quả thực thi công cụ '{fn_name}' từ CSDL NutriSnap:\n"
+                    f"{json.dumps(tool_result, ensure_ascii=False)}\n\n"
+                    "Dựa trên 100% số liệu trên, hãy viết câu trả lời tự nhiên, thân thiện và ấm áp gửi tới người dùng. "
+                    "TUYỆT ĐỐI không bịa đặt số liệu dinh dưỡng khác với số liệu trên. Luôn kèm từ 'ước tính'."
+                )
 
         if not last_fn_name and not final_reply:
             return None
@@ -1668,10 +1687,16 @@ class AIOrchestrator:
                 engine="fallback",
             )
 
-        greetings_reply = (
-            f"Chào {profile.username}! Mình là NutriSnap Coach – Trợ lý dinh dưỡng cá nhân của bạn. "
-            f"Hôm nay bạn muốn kiểm tra dinh dưỡng trong ngày, ghi nhận bữa ăn, tìm gợi ý món ăn ngon hay xem tiến độ cân nặng?"
-        )
+        if intent == "greetings":
+            greetings_reply = (
+                f"Chào {profile.username}! Mình là NutriSnap Coach – Trợ lý dinh dưỡng cá nhân của bạn. "
+                f"Hôm nay bạn muốn kiểm tra dinh dưỡng trong ngày, ghi nhận bữa ăn, tìm gợi ý món ăn ngon hay xem tiến độ cân nặng?"
+            )
+        else:
+            greetings_reply = (
+                f"Chào {profile.username}! Hiện tại hệ thống đang chạy ở chế độ ngoại tuyến cơ bản nên chưa thể giải đáp chi tiết yêu cầu: '{message}'. "
+                f"Bạn có thể thử các chức năng: tra cứu calo hôm nay, ghi nhận bữa ăn, gợi ý thực đơn, hoặc xem tiến độ cân nặng nhé!"
+            )
         out_guard = check_output(greetings_reply, None, message)
         final_greet = out_guard.sanitized_text or greetings_reply
         return OrchestratorResponse(

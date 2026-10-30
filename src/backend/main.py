@@ -22,6 +22,7 @@ from src.backend.core.config import settings
 from src.backend.models.database import get_session, init_db
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
+from src.backend.routers.chat import router as chat_router
 from src.backend.routers.auth_goal_router import router as auth_goal_router
 from src.backend.routers.meal_router import router as meal_router
 from src.backend.routers.report_router import router as report_router
@@ -156,6 +157,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.include_router(auth_goal_router)
 app.include_router(meal_router)
 app.include_router(assistant_router)
+app.include_router(chat_router)
 app.include_router(analytics_router)
 app.include_router(report_router)
 

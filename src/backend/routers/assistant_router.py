@@ -9,6 +9,7 @@ Router cung cấp các API endpoint cho phân hệ Trợ lý ảo AI NutriSnap:
 6. GET /api/v1/assistant/history: Endpoint lấy lịch sử hội thoại tương thích ngược.
 """
 
+import logging
 import re
 import unicodedata  # noqa: F401
 import uuid
@@ -45,6 +46,8 @@ from src.backend.services.auth_guard import (
 )
 from src.backend.services.nutrition_service import DISCLAIMER_TEXT
 from src.backend.services.tool_context import ToolContext
+
+logger = logging.getLogger("nutrisnap.backend.routers.assistant_router")
 
 router = APIRouter(prefix="/api/v1/assistant", tags=["Assistant Chat & Tools"])
 
@@ -233,7 +236,8 @@ def assistant_chat_endpoint(
         engine = getattr(orch_res, "engine", "llm" if not orch_res.is_fallback else "fallback")
         if orch_res.is_fallback and not reply.startswith("Trợ lý đang chạy chế độ cơ bản"):
             reply = f"Trợ lý đang chạy chế độ cơ bản. {reply}"
-    except Exception:
+    except Exception as exc:
+        logger.exception("Lỗi khi điều phối orchestrate_chat: %s", exc)
         engine = "fallback"
         # Fallback khi LLM / Orchestrator gặp sự cố: giữ từ khóa làm fallback an toàn
         fallback_notice = "Trợ lý đang chạy chế độ cơ bản. "
@@ -366,7 +370,7 @@ def assistant_chat_endpoint(
             else:
                 reply = "Đã thực thi công cụ thành công."
         else:
-            reply = "Xin chào! Tôi là Trợ lý Dinh dưỡng NutriSnap. Tôi có thể giúp gì cho bạn hôm nay?"
+            reply = "Hệ thống trợ lý AI đang gặp sự cố kết nối hoặc không nhận diện được yêu cầu. Vui lòng thử lại sau."
 
         if "fallback_notice" in locals() and fallback_notice and not reply.startswith("Trợ lý đang chạy chế độ cơ bản"):
             reply = f"{fallback_notice}{reply}"
