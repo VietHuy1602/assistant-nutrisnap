@@ -85,7 +85,10 @@ class Settings(BaseSettings):
     def mobile_dev_origins(self) -> list[str]:
         if self.APP_ENV != "development":
             return []
-        return ["https://localhost"] + ([self.DEV_MOBILE_ORIGIN] if self.DEV_MOBILE_ORIGIN else [])
+        origins = ["https://localhost", "http://localhost", "capacitor://localhost"]
+        if self.DEV_MOBILE_ORIGIN:
+            origins.append(self.DEV_MOBILE_ORIGIN)
+        return origins
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
