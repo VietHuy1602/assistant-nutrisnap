@@ -91,3 +91,4 @@ Qua rà soát toàn diện mã nguồn tại `src/ai/`, `src/backend/routers/`, 
 
 ## 4. Kết luận & Sẵn sàng cho Phase 1
 Các lỗi gốc gây ra triệu chứng "chỉ trả lời hi/hello rồi lặp một câu cố định" đã được chẩn đoán chính xác và triệt tiêu hoàn toàn. Toàn bộ test liên quan đến Phase 0 đã vượt qua. Hệ thống đã sẵn sàng bước vào **Phase 1: Tái cấu trúc Kiến trúc 3 lớp**.
+
