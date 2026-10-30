@@ -156,7 +156,7 @@ export const MealReviewList: React.FC<MealReviewListProps> = ({
 
       {/* Lỗi tính toán preview nếu có */}
       {previewError && (
-        <div className="flex items-center justify-between p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" aria-hidden="true" />
             <span>{previewError}</span>
@@ -171,7 +171,19 @@ export const MealReviewList: React.FC<MealReviewListProps> = ({
         </div>
       )}
 
+      <MealTotalsBar nutrition={preview} isCalculating={isCalculating} />
+      <ConfirmBar
+        isSavable={savable}
+        isSaving={isSaving}
+        isCalculating={isCalculating}
+        unsavableReasons={unsavableReasons}
+        onConfirmSave={onConfirmSave}
+        onCancel={onCancel}
+      />
+
       {/* Ghi chú gia vị & Chế biến bằng giọng nói */}
+      <details className="rounded-xl border border-nutri-border bg-nutri-panel p-3">
+        <summary className="min-h-12 cursor-pointer rounded-lg py-3 text-sm font-semibold text-nutri-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">Ghi chú gia vị (tùy chọn)</summary>
       <VoiceNotePanel
         initialNote={state.voiceNote ?? ''}
         currentItems={state.items.map((it) => ({
@@ -190,19 +202,8 @@ export const MealReviewList: React.FC<MealReviewListProps> = ({
           dispatch({ type: 'UNDO_VOICE' });
         }}
       />
+      </details>
 
-      {/* Tổng dinh dưỡng Calo / Macro tính bởi Backend */}
-      <MealTotalsBar nutrition={preview} isCalculating={isCalculating} />
-
-      {/* Thanh nút Xác nhận lưu hoặc Hủy */}
-      <ConfirmBar
-        isSavable={savable}
-        isSaving={isSaving}
-        isCalculating={isCalculating}
-        unsavableReasons={unsavableReasons}
-        onConfirmSave={onConfirmSave}
-        onCancel={onCancel}
-      />
     </div>
   );
 };

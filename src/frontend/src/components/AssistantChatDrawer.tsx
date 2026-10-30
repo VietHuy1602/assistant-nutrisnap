@@ -8,6 +8,7 @@ import { QuickSuggestions } from '../chat/components/QuickSuggestions';
 import { HistorySkeleton } from '../chat/components/HistorySkeleton';
 import { MessageList } from '../chat/components/MessageList';
 import { ActionConfirmationCard } from '../chat/components/ActionConfirmationCard';
+import styles from '../chat/components/AssistantSurface.module.css';
 
 interface Props {
   isOpen: boolean;
@@ -73,33 +74,35 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/30">
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby="assistant-title" onKeyDown={handleKey}
-        className="flex h-[100dvh] min-h-0 w-full max-w-md flex-col bg-nutri-panel text-nutri-ink shadow-2xl">
+        className={`${styles.assistant} flex h-[100dvh] min-h-0 w-full max-w-md flex-col bg-nutri-panel text-nutri-ink shadow-2xl`}>
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-nutri-border/60 bg-nutri-surface p-4">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="rounded-xl bg-nutri-selected p-2 text-nutri-primary"><Bot aria-hidden="true" size={20} /></span>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h2 id="assistant-title" className="text-sm font-semibold">Trợ lý AI NutriSnap</h2>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h2 id="assistant-title" className="text-base leading-6 font-semibold">Trợ lý AI NutriSnap</h2>
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${
                   aiMode === 'live' ? 'bg-emerald-50 text-emerald-700 border-emerald-300' : 'bg-amber-50 text-amber-700 border-amber-300'
                 }`}>
-                  {aiMode === 'live' ? 'API: online ✓' : 'Chế độ cơ bản'}
+                  {aiMode === 'live' ? 'AI đang kết nối' : 'Chế độ cơ bản'}
                 </span>
               </div>
               <p className="text-xs text-nutri-muted">Dinh dưỡng · Thông tin tham khảo</p>
             </div>
           </div>
           <button type="button" onClick={onClose} aria-label="Đóng trợ lý"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
+            className="flex min-h-12 min-w-12 shrink-0 items-center justify-center rounded-xl hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
             <X aria-hidden="true" size={20} />
           </button>
         </div>
+        <div className="min-w-0 max-h-[28dvh] shrink-0 overflow-y-auto overscroll-contain">
         <QuickSuggestions disabled={isSending} onSelect={message => void chat.send(message)} />
         {chat.state.historyStatus === 'loading' && <HistorySkeleton />}
         {chat.state.historyStatus === 'error' && <div role="status" className="shrink-0 px-4 py-2 text-sm text-nutri-muted">
           Chưa tải được lịch sử. Bạn vẫn có thể trò chuyện mới.
           <button type="button" onClick={() => void chat.loadHistory()} className="ml-2 min-h-11 rounded-lg px-2 text-nutri-primary focus-visible:ring-2 focus-visible:ring-nutri-focus">Thử tải lại lịch sử</button>
         </div>}
+        </div>
         <MessageList messages={chat.state.messages} username={username} isSending={isSending}
           containerRef={scroll.containerRef} showScrollBottom={scroll.showScrollBottom}
           onScroll={scroll.handleScroll} onScrollToBottom={() => scroll.scrollToBottom(true)}

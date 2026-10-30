@@ -26,14 +26,14 @@ export function QuickSuggestions({
   prompts = DEFAULT_PROMPTS,
 }: QuickSuggestionsProps) {
   return (
-    <div className="flex min-w-0 shrink-0 gap-2 overflow-x-auto border-b border-nutri-border/60 bg-nutri-surface px-4 py-3">
+    <div role="group" aria-label="Gợi ý bắt đầu trò chuyện" className="grid min-w-0 grid-cols-2 gap-2 border-b border-nutri-border/60 bg-nutri-surface px-4 py-3">
       {prompts.map((prompt) => (
         <button
           key={prompt.message}
           type="button"
           disabled={disabled}
           onClick={() => onSelect(prompt.message)}
-          className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border border-nutri-border bg-nutri-panel px-3 py-2 text-xs text-nutri-muted hover:text-nutri-dark disabled:opacity-50 ${focusStyle}`}
+          className={`min-h-12 min-w-0 whitespace-normal break-words rounded-xl border border-nutri-border bg-nutri-panel px-3 py-2 text-left text-sm leading-5 text-nutri-muted hover:text-nutri-dark disabled:opacity-50 ${focusStyle}`}
         >
           {prompt.label}
         </button>

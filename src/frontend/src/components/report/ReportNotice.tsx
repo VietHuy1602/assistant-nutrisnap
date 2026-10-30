@@ -18,7 +18,7 @@ export const ReportNotice: React.FC = () => {
         <Info className="w-4 h-4 text-nutri-primary shrink-0" aria-hidden="true" />
         <span>Lưu ý minh bạch về số liệu:</span>
       </div>
-      <ul className="list-disc list-inside space-y-1 pl-1 text-[11.5px] leading-relaxed">
+      <ul className="list-disc list-outside space-y-2 pl-5 text-sm leading-6">
         {REPORT_NOTICES.map((notice, idx) => (
           <li key={idx}>{notice}</li>
         ))}

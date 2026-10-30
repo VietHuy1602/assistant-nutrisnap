@@ -29,7 +29,7 @@ export const RangeSelector: React.FC<RangeSelectorProps> = ({
     <div
       role="radiogroup"
       aria-label="Chọn khoảng thời gian theo dõi"
-      className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200"
+      className="grid w-full min-w-0 grid-cols-2 min-[390px]:grid-cols-4 sm:w-auto gap-1 p-1 rounded-xl bg-slate-100 border border-slate-200"
     >
       {RANGES.map((r) => {
         const isSelected = value === r.value;
@@ -41,7 +41,7 @@ export const RangeSelector: React.FC<RangeSelectorProps> = ({
             aria-checked={isSelected}
             disabled={disabled}
             onClick={() => onChange(r.value)}
-            className={`min-h-10 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+            className={`min-h-12 min-w-12 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 ${
               isSelected
                 ? 'bg-white text-emerald-800 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'

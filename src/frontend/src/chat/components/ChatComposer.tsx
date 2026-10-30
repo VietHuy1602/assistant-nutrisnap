@@ -66,7 +66,7 @@ export function ChatComposer({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="shrink-0 border-t border-nutri-border/60 p-3 bg-nutri-panel">
+    <form onSubmit={handleSubmit} className="shrink-0 border-t border-nutri-border/60 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-nutri-panel">
       {text.length > MESSAGE_MAX_LENGTH * 0.8 && (
         <div className="flex justify-end pb-1 px-1">
           <span
@@ -117,7 +117,7 @@ export function ChatComposer({
             type="submit"
             aria-label="Gửi tin nhắn"
             disabled={!canSend}
-            className={`${primaryBtn} min-w-11 shrink-0 px-3`}
+            className={`${primaryBtn} min-h-12 min-w-12 shrink-0 px-3`}
           >
             <Send size={16} aria-hidden="true" />
           </button>

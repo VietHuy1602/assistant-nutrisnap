@@ -59,7 +59,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
       <div
         role="status"
         aria-label="Chưa có dữ liệu cân nặng"
-        className="w-full h-72 flex flex-col items-center justify-center text-slate-400 gap-2 border border-dashed border-slate-200 rounded-xl"
+        className="w-full min-h-64 flex flex-col items-center justify-center text-center text-nutri-muted gap-3 p-4 border border-dashed border-slate-200 rounded-xl"
       >
         <p className="text-sm font-medium">Chưa có dữ liệu cân nặng trong khoảng này.</p>
         <p className="text-xs">Hãy ghi nhận cân nặng để theo dõi tiến trình.</p>
@@ -79,7 +79,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
           <XAxis
             dataKey="displayDate"
             interval="preserveStartEnd"
-            tick={{ fontSize: 11, fill: '#64748B' }}
+            tick={{ fontSize: 13, fill: '#475569' }}
             tickMargin={8}
             axisLine={{ stroke: '#CBD5E1' }}
           />
@@ -87,7 +87,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
           <YAxis
             domain={['dataMin - 1', 'dataMax + 1']}
             width={44}
-            tick={{ fontSize: 11, fill: '#64748B' }}
+            tick={{ fontSize: 13, fill: '#475569' }}
             tickFormatter={(v: number) => (masked ? '•••' : String(v))}
             axisLine={{ stroke: '#CBD5E1' }}
           />
@@ -97,7 +97,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
               borderRadius: '0.75rem',
               border: '1px solid #E2E8F0',
               boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-              fontSize: '12px',
+              fontSize: '14px',
             }}
             formatter={(value: number, name: string) => {
               if (masked) return ['•••', name];
@@ -107,8 +107,8 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
           />
           <Legend
             verticalAlign="top"
-            height={36}
-            wrapperStyle={{ fontSize: '12px', paddingBottom: '8px' }}
+            height={56}
+            wrapperStyle={{ fontSize: '14px', paddingBottom: '8px' }}
           />
           {/* Đường 1: Cân nặng ghi nhận thực tế (nét liền, có điểm, màu xanh thương hiệu #107C41) */}
           <Line

@@ -23,6 +23,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useMonthlyReport } from '../hooks/useMonthlyReport';
+import styles from '../components/report/ReportSurface.module.css';
 import { ReportMetricCard } from '../components/report/ReportMetricCard';
 import { ReportNotice } from '../components/report/ReportNotice';
 import { ExportMenu } from '../components/report/ExportMenu';
@@ -53,27 +54,23 @@ export const MonthlyReportPage: React.FC = () => {
   return (
     <div
       id="monthly-report-printable-area"
-      className="nutri-monthly-report space-y-6 max-w-6xl mx-auto px-4 sm:px-6 py-4"
+      className={`${styles.reports} nutri-monthly-report space-y-6 max-w-6xl mx-auto px-4 sm:px-6 py-4`}
     >
       {/* Top Header & Month Navigation */}
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
-          <div className="flex items-center gap-2 text-nutri-primary font-semibold text-xs tracking-wider uppercase">
-            <Calendar className="w-4 h-4" aria-hidden="true" />
-            <span>Monthly Health Summary</span>
-          </div>
           <h1 className="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Báo cáo {formatMonthDisplay(monthKey)}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-500">
-            Tổng kết dinh dưỡng, biến động thể trạng và chuỗi thói quen (Asia/Ho_Chi_Minh).
+            Tổng kết dinh dưỡng, cân nặng và thói quen theo tháng · giờ Việt Nam.
           </p>
         </div>
 
         {/* Controls: Month navigation & Export Buttons */}
         <div className="report-controls flex flex-wrap items-center gap-2">
           {/* Month Switcher */}
-          <div className="flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
+          <div role="group" aria-label="Chọn tháng báo cáo" className="flex max-w-full items-center bg-white border border-slate-200 rounded-xl p-1 shadow-2xs">
             <button
               type="button"
               aria-label="Tháng trước"
@@ -82,7 +79,7 @@ export const MonthlyReportPage: React.FC = () => {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-3 text-xs font-bold text-slate-700 min-w-28 text-center">
+            <span aria-live="polite" className="px-2 text-sm tabular-nums font-bold text-slate-700 min-w-0 text-center">
               {formatMonthDisplay(monthKey)}
             </span>
             <button
@@ -124,7 +121,7 @@ export const MonthlyReportPage: React.FC = () => {
 
       {/* State: Error */}
       {!isFuture && loadState === 'error' && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 space-y-3">
+        <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-800 space-y-3">
           <p className="font-semibold text-sm">
             {errorMessage || 'Không tải được báo cáo tháng.'}
           </p>
@@ -224,7 +221,7 @@ export const MonthlyReportPage: React.FC = () => {
                 Xu hướng Năng lượng các ngày trong tháng (kcal)
               </h2>
               <p className="text-xs text-slate-400">
-                Chỉ hiển thị các ngày đã ghi nhận bữa ăn. Không tự nội suy ngày thiếu.
+                Chỉ hiển thị ngày đã ghi nhận bữa ăn. Ngày thiếu dữ liệu không được ước tính thêm.
               </p>
               <div className="h-64 w-full pt-4 min-w-0" aria-hidden="true">
                 <ResponsiveContainer width="100%" height="100%">
@@ -233,10 +230,10 @@ export const MonthlyReportPage: React.FC = () => {
                     <XAxis
                       dataKey="day"
                       tickFormatter={(val) => `N${val}`}
-                      stroke="#94a3b8"
-                      fontSize={11}
+                      stroke="#475569"
+                      fontSize={13}
                     />
-                    <YAxis stroke="#94a3b8" fontSize={11} width={45} />
+                    <YAxis stroke="#475569" fontSize={13} width={52} />
                     <Tooltip
                       formatter={(val: number) => [`${val} kcal`, 'Năng lượng']}
                       labelFormatter={(label) => `Ngày ${label}/${monthKey.slice(5)}`}

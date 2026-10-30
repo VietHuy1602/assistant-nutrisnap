@@ -1,0 +1,47 @@
+.capture {
+  @apply mx-auto w-full max-w-3xl min-w-0 py-4 text-nutri-ink sm:py-6;
+}
+.capture :global(button) {
+  @apply min-h-12 min-w-12;
+}
+.capture :global(button:focus-visible),
+.capture :global(input:focus-visible),
+.capture :global(textarea:focus-visible),
+.capture :global(select:focus-visible),
+.capture :global([role='button']:focus-visible) {
+  @apply outline-none ring-2 ring-nutri-focus ring-offset-2;
+}
+.capture :global(button:disabled) {
+  @apply cursor-not-allowed opacity-60;
+}
+.capture :global(.text-xs), .capture :global(.text-\[11px\]) {
+  @apply text-sm leading-6;
+}
+.capture :global(.text-slate-400), .capture :global(.text-slate-500) {
+  @apply text-nutri-muted;
+}
+.capture :global(.bg-slate-900) :global(.text-slate-400),
+.capture :global(.bg-slate-950) :global(.text-slate-400) { @apply text-slate-300; }
+.capture :global(h2) { @apply text-xl leading-7; }
+.capture :global(input[type='number']),
+.capture :global(input[type='text']),
+.capture :global(input[role='combobox']) {
+  @apply min-h-12 text-base tabular-nums;
+}
+.capture :global(.capture-entry-heading), .capture :global(.capture-item-controls) {
+  @apply flex flex-wrap items-start gap-3;
+}
+.capture :global(.capture-entry-heading) > :first-child { @apply min-w-0 flex-1; }
+.capture :global(.capture-entry-heading) > button { @apply shrink-0; }
+.capture :global(.capture-item-name) { @apply min-w-0 break-words; }
+.capture :global(.capture-action-row) { @apply flex flex-col gap-3 sm:flex-row; }
+.capture :global(.capture-action-row) > button { @apply w-full sm:w-auto; }
+@media (max-width: 639px) {
+  .capture > :global(.p-6), .capture > :global(.p-8) { @apply p-4; }
+  .capture :global(.capture-entry-heading) { @apply flex-col items-stretch; }
+  .capture :global(.capture-entry-heading) > button { @apply self-start; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .capture :global(.animate-spin), .capture :global(.animate-pulse) { animation: none; }
+  .capture :global(button), .capture :global(video) { transition: none; }
+}

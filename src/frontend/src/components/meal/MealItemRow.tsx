@@ -64,7 +64,7 @@ export const MealItemRow: React.FC<MealItemRowProps> = ({
                 className="group inline-flex items-center gap-1.5 text-base font-semibold text-slate-800 hover:text-emerald-700 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg"
                 title="Nhấn để đổi tên hoặc chọn món khác trong CSDL"
               >
-                <span className="truncate">{item.food_name}</span>
+                <span className="break-words">{item.food_name}</span>
                 <Edit2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 shrink-0" aria-hidden="true" />
               </button>
 
@@ -111,7 +111,7 @@ export const MealItemRow: React.FC<MealItemRowProps> = ({
       </div>
 
       {/* Hàng dưới: Điều chỉnh khối lượng (gam) và hiển thị Calo ước tính */}
-      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm">
+      <div className="capture-item-controls flex items-center justify-between pt-2 border-t border-slate-100 text-sm">
         <div className="flex items-center gap-2">
           <label htmlFor={`gram-input-${item.key}`} className="text-xs text-slate-500 font-medium">
             Khối lượng:

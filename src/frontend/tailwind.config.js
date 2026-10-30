@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
     extend: {
+      // Compatibility names used by existing surfaces; same small elevation as shadow-sm.
+      boxShadow: {
+        xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        '2xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      },
       colors: {
         nutri: {
           50: '#f0fdf4',

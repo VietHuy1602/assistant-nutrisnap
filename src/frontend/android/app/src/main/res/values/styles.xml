@@ -17,6 +17,11 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="windowSplashScreenBackground">@color/nutrisnap_splash_navy</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/nutrisnap_splash_icon</item>
+        <item name="android:windowBackground">@drawable/nutrisnap_splash_legacy</item>
+        <item name="android:statusBarColor">@color/nutrisnap_splash_navy</item>
+        <item name="android:navigationBarColor">@color/nutrisnap_splash_navy</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

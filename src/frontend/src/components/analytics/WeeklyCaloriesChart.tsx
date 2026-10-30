@@ -33,7 +33,7 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
       <div
         role="status"
         aria-label="Chưa có dữ liệu calo"
-        className="w-full h-72 flex flex-col items-center justify-center text-slate-400 gap-2 border border-dashed border-slate-200 rounded-xl"
+        className="w-full min-h-64 flex flex-col items-center justify-center text-center text-nutri-muted gap-3 p-4 border border-dashed border-slate-200 rounded-xl"
       >
         <p className="text-sm font-medium">Chưa có dữ liệu nhật ký trong khoảng này.</p>
         <p className="text-xs">Hãy ghi nhận các bữa ăn để theo dõi năng lượng.</p>
@@ -65,7 +65,7 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
             <XAxis
               dataKey="label"
               interval="preserveStartEnd"
-              tick={{ fontSize: 11, fill: '#64748B' }}
+              tick={{ fontSize: 13, fill: '#475569' }}
               tickMargin={8}
               axisLine={{ stroke: '#CBD5E1' }}
             />
@@ -73,7 +73,7 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
             <YAxis
               domain={[0, 'dataMax + 200']}
               width={48}
-              tick={{ fontSize: 11, fill: '#64748B' }}
+              tick={{ fontSize: 13, fill: '#475569' }}
               tickFormatter={(v: number) => String(v)}
               axisLine={{ stroke: '#CBD5E1' }}
             />
@@ -83,15 +83,15 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
                 borderRadius: '0.75rem',
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                fontSize: '12px',
+                fontSize: '14px',
               }}
               formatter={(value: number) => [formatKcal(value), 'Nạp vào']}
               labelFormatter={(label: string) => `Kỳ: ${label}`}
             />
             <Legend
               verticalAlign="top"
-              height={36}
-              wrapperStyle={{ fontSize: '12px', paddingBottom: '8px' }}
+              height={56}
+              wrapperStyle={{ fontSize: '14px', paddingBottom: '8px' }}
             />
             {/* Đường hạn mức calo mục tiêu (từ backend, nét đứt slate) */}
             {typeof targetCalories === 'number' && targetCalories > 0 && (
@@ -103,7 +103,7 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
                 label={{
                   value: `Mục tiêu: ${targetCalories} kcal`,
                   fill: '#475569',
-                  fontSize: 10,
+                  fontSize: 12,
                   position: 'top',
                 }}
               />

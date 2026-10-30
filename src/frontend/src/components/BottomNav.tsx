@@ -43,7 +43,7 @@ export const BottomNav: React.FC = () => {
   return (
     <nav
       aria-label="Điều hướng di động"
-      className="fixed bottom-0 inset-x-0 z-30 lg:hidden bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-md pb-safe"
+      className="fixed bottom-3 inset-x-3 rounded-[28px] z-30 lg:hidden bg-white/95 backdrop-blur-md border border-slate-100 shadow-sm pb-[env(safe-area-inset-bottom,0px)]"
     >
       <div className="grid grid-cols-5 items-center justify-around px-2 py-1">
         {navItems.map((item) => {
@@ -55,14 +55,14 @@ export const BottomNav: React.FC = () => {
                 key={item.to}
                 to={item.to}
                 aria-label={item.label}
-                className="flex flex-col items-center justify-center -mt-5 min-h-11 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus rounded-full"
+                className="flex flex-col items-center justify-center -mt-5 min-h-12 min-w-12 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 rounded-full"
               >
                 {({ isActive }) => (
                   <div
                     className={`w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-transform group-active:scale-95 ${
                       isActive
-                        ? 'bg-nutri-dark text-white ring-4 ring-emerald-100'
-                        : 'bg-nutri-primary hover:bg-nutri-dark text-white ring-4 ring-white'
+                        ? 'bg-[#9ADA26] text-[#171717] ring-4 ring-white'
+                        : 'bg-[#9ADA26] hover:bg-[#E0F1B8] text-[#171717] ring-4 ring-white'
                     }`}
                   >
                     <Icon className="w-5 h-5" aria-hidden="true" />
@@ -79,9 +79,9 @@ export const BottomNav: React.FC = () => {
               end={item.end}
               aria-label={item.ariaLabel || item.label}
               className={({ isActive }) =>
-                `flex flex-col items-center justify-center min-h-11 py-1 px-1 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
+                `flex flex-col items-center justify-center min-h-12 min-w-12 py-1 px-1 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none ${
                   isActive
-                    ? 'text-nutri-primary font-bold'
+                    ? 'bg-[#E0F1B8] text-[#171717] font-bold'
                     : 'text-slate-500 hover:text-slate-800'
                 }`
               }
@@ -94,7 +94,7 @@ export const BottomNav: React.FC = () => {
                     }`}
                     aria-hidden="true"
                   />
-                  <span className="text-[10px] mt-0.5 tracking-tight font-medium">
+                  <span className="text-xs mt-0.5 tracking-tight font-medium">
                     {item.label}
                   </span>
                 </>

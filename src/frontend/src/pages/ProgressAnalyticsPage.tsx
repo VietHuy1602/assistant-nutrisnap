@@ -28,6 +28,7 @@ import { ChartCard } from '../components/analytics/ChartCard';
 import { PatternInsightsPanel } from '../components/analytics/PatternInsightsPanel';
 import { ProgressSkeleton } from '../components/analytics/ProgressSkeleton';
 import { progressApi } from '../api/progressApi';
+import styles from '../components/report/ReportSurface.module.css';
 
 export const ProgressAnalyticsPage: React.FC = () => {
   const [masked, setMasked] = useState<boolean>(false);
@@ -104,11 +105,11 @@ export const ProgressAnalyticsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 space-y-6">
+    <div className={`${styles.reports} max-w-6xl mx-auto px-4 py-6 sm:px-6 space-y-6`}>
       {/* Header section */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/80 pb-5">
         <div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <div className="p-2 rounded-xl bg-emerald-50 text-emerald-800">
               <TrendingUp className="w-5 h-5" aria-hidden="true" />
             </div>
@@ -178,11 +179,11 @@ export const ProgressAnalyticsPage: React.FC = () => {
       {generalError && (
         <div
           role="alert"
-          className="rounded-2xl p-4 bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center justify-between gap-3"
+          className="rounded-2xl p-4 bg-amber-50 border border-amber-200 text-amber-900 text-xs flex flex-wrap items-center justify-between gap-3"
         >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" aria-hidden="true" />
-            <span>{generalError}</span>
+            <div><p>{generalError}</p><p className="mt-1">Một số dữ liệu có thể chưa tải được. Các thông báo thiếu dữ liệu bên dưới chưa phản ánh đầy đủ tiến trình của bạn.</p></div>
           </div>
           <button
             type="button"
@@ -206,7 +207,7 @@ export const ProgressAnalyticsPage: React.FC = () => {
           <ChartCard
             title="Xu hướng Cân nặng"
             chip={<TrendStatusChip status={currentTrendStatus} />}
-            disclaimer="Đường xu hướng EMA làm mịn biến động cân nặng tự nhiên hàng ngày. Tham khảo chuyên gia y tế khi cần tư vấn chuyên sâu."
+            disclaimer="EMA là đường trung bình làm mịn biến động cân nặng hằng ngày, giúp bạn dễ theo dõi xu hướng. Tham khảo chuyên gia y tế khi cần tư vấn chuyên sâu."
             tableComponent={
               <ChartDataTable
                 type="weight"
@@ -259,10 +260,11 @@ export const ProgressAnalyticsPage: React.FC = () => {
           role="dialog"
           aria-modal="true"
           aria-labelledby="log-weight-dialog-title"
+          aria-describedby="log-weight-dialog-help"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs"
         >
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-200 flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-800">
                   <Scale className="w-4 h-4" aria-hidden="true" />
@@ -282,6 +284,7 @@ export const ProgressAnalyticsPage: React.FC = () => {
               </button>
             </div>
 
+            <p id="log-weight-dialog-help" className="text-sm leading-6 text-nutri-muted">Nhập cân nặng thực tế và kiểm tra đơn vị kg trước khi lưu.</p>
             <form onSubmit={handleSubmitWeight} noValidate className="space-y-4">
               <div>
                 <label htmlFor="weight-input" className="block text-xs font-semibold text-slate-700 mb-1">

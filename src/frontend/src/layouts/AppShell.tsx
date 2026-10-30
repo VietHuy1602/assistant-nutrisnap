@@ -28,20 +28,19 @@ function AppShellInner() {
         <Navbar onOpenChat={openChat} />
         <DraftBanner />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24 lg:pb-8">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
           {/* Banner gợi ý thiết lập mục tiêu nếu chưa có */}
           {!hasGoal && location.pathname === '/' && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-900 shadow-xs">
+            <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm leading-6 text-amber-900 shadow-xs">
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
                 <span>
-                  Bạn chưa thiết lập mục tiêu thể trạng cá nhân! Hãy dành 1 phút để hệ thống tính toán
-                  hạn mức calo và dinh dưỡng phù hợp nhất cho bạn.
+                  Thiết lập mục tiêu để xem kế hoạch dinh dưỡng phù hợp với bạn. Bạn vẫn có thể ghi bữa ăn trước.
                 </span>
               </div>
               <Link
                 to="/goal-setup"
-                className="inline-flex min-h-11 items-center justify-center px-4 py-2 rounded-xl bg-nutri-primary text-white font-semibold text-center hover:bg-nutri-dark shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
+                className="inline-flex min-h-12 min-w-12 items-center justify-center px-4 py-2 rounded-xl bg-nutri-primary text-white font-semibold text-center hover:bg-nutri-dark shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2"
               >
                 Thiết lập ngay
               </Link>
@@ -50,9 +49,8 @@ function AppShellInner() {
 
           <Outlet context={{ openChat, mealRevision } satisfies AppShellContext} />
         </main>
-      </div>
-
       <BottomNav />
+      </div>
 
       <AssistantChatDrawer
         isOpen={isOpen}
