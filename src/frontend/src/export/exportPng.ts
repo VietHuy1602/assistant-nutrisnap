@@ -7,10 +7,27 @@
  * - Thu hồi Object URL ngay sau khi kích hoạt tải.
  */
 
+import { isNativeApp, saveAndShareNativeFile } from './saveNativeFile';
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Không thể tạo file ảnh PNG từ Canvas.'));
+    }, 'image/png');
+  });
+}
+
 export async function exportCanvasAsPng(
   canvas: HTMLCanvasElement,
   filename = 'NutriSnap_BaoCaoThang.png'
 ): Promise<void> {
+  // App Android/iOS: WebView bỏ qua <a download>, nên ghi file và mở bảng chia sẻ để lưu
+  if (isNativeApp()) {
+    await saveAndShareNativeFile(await canvasToPngBlob(canvas), filename, 'Báo cáo NutriSnap (PNG)');
+    return;
+  }
+
   return new Promise((resolve, reject) => {
     try {
       canvas.toBlob(

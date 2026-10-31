@@ -7,6 +7,7 @@ Zero-Trust Authentication: Xác thực người dùng qua HttpOnly Cookie 'acces
 Tích hợp router auth_goal_router quản lý toàn bộ luồng Auth + Goal + Dữ liệu món ăn.
 """
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -49,12 +50,17 @@ from src.backend.services.auth_guard import (
     verify_csrf_protection,
 )
 from src.backend.services.food_recognition import (
+    SERVICE_ERROR_MESSAGE,
+    UNCLEAR_MESSAGE,
+    build_unrecognized_response,
     decode_base64_image,
-    get_fallback_recognition_response,
     recognize_food_pipeline,
 )
 from src.backend.services.nutrition_service import get_daily_dashboard_data
 
+
+
+logger = logging.getLogger("nutrisnap.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -349,8 +355,10 @@ async def recognize_food_endpoint(request: Request):
                 image_bytes = raw_body
 
         if not image_bytes:
-            # Nếu không có ảnh, trả về dữ liệu mẫu Fallback an toàn cho Demo PoC
-            return get_fallback_recognition_response(meal_type=meal_type)
+            # Không có ảnh: yêu cầu chụp/chọn lại thay vì trả món mẫu
+            logger.warning("recognize-food: không nhận được dữ liệu ảnh (content-type=%s)", content_type)
+            return build_unrecognized_response(meal_type, "unclear", UNCLEAR_MESSAGE)
+        logger.info("recognize-food: nhận ảnh %d bytes", len(image_bytes))
 
         return recognize_food_pipeline(
             image_input=image_bytes,
@@ -358,8 +366,9 @@ async def recognize_food_endpoint(request: Request):
             use_mock_fallback=True,
         )
     except Exception:
-        # Cơ chế Mock Fallback bắt buộc: Đảm bảo không bao giờ crash 500 làm gián đoạn Demo
-        return get_fallback_recognition_response(meal_type=meal_type)
+        # Không crash 500: báo lỗi dịch vụ để người dùng thử lại hoặc chọn món thủ công
+        logger.exception("Lỗi không mong muốn khi nhận diện món ăn")
+        return build_unrecognized_response(meal_type, "service_error", SERVICE_ERROR_MESSAGE, is_fallback=True)
 
 
 if __name__ == "__main__":

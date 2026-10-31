@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Salad, Target, LayoutDashboard, MessageSquareText, LogOut, Camera, FileText, TrendingUp, Flame } from 'lucide-react';
+import { Sparkles, Target, LayoutDashboard, LogOut, Camera, FileText, TrendingUp, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { draftStore } from '../storage/draftStore';
 import { MobileAccountMenu } from './MobileAccountMenu';
@@ -48,9 +48,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 flex flex-wrap items-center justify-between gap-3 py-3 lg:flex-nowrap lg:py-0">
         {/* Brand Logo */}
         <Link to="/" className="flex min-h-12 min-w-0 items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 lg:min-h-11">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-nutri-primary">
-            <Salad className="w-6 h-6" />
-          </div>
+          <img
+            src="/branding/nutrisnap-logo-icon.webp"
+            alt=""
+            aria-hidden="true"
+            width={44}
+            height={44}
+            className="h-11 w-11 shrink-0 rounded-2xl bg-slate-950 object-cover shadow-md shadow-emerald-900/20 ring-2 ring-white"
+          />
           <div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Nutri<span className="text-nutri-primary">Snap</span>
@@ -63,8 +68,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
         <div className="flex shrink-0 items-center gap-2 lg:hidden">
           <button type="button" onClick={onOpenChat} aria-label="Mở trợ lý ảo AI" aria-haspopup="dialog" aria-controls="assistant-title"
-            className="flex min-h-12 min-w-12 items-center justify-center rounded-xl bg-nutri-primary text-white hover:bg-nutri-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
-            <MessageSquareText aria-hidden="true" className="h-5 w-5" />
+            className="relative flex min-h-12 items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 via-lime-500 to-amber-400 pl-3 pr-4 text-sm font-bold text-white shadow-md shadow-emerald-600/30 transition-transform hover:scale-[1.03] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none">
+            <Sparkles aria-hidden="true" className="h-5 w-5" />
+            <span aria-hidden="true">AI Coach</span>
+            <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-lime-300" />
           </button>
           <MobileAccountMenu username={user?.username} onLogout={handleLogout} />
         </div>
@@ -190,9 +197,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
             onClick={onOpenChat}
             aria-haspopup="dialog"
             aria-controls="assistant-title"
-            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap px-3 py-2 sm:ml-2 rounded-lg text-sm font-medium bg-nutri-primary hover:bg-nutri-dark text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none"
+            className="flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-gradient-to-r from-emerald-500 via-lime-500 to-amber-400 px-4 py-2 sm:ml-2 text-sm font-bold text-white shadow-md shadow-emerald-600/30 transition-transform hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 motion-reduce:transition-none"
           >
-            <MessageSquareText className="w-4 h-4" />
+            <Sparkles className="w-4 h-4" aria-hidden="true" />
             <span>Trợ lý AI</span>
           </button>
 
@@ -200,7 +207,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
           <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-200">
             <div
               title={user?.username || 'Tài khoản'}
-              className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-700"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-sky-500 ring-2 ring-white shadow-sm flex items-center justify-center text-sm font-bold text-white"
             >
               {initial}
             </div>
@@ -212,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
               onClick={handleLogout}
               title="Đăng xuất"
               aria-label="Đăng xuất"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-nutri-muted hover:text-red-600 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-nutri-muted hover:text-amber-700 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
             >
               <LogOut className="w-4 h-4" />
             </button>

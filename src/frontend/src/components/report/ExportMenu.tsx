@@ -12,6 +12,8 @@ import type { MonthlyReport } from '../../api/reportContract';
 import { renderReportCanvas } from '../../export/renderReportCanvas';
 import { exportCanvasAsPng } from '../../export/exportPng';
 import { printReport } from '../../export/printReport';
+import { canvasToPdfBlob } from '../../export/exportPdf';
+import { isNativeApp, saveAndShareNativeFile } from '../../export/saveNativeFile';
 
 interface ExportMenuProps {
   report: MonthlyReport;
@@ -42,8 +44,29 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({ report, disabled = false
     }
   };
 
-  const handlePrint = () => {
-    if (disabled) return;
+  const handlePrint = async () => {
+    if (disabled || isExporting) return;
+
+    // App Android/iOS: WebView không hỗ trợ window.print(), nên tạo file PDF thật rồi mở bảng chia sẻ
+    if (isNativeApp()) {
+      setIsExporting(true);
+      setMessage(null);
+      try {
+        const pdf = await canvasToPdfBlob(renderReportCanvas(report));
+        const saved = await saveAndShareNativeFile(pdf, `NutriSnap_BaoCao_${report.month}.pdf`, 'Báo cáo NutriSnap (PDF)');
+        if (saved) {
+          setMessage({ text: 'Đã tạo file PDF thành công!', type: 'success' });
+          setTimeout(() => setMessage(null), 3000);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Không thể tạo file PDF.';
+        setMessage({ text: msg, type: 'error' });
+      } finally {
+        setIsExporting(false);
+      }
+      return;
+    }
+
     const ok = printReport();
     if (!ok) {
       setMessage({
@@ -68,8 +91,8 @@ export const ExportMenu: React.FC<ExportMenuProps> = ({ report, disabled = false
 
         <button
           type="button"
-          disabled={disabled}
-          onClick={handlePrint}
+          disabled={disabled || isExporting}
+          onClick={() => void handlePrint()}
           className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus"
         >
           <Printer className="w-4 h-4" aria-hidden="true" />

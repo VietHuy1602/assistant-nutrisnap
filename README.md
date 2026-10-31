@@ -83,6 +83,23 @@ python scripts/free_port.py              # Tự động giải phóng cả cổn
 python scripts/free_port.py --port 8000  # Giải phóng riêng cổng 8000
 ```
 
+### 4.4. Dữ liệu dinh dưỡng quốc tế USDA (nhận diện món toàn cầu)
+Món Việt dùng `data/vn_foods.csv`. Để món nước ngoài (pizza, sushi, cà ri...) có số liệu chuẩn, nạp thêm bảng USDA FoodData Central (miễn phí):
+1. Tải tại https://fdc.nal.usda.gov/download-datasets: **FNDDS (JSON)** và **SR Legacy (CSV)**.
+2. Đặt file `.zip` (không cần giải nén) vào `data/usda/fndds/` và `data/usda/sr_legacy/`.
+3. Chạy:
+```bash
+python scripts/import_usda.py
+```
+Thứ tự tra dinh dưỡng khi nhận diện ảnh: CSDL món Việt → USDA → AI ước tính. Món mới được thêm vào `food_references` để lưu bữa ăn.
+
+### 4.5. Chạy app Android (emulator / điện thoại)
+```bash
+python run_backend.py --host 127.0.0.1 --port 8000
+cd src/frontend && npm install && npm run android:open
+```
+`src/frontend/.env.local`: emulator dùng `VITE_API_BASE_URL=http://10.0.2.2:8000/api/v1` (điện thoại thật: `http://<IP-LAN-của-PC>:8000/api/v1`, backend `--host 0.0.0.0`). Trong Android Studio chọn **Gradle JDK = 21** (Settings → Build Tools → Gradle); JDK 25 đi kèm Android Studio mới không chạy được Gradle 8.14.
+
 ---
 
 ## 🚪 5. Phân hệ Xác thực (Authentication API)

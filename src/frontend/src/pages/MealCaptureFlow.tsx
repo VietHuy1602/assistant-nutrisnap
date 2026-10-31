@@ -23,9 +23,12 @@ import { mealApi } from '../api/mealApi';
 import { emitMealLogged } from '../utils/mealEvents';
 import { useConnectivity } from '../app/ConnectivityProvider';
 import { draftStore } from '../storage/draftStore';
+import { isNativeCameraAvailable, takeNativePhoto } from '../utils/nativeCamera';
 import { useDraftAutosave } from '../offline/useDraftAutosave';
 import { Check } from 'lucide-react';
 import styles from '../components/meal/CaptureSurface.module.css';
+
+export const NOT_FOOD_MESSAGE = 'Đây không phải là món ăn, xin vui lòng chụp lại';
 
 export type CaptureMode =
   | 'idle'
@@ -51,7 +54,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
 }) => {
   const [mode, setMode] = useState<CaptureMode>(() => {
     if (initialMode === 'manual' || initialMode === 'manualEntry') return 'manualEntry';
-    if (initialMode === 'photo' || initialMode === 'cameraLive') return 'cameraLive';
+    if ((initialMode === 'photo' || initialMode === 'cameraLive') && !isNativeCameraAvailable()) return 'cameraLive';
     return 'idle';
   });
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
@@ -59,7 +62,12 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [manualReason, setManualReason] = useState<string | undefined>();
+  const [unrecognized, setUnrecognized] = useState<{ reason?: 'not_food' | 'unclear' | 'service_error' | null; message?: string }>({});
   const [isSavedOffline, setIsSavedOffline] = useState(false);
+  // Ảnh vừa gửi không phải món ăn: quay lại màn chụp và hiện thông báo cho tới khi chọn ảnh mới
+  const [notFoodNotice, setNotFoodNotice] = useState(false);
+  const [cameraNotice, setCameraNotice] = useState<string | null>(null);
+  const nativeCameraOpenedRef = useRef(false);
 
   const { isOnline } = useConnectivity();
 
@@ -98,6 +106,13 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   // Tự động bật camera nếu bắt đầu ở chế độ chụp ảnh
   useEffect(() => {
     if (initialMode === 'photo' || initialMode === 'cameraLive') {
+      if (isNativeCameraAvailable()) {
+        if (!nativeCameraOpenedRef.current) {
+          nativeCameraOpenedRef.current = true;
+          void handleStartCamera();
+        }
+        return;
+      }
       void startCamera().then((ok) => {
         if (!ok) {
           setMode('filePicker');
@@ -116,6 +131,21 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   }, [mode, stopCamera]);
 
   const handleStartCamera = async () => {
+    // App Android/iOS: mở camera gốc của máy (WebRTC không chạy trong WebView http://)
+    if (isNativeCameraAvailable()) {
+      const result = await takeNativePhoto();
+      if (result.status === 'ok') {
+        setNotFoodNotice(false);
+        setCameraNotice(null);
+        setCapturedBlob(result.blob);
+        setMode('captured');
+      } else {
+        setCameraNotice(result.status === 'error' ? result.message : null);
+        setMode('filePicker');
+      }
+      return;
+    }
+
     const ok = await startCamera();
     if (ok) {
       setMode('cameraLive');
@@ -127,12 +157,14 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   const handleCapturePhoto = async () => {
     const photo = await captureFrame();
     if (photo) {
+      setNotFoodNotice(false);
       setCapturedBlob(photo.blob);
       setMode('captured');
     }
   };
 
   const handleImageFileSelected = (file: File) => {
+    setNotFoodNotice(false);
     setCapturedBlob(file);
     setMode('captured');
   };
@@ -149,7 +181,15 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       return;
     }
 
+    if (result.reason === 'not_food') {
+      setCapturedBlob(null);
+      setNotFoodNotice(true);
+      setMode('idle');
+      return;
+    }
+
     if (result.status === 'unrecognized' || result.detected_items.length === 0) {
+      setUnrecognized({ reason: result.reason, message: result.message });
       setMode('unrecognized');
     } else {
       draftDispatch({
@@ -253,6 +293,25 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
         </div>
       )}
 
+      {notFoodNotice && (mode === 'idle' || mode === 'filePicker' || mode === 'cameraLive') && (
+        <div
+          role="alert"
+          className="w-full max-w-lg mx-auto mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+        >
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+          <span>{NOT_FOOD_MESSAGE}</span>
+        </div>
+      )}
+
+      {cameraNotice && (mode === 'idle' || mode === 'filePicker') && (
+        <div
+          role="status"
+          className="w-full max-w-lg mx-auto mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700"
+        >
+          {cameraNotice}
+        </div>
+      )}
+
       {/* Trạng thái 1: Máy ảnh trực tiếp */}
       {mode === 'cameraLive' && (
         <CameraView
@@ -343,6 +402,8 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       {/* Trạng thái 5: Không nhận diện được món */}
       {mode === 'unrecognized' && (
         <UnrecognizedPanel
+          reason={unrecognized.reason}
+          message={unrecognized.message}
           onRetake={() => {
             setCapturedBlob(null);
             handleStartCamera();

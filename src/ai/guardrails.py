@@ -265,7 +265,14 @@ def verify_number_consistency(
     if not tool_result:
         return True, []
 
-    reply_numbers = extract_numbers_from_text(reply)
+    # Ngày tháng, giờ và năm không phải số liệu dinh dưỡng (ví dụ: 31/10/2026, 2026-10-31, 21h, 7:30)
+    reply_wo_dates = re.sub(
+        r"\b\d{4}-\d{1,2}-\d{1,2}\b|\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b|\bnăm\s+\d{4}\b|\b\d{1,2}(?::\d{2}|h\d{0,2})\b",
+        " ",
+        reply,
+        flags=re.IGNORECASE,
+    )
+    reply_numbers = extract_numbers_from_text(reply_wo_dates)
     if not reply_numbers:
         return True, []
 

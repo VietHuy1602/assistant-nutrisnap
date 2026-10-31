@@ -20,7 +20,7 @@ describe('Route Guards', () => {
   });
 
   describe('ProtectedRoute', () => {
-    it('1. Đang kiểm tra phiên (loading): hiển thị màn hình chờ Spinner', () => {
+    it('1. Đang kiểm tra phiên (loading): hiển thị màn hình chờ Spinner', async () => {
       mockAuthStatus = 'loading';
       render(
         <MemoryRouter initialEntries={['/protected']}>
@@ -32,7 +32,8 @@ describe('Route Guards', () => {
         </MemoryRouter>,
       );
 
-      expect(screen.getByText('Đang kiểm tra phiên đăng nhập…')).toBeInTheDocument();
+      // Nhãn trạng thái chỉ hiện sau 150ms để tránh nháy splash khi phiên được xác nhận nhanh.
+      expect(await screen.findByText('Đang kiểm tra phiên đăng nhập…')).toBeInTheDocument();
       expect(screen.queryByText('Trang Bảo Mật')).not.toBeInTheDocument();
     });
 

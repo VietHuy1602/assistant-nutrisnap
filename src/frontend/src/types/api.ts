@@ -157,6 +157,8 @@ export interface RecognizedFoodItem {
   carbs_g: number;
   fat_g: number;
   confidence: number;
+  /** Nguồn dinh dưỡng: CSDL món Việt, bảng chuẩn USDA, hoặc AI ước tính */
+  nutrition_source?: 'database' | 'usda' | 'ai_estimate' | null;
 }
 
 export interface RecognizeFoodResponse {
@@ -167,6 +169,8 @@ export interface RecognizeFoodResponse {
   total_estimated_calories: number;
   is_fallback?: boolean;
   message?: string;
+  /** Lý do khi status='unrecognized' */
+  reason?: 'not_food' | 'unclear' | 'service_error' | null;
   disclaimer?: string;
 }
 

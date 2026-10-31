@@ -341,6 +341,50 @@ GET_USER_PROFILE_DECLARATION: dict[str, Any] = {
     },
 }
 
+GET_HABIT_SUMMARY_DECLARATION: dict[str, Any] = {
+    "name": "get_habit_summary",
+    "description": (
+        "Tra cứu màn hình Thói quen của người dùng: chuỗi ngày ghi nhật ký liên tiếp (streak hiện tại, dài nhất), "
+        "tổng số ngày đã ghi, tiến độ thử thách 7 ngày và trạng thái 'quay lại đường đua'. "
+        "KHI NÀO DÙNG: 'streak của mình bao nhiêu', 'thử thách 7 ngày tới đâu rồi', 'mình có đều đặn không'."
+    ),
+    "parameters": {"type": "object", "properties": {}, "required": []},
+}
+
+GET_MONTHLY_REPORT_DECLARATION: dict[str, Any] = {
+    "name": "get_monthly_report",
+    "description": (
+        "Lấy báo cáo tổng hợp theo tháng hoặc N ngày gần nhất: số ngày ghi & tỷ lệ kiên trì, cân nặng đầu/cuối kỳ, "
+        "năng lượng & macro trung bình mỗi ngày so với mục tiêu, thói quen và điểm mạnh. "
+        "KHI NÀO DÙNG: 'tổng kết tháng này', 'báo cáo tháng 9', 'tháng qua mình ăn uống thế nào', 'trung bình mỗi ngày ăn bao nhiêu'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "year": {"type": "integer", "description": "Năm của báo cáo (ví dụ 2026). Bỏ trống để dùng N ngày gần nhất."},
+            "month": {"type": "integer", "description": "Tháng 1-12. Bỏ trống để dùng N ngày gần nhất."},
+            "days": {"type": "integer", "description": "Số ngày gần nhất (7-90) khi không chọn tháng. Mặc định 30."},
+        },
+        "required": [],
+    },
+}
+
+GET_EATING_PATTERNS_DECLARATION: dict[str, Any] = {
+    "name": "get_eating_patterns",
+    "description": (
+        "Phân tích thói quen ăn uống 7-30 ngày gần nhất từ nhật ký: bỏ bữa sáng, thiếu đạm, ăn khuya sau 21h, "
+        "kèm chỉ số thống kê và gợi ý. "
+        "KHI NÀO DÙNG: 'mình có thói quen xấu nào không', 'nhận xét cách ăn của mình', 'vì sao mình khó giảm cân', 'mình ăn đủ đạm không'."
+    ),
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "days_range": {"type": "integer", "description": "Số ngày phân tích (7-30). Mặc định 14."},
+        },
+        "required": [],
+    },
+}
+
 # ==============================================================================
 # 2. WRAPPERS DÀNH CHO CÁC MÔ HÌNH CHUẨN OPENAPI / OPENAI
 # ==============================================================================
@@ -531,6 +575,9 @@ def get_gemini_tool_declarations(include_extended: bool = False) -> list[dict[st
             SUGGEST_FOOD_SWAP_DECLARATION,
             SEARCH_FOODS_DECLARATION,
             GET_USER_PROFILE_DECLARATION,
+            GET_HABIT_SUMMARY_DECLARATION,
+            GET_MONTHLY_REPORT_DECLARATION,
+            GET_EATING_PATTERNS_DECLARATION,
         ]
     return [sanitize_schema_for_gemini(copy.deepcopy(decl)) for decl in raw_declarations]
 

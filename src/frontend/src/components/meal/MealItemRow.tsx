@@ -76,6 +76,24 @@ export const MealItemRow: React.FC<MealItemRowProps> = ({
                 </span>
               )}
 
+              {item.nutrition_source === 'usda' && !isUnlinked && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200"
+                  title="Dinh dưỡng lấy từ bảng chuẩn USDA FoodData Central"
+                >
+                  <span>Số liệu USDA</span>
+                </span>
+              )}
+
+              {item.nutrition_source === 'ai_estimate' && !isUnlinked && (
+                <span
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-200"
+                  title="Món chưa có trong CSDL chuẩn; dinh dưỡng do AI ước tính và đã được thêm vào CSDL"
+                >
+                  <span>Dinh dưỡng AI ước tính</span>
+                </span>
+              )}
+
               {isLowConfidence && !isUnlinked && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-700 bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
                   <span>Cần kiểm tra</span>

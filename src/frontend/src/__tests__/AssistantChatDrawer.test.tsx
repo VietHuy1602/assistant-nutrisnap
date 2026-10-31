@@ -4,6 +4,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AssistantChatDrawer } from '../components/AssistantChatDrawer';
+import { DEFAULT_PROMPTS } from '../chat/components/QuickSuggestions';
 import { apiClient } from '../api/client';
 import { ApiError } from '../utils/apiError';
 import { isMealCard, saveAssistantMeal } from '../api/assistantApi';
@@ -32,7 +33,7 @@ async function open() {
   return { user, ...view };
 }
 async function requestCard(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+  await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
   return screen.findByRole('button', { name: /^Xác nhận lưu/ });
 }
 function deferred<T>() {
@@ -73,9 +74,9 @@ describe('AssistantChatDrawer — simulated API only', () => {
   });
 
   it.each([
-    ['💡 Calo còn lại?', 'Hôm nay tôi còn bao nhiêu calo?'],
-    ['🍲 Ghi nhận phở bò', 'Trưa nay tôi ăn 1 tô phở bò tái'],
-    ['🥗 Gợi ý món 40k', 'Gợi ý bữa tối 40k đủ đạm'],
+    ['💡 Calo & Đạm hôm nay', 'Hôm nay mình đã ăn bao nhiêu calo và còn thiếu bao nhiêu đạm?'],
+    ['🍜 Ghi nhận bữa ăn', 'Ghi nhận nhanh bữa ăn vừa dùng'],
+    ['🍱 Gợi ý thực đơn', 'Gợi ý thực đơn vừa ngân sách hôm nay'],
   ])('preserves prompt %s and its exact submitted message', async (label, message) => {
     const { user } = await open();
     expect(apiClient.post).not.toHaveBeenCalled();
@@ -100,16 +101,16 @@ describe('AssistantChatDrawer — simulated API only', () => {
 
   it('uses the acknowledged session for the next message rather than a fixed session', async () => {
     const { user } = await open(); await requestCard(user);
-    await user.click(screen.getByRole('button', { name: '💡 Calo còn lại?' }));
+    await user.click(screen.getByRole('button', { name: '💡 Calo & Đạm hôm nay' }));
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(2));
-    expect(apiClient.post).toHaveBeenLastCalledWith('/assistant/chat', { session_id: 9, message: 'Hôm nay tôi còn bao nhiêu calo?' }, expect.any(Object));
+    expect(apiClient.post).toHaveBeenLastCalledWith('/assistant/chat', { session_id: 9, message: 'Hôm nay mình đã ăn bao nhiêu calo và còn thiếu bao nhiêu đạm?' }, expect.any(Object));
   });
 
   it('cancels the actual in-flight request and ignores a late reply', async () => {
     const pending = deferred<ReturnType<typeof reply>>();
     vi.mocked(apiClient.post).mockReturnValueOnce(pending.promise);
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '💡 Calo còn lại?' }));
+    await user.click(screen.getByRole('button', { name: '💡 Calo & Đạm hôm nay' }));
     const signal = vi.mocked(apiClient.post).mock.calls[0][2]?.signal;
     await user.click(screen.getByRole('button', { name: 'Hủy yêu cầu đang gửi' }));
     expect(signal?.aborted).toBe(true);
@@ -121,7 +122,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   it('shows a failed message and explicitly retries it through the same provider', async () => {
     vi.mocked(apiClient.post).mockRejectedValueOnce(new ApiError('Giới hạn', { status: 429 }));
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '💡 Calo còn lại?' }));
+    await user.click(screen.getByRole('button', { name: '💡 Calo & Đạm hôm nay' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('thao tác hơi nhanh');
     expect(apiClient.post).toHaveBeenCalledTimes(1);
     await user.click(screen.getByRole('button', { name: 'Gửi lại' }));
@@ -221,7 +222,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   ])('never offers an unsupported or malformed card for saving %#', async unsupported => {
     vi.mocked(apiClient.post).mockResolvedValueOnce(reply(unsupported));
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     expect(await screen.findByText(/Thẻ này chưa hỗ trợ/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Xác nhận lưu/ })).not.toBeInTheDocument();
     expect(saves()).toHaveLength(0); expect(onSaved).not.toHaveBeenCalled();
@@ -231,7 +232,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
     const { user } = await open(); const confirm = await requestCard(user);
     const pendingReply = deferred<ReturnType<typeof reply>>();
     vi.mocked(apiClient.post).mockReturnValueOnce(pendingReply.promise);
-    await user.click(screen.getByRole('button', { name: '💡 Calo còn lại?' }));
+    await user.click(screen.getByRole('button', { name: '💡 Calo & Đạm hôm nay' }));
     await user.click(confirm);
     expect(await screen.findByText(/Đã lưu vào nhật ký · 135 kcal/)).toBeInTheDocument();
     await act(async () => pendingReply.resolve({ data: { session_id: 9, reply_text: 'Phản hồi đến sau.', action_card: null, disclaimer: '' } }));
@@ -259,7 +260,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   ])('explains normalized chat failures without creating a card: %s', async (error, message) => {
     vi.mocked(apiClient.post).mockRejectedValueOnce(error);
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
     expect(screen.getAllByText(text => text.includes(message))).toHaveLength(1);
     expect(screen.queryByText('Internal implementation details')).not.toBeInTheDocument();
@@ -273,7 +274,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   it.each([null, {}, { reply_text: '   ' }, { action_card: { data: { items: [] } } }])('treats unusable HTTP-success responses as failed messages %#', async data => {
     vi.mocked(apiClient.post).mockResolvedValueOnce({ data });
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('CONTRACT_MISMATCH');
     expect(screen.getByRole('button', { name: 'Gửi lại' })).toBeEnabled();
     expect(screen.queryByRole('button', { name: /^Xác nhận lưu/ })).not.toBeInTheDocument();
@@ -284,7 +285,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   it('keeps ordinary assistant text without fabricating a meal card', async () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { reply: 'Bạn muốn ghi nhận món nào?', action_card: null, pending_confirmation: false } });
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     expect(await screen.findByText('Bạn muốn ghi nhận món nào?')).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Xác nhận lưu/ })).not.toBeInTheDocument();
@@ -294,7 +295,7 @@ describe('AssistantChatDrawer — simulated API only', () => {
   it('explains missing structured confirmation data without inventing a card', async () => {
     vi.mocked(apiClient.post).mockResolvedValueOnce({ data: { reply: 'Vui lòng xác nhận.', pending_confirmation: true, action_card: null } });
     const { user } = await open();
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     expect(await screen.findByText(/Thẻ này chưa hỗ trợ lưu bữa ăn tại đây hoặc thiếu thông tin hợp lệ/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Xác nhận lưu/ })).not.toBeInTheDocument();
     expect(saves()).toHaveLength(0);
@@ -306,10 +307,8 @@ describe('AssistantChatDrawer — simulated API only', () => {
     const { user, unmount } = await open();
     const close = screen.getByRole('button', { name: 'Đóng trợ lý' });
     expect(screen.getByRole('textbox')).toHaveFocus();
-    await user.tab({ shift: true });
-    await user.tab({ shift: true });
-    await user.tab({ shift: true });
-    await user.tab({ shift: true });
+    // Mỗi gợi ý nhanh là một nút; lùi qua tất cả để tới nút đóng.
+    for (let index = 0; index <= DEFAULT_PROMPTS.length; index++) await user.tab({ shift: true });
     expect(close).toHaveFocus();
     expect(document.querySelector('[inert]')).not.toBeNull();
     await user.tab({ shift: true }); expect(screen.getByRole('textbox')).toHaveFocus();

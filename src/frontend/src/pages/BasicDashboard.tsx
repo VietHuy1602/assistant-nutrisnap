@@ -149,7 +149,7 @@ export const BasicDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 ref={headingRef} tabIndex={-1} className="break-words text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 focus:outline-none">
-            Chào {user?.username || 'bạn'} 👋
+            Chào {user?.username || 'bạn'}
           </h1>
           <p className="text-sm leading-6 text-nutri-muted mt-1">
             Theo dõi các bữa ăn và dinh dưỡng của bạn.
