@@ -15,6 +15,7 @@ const config: CapacitorConfig = {
   appId: 'com.nutrisnap.app',
   appName: 'Nutrisnap',
   webDir: 'dist',
+  android: { backgroundColor: '#07152F' },
   ...(apiUrl ? { server: { hostname: apiUrl.hostname, androidScheme: 'http' } } : {}),
 };
 

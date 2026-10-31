@@ -4,7 +4,7 @@ import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicOnlyRoute } from './components/PublicOnlyRoute';
 import { AppShell } from './layouts/AppShell';
-import { Spinner } from './components/Spinner';
+import { BrandedStartup } from './components/BrandedStartup';
 import { useDelayedFlag } from './hooks/useDelayedFlag';
 
 // Route Code-Splitting (SAC-10): LoginPage giữ eager (trang vào đầu), các route khác lazy load
@@ -86,18 +86,7 @@ const DevApiStatusBadge = import.meta.env.DEV
 // Fallback trì hoãn 150 ms để tránh nháy spinner khi chunk tải nhanh (SAC-1, SAC-2)
 const PageFallback: React.FC = () => {
   const show = useDelayedFlag(true, 150);
-  if (!show) {
-    return <div className="min-h-screen bg-slate-50" aria-busy="true" />;
-  }
-  return (
-    <div
-      aria-busy="true"
-      className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3"
-    >
-      <Spinner size="lg" label="Đang tải trang..." />
-      <p className="text-xs text-slate-500 font-medium">Đang tải trang…</p>
-    </div>
-  );
+  return <BrandedStartup announce={show} label="Đang tải trang…" />;
 };
 
 export const App: React.FC = () => {

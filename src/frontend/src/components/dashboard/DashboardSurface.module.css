@@ -5,28 +5,38 @@
 :global(body):has(.dashboard) :global(.bg-nutri-surface) { background-color: #f7f8f5; }
 .dashboard :global(.dashboard-summary) { @apply grid grid-cols-1 gap-4; }
 .dashboard :global(.calorie-summary) {
-  @apply flex flex-row flex-wrap items-center justify-between gap-4 rounded-[28px] border-0 p-5 shadow-none sm:p-7;
+  @apply grid items-center gap-x-3 gap-y-2 rounded-[28px] border-0 p-4 shadow-none sm:p-5;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   background: #e0f1b8;
 }
-.dashboard :global(.calorie-ring) { @apply h-40 w-40 shrink-0; }
-.dashboard :global(.calorie-ring) :global(.text-3xl) { @apply text-2xl; }
-.dashboard :global(.calorie-total) { @apply flex min-w-0 flex-1 flex-col gap-3; }
-.dashboard :global(.calorie-total) strong { @apply text-4xl font-semibold tracking-tight tabular-nums; }
-.dashboard :global(.calorie-caption) { @apply mt-0 flex w-full flex-wrap gap-2 text-sm leading-6; }
+.dashboard :global(.calorie-ring) { @apply min-w-0 w-full gap-3; }
+.dashboard :global(.calorie-ring-face) { width: max-content; max-width: 100%; min-width: 8rem; aspect-ratio: 1; }
+.dashboard :global(.calorie-ring-reading) { padding: 3rem; max-width: 100%; overflow-wrap: anywhere; }
+.dashboard :global(.calorie-ring-label) { @apply text-sm leading-5; }
+.dashboard :global(.calorie-total) { @apply flex min-w-0 flex-col gap-1 self-end; }
+.dashboard :global(.calorie-total) strong { @apply font-semibold tracking-tight tabular-nums; font-size: 1.875rem; line-height: 2.25rem; overflow-wrap: anywhere; }
+.dashboard :global(.calorie-caption) { @apply mt-0 flex min-w-0 flex-wrap gap-1 self-start text-sm leading-5; grid-column: 1 / -1; }
+.dashboard :global(.calorie-summary) > :global(.bg-amber-50) { @apply max-w-none; grid-column: 1 / -1; }
 .dashboard :global(.macro-summary) { @apply border-0 bg-transparent p-0 shadow-none; }
 .dashboard :global(.macro-summary) > :first-child { @apply flex-wrap gap-2; }
 .dashboard :global(.macro-summary) h3 { @apply text-base normal-case tracking-normal; }
-.dashboard :global(.macro-grid) { @apply grid grid-cols-1 gap-3 min-[390px]:grid-cols-3; }
-.dashboard :global(.macro-item) { @apply min-w-0 rounded-[24px] bg-white p-4; }
-.dashboard :global(.macro-item) > :first-child { @apply flex-col items-start gap-2; }
-.dashboard :global(.macro-item) > :first-child > span { @apply break-words text-sm leading-6; }
+.dashboard :global(.macro-grid) { @apply grid grid-cols-3 gap-2 sm:gap-3; }
+.dashboard :global(.macro-item) { @apply min-w-0 rounded-2xl bg-white px-3 py-4; }
+.dashboard :global(.macro-item) > :first-child { @apply flex-col items-start gap-1; }
+.dashboard :global(.macro-item) > :first-child > span { @apply break-words text-sm leading-5; }
+.dashboard :global(.macro-values) { @apply flex w-full flex-col gap-1; }
+.dashboard :global(.macro-target) { @apply text-sm; }
+.dashboard :global(.macro-percent) { @apply text-sm; }
+.dashboard :global(.macro-item) [role='progressbar'] { @apply mt-1 h-2; }
 .dashboard :global(.macro-item) strong { @apply text-lg font-semibold; }
 .dashboard :global(.diary-meal) { @apply rounded-[24px] border-0 p-4 shadow-none sm:p-5; }
 .dashboard :global(.diary-list) { @apply border-0 pl-0; }
 .dashboard :global(.diary-marker) { @apply hidden; }
 .dashboard :global(.diary-meal) h4 { @apply text-lg font-semibold; }
 @media (min-width: 768px) {
-  .dashboard :global(.calorie-summary) { @apply min-h-60; }
   .dashboard :global(.calorie-total) strong { @apply text-5xl; }
   .dashboard :global(.macro-item) { @apply p-5; }
+}
+@media (min-width: 640px) {
+  .dashboard :global(.calorie-total) strong { font-size: 2.25rem; line-height: 2.5rem; }
 }

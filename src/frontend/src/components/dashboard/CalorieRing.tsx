@@ -1,5 +1,4 @@
 import React from 'react';
-import { EstimatedBadge } from '../common/EstimatedBadge';
 import { formatKcal } from '../../utils/format';
 
 interface CalorieRingProps {
@@ -47,8 +46,12 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         <span className="text-base font-medium">Tổng calo đã nạp</span>
         <div className="flex flex-wrap items-baseline gap-2"><strong>{formatKcal(consumed)}</strong><span className="text-sm">kcal</span></div>
       </div>
-      <div className="calorie-ring relative w-48 h-48 flex items-center justify-center">
-        <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 128 128">
+      <div className="calorie-ring flex flex-col items-center gap-2">
+        <span className="calorie-ring-label text-sm font-semibold text-nutri-muted text-center">
+          {!personalized ? 'Mức tham khảo' : isOver ? 'Vượt hạn mức' : 'Calo còn lại'}
+        </span>
+        <div className="calorie-ring-face relative grid aspect-square w-max min-w-32 max-w-full place-items-center">
+        <svg aria-hidden="true" className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 128 128">
           {/* Vòng nền mờ */}
           <circle
             cx="64"
@@ -74,14 +77,12 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         </svg>
 
         {/* Nội dung số ở tâm vòng tròn */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-          <span className="text-sm font-semibold uppercase tracking-wider text-nutri-muted">
-            {!personalized ? 'Mức tham khảo' : isOver ? 'Vượt hạn mức' : 'Calo còn lại'}
-          </span>
-          <span className="text-3xl tabular-nums font-extrabold tracking-tight text-slate-900 mt-0.5">
+        <div className="calorie-ring-reading relative flex max-w-full flex-col items-center justify-center p-12 text-center break-words">
+          <span className="calorie-ring-value text-2xl tabular-nums font-extrabold tracking-tight text-slate-900">
             {!personalized ? formatKcal(target) : isOver ? `+${formatKcal(Math.abs(remaining))}` : formatKcal(remaining)}
           </span>
           <span className="text-sm text-nutri-muted font-medium">kcal</span>
+        </div>
         </div>
       </div>
 
@@ -90,7 +91,6 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         <span>
           {personalized ? 'Mục tiêu ngày' : 'Mức tham khảo'}: {formatKcal(target)} kcal
         </span>
-        <EstimatedBadge size="sm" showIcon={false} />
       </div>
 
       {/* Thông điệp tích cực, không phán xét khi vượt hạn mức (N6) */}

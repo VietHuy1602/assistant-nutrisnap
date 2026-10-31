@@ -35,7 +35,7 @@ describe('Dashboard P2 presentation', () => {
     render(<MacroBar macros={{ protein: detail, carbs: detail, fat: detail }} personalized={false} />);
     expect(screen.getByText('Giá trị tham khảo')).toBeInTheDocument();
     expect(screen.getAllByRole('progressbar')).toHaveLength(3);
-    expect(screen.getByText('Đạm (Protein)')).toBeInTheDocument();
+    expect(screen.getByText('Đạm')).toBeInTheDocument();
     expect(screen.getAllByText('(20%)')).toHaveLength(3);
   });
 });
