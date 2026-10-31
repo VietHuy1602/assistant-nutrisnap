@@ -52,7 +52,7 @@ export const BasicDashboard: React.FC = () => {
   } = useDailyDashboard();
 
   const dateLabel = selectedDate === toLocalISODate() ? 'Hôm nay' : `Ngày ${formatVNDate(selectedDate)}`;
-  const dateControls = <div className="mx-auto w-full max-w-5xl py-4"><DateNavigator currentDate={selectedDate} onDateChange={setSelectedDate} /></div>;
+  const dateControls = <div className="mx-auto w-full max-w-4xl pb-2"><DateNavigator currentDate={selectedDate} onDateChange={setSelectedDate} /></div>;
 
   const requestDeleteMeal = (mealId: number) => {
     if (deletionInFlight.current) return;
@@ -144,11 +144,11 @@ export const BasicDashboard: React.FC = () => {
   const hasMeals = meals.length > 0;
 
   return (
-    <>{deletionFeedback}{dateControls}<div className={`${styles.dashboard} w-full max-w-4xl mx-auto px-0 py-4 sm:py-8 flex flex-col gap-6`}>
+    <>{deletionFeedback}{dateControls}<div className={`${styles.dashboard} w-full max-w-4xl mx-auto px-0 pt-2 pb-4 flex flex-col gap-4 sm:gap-5`}>
       {/* Header chào mừng & Bộ điều hướng ngày */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 ref={headingRef} tabIndex={-1} className="text-3xl sm:text-4xl font-semibold text-slate-900 focus:outline-none">
+          <h1 ref={headingRef} tabIndex={-1} className="break-words text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 focus:outline-none">
             Chào {user?.username || 'bạn'} 👋
           </h1>
           <p className="text-sm leading-6 text-nutri-muted mt-1">
@@ -187,7 +187,7 @@ export const BasicDashboard: React.FC = () => {
       </div>
 
       {/* Danh sách các bữa ăn trong ngày */}
-      <div className="mt-2">
+      <div>
         {hasMeals ? (
           <MealTimeline meals={meals} onDeleteMeal={requestDeleteMeal} />
         ) : (
@@ -196,9 +196,9 @@ export const BasicDashboard: React.FC = () => {
       </div>
 
       {/* Footer Disclaimer minh bạch y khoa (Guardrail M3, M4) */}
-      <div className="mt-4 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-nutri-muted">
-        <DisclaimerBadge />
-        <span className="italic max-w-md text-right sm:text-right text-left">
+      <div className="pt-3 border-t border-slate-200/80 flex flex-col gap-2 text-sm leading-6 text-nutri-muted">
+        <DisclaimerBadge className="!bg-transparent !border-0 !px-0 !text-sm !leading-6 !text-nutri-muted" />
+        <span className="max-w-prose">
           {DISCLAIMER_RECOGNITION}
         </span>
       </div>

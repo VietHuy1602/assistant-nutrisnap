@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Spinner } from './Spinner';
+import { BrandedStartup } from './BrandedStartup';
 import { ConnectionErrorScreen } from './ConnectionErrorScreen';
 import { useDelayedFlag } from '../hooks/useDelayedFlag';
 
@@ -14,15 +14,7 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
   const showSpinner = useDelayedFlag(status === 'loading', 150);
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-3" aria-busy="true">
-        {showSpinner ? (
-          <Spinner size="lg" label="Đang kiểm tra phiên đăng nhập..." />
-        ) : (
-          <span className="sr-only">Đang kiểm tra phiên đăng nhập...</span>
-        )}
-      </div>
-    );
+    return <BrandedStartup announce={showSpinner} />;
   }
 
   if (status === 'unreachable') {

@@ -28,10 +28,10 @@ function AppShellInner() {
         <Navbar onOpenChat={openChat} />
         <DraftBanner />
 
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
+        <main className={`flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] lg:pb-8 ${location.pathname === '/' ? 'pt-4' : 'pt-8'}`}>
           {/* Banner gợi ý thiết lập mục tiêu nếu chưa có */}
           {!hasGoal && location.pathname === '/' && (
-            <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm leading-6 text-amber-900 shadow-xs">
+            <div className="mb-4 p-3 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm leading-6 text-amber-900 shadow-xs">
               <div className="flex items-center gap-2.5">
                 <Sparkles className="w-5 h-5 text-amber-600 shrink-0" />
                 <span>

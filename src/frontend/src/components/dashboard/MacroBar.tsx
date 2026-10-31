@@ -34,9 +34,10 @@ const SingleMacroItem: React.FC<SingleMacroItemProps> = ({
     <div className="macro-item flex flex-col gap-1.5">
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className={`font-semibold ${labelColor}`}>{label}</span>
-        <span className="text-nutri-muted font-medium tabular-nums">
-          <strong className="text-slate-800">{formatGram(detail.consumed)}</strong> / {formatGram(detail.target)}
-          <span className="ml-1 text-nutri-muted">({Math.round(percent)}%)</span>
+        <span className="macro-values text-nutri-muted font-medium tabular-nums">
+          <strong className="text-slate-800">{formatGram(detail.consumed)}</strong>
+          <span className="macro-target">/ {formatGram(detail.target)}</span>
+          <span className="macro-percent text-nutri-muted">({Math.round(percent)}%)</span>
         </span>
       </div>
 
@@ -62,7 +63,7 @@ export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '', pers
     <div className={`macro-summary p-6 bg-white rounded-3xl border border-slate-200/80 shadow-sm flex flex-col gap-4 ${className}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-          Chất đa lượng (Macronutrients)
+          Dinh dưỡng
         </h3>
         <span className="text-sm text-nutri-muted">{personalized ? 'Mục tiêu ngày' : 'Giá trị tham khảo'}</span>
       </div>
@@ -70,7 +71,7 @@ export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '', pers
       <div className="macro-grid flex flex-col gap-4">
         {/* Đạm / Protein - Màu xanh dương */}
         <SingleMacroItem
-          label="Đạm (Protein)"
+          label="Đạm"
           detail={macros.protein}
           colorClass="bg-blue-600"
           bgClass="bg-blue-100/60"
@@ -79,7 +80,7 @@ export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '', pers
 
         {/* Tinh bột / Carbs - Màu vàng hổ phách */}
         <SingleMacroItem
-          label="Tinh bột (Carbs)"
+          label="Tinh bột"
           detail={macros.carbs}
           colorClass="bg-amber-500"
           bgClass="bg-amber-100/60"
@@ -88,7 +89,7 @@ export const MacroBar: React.FC<MacroBarProps> = ({ macros, className = '', pers
 
         {/* Chất béo / Fat - Màu tím */}
         <SingleMacroItem
-          label="Chất béo (Fat)"
+          label="Chất béo"
           detail={macros.fat}
           colorClass="bg-purple-600"
           bgClass="bg-purple-100/60"

@@ -24,6 +24,7 @@ import {
 } from 'recharts';
 import { useMonthlyReport } from '../hooks/useMonthlyReport';
 import styles from '../components/report/ReportSurface.module.css';
+import { reportMonthLength } from '../utils/monthlyReport';
 import { ReportMetricCard } from '../components/report/ReportMetricCard';
 import { ReportNotice } from '../components/report/ReportNotice';
 import { ExportMenu } from '../components/report/ExportMenu';
@@ -34,6 +35,60 @@ import {
   formatMonthDisplay,
 } from '../utils/month';
 
+export function MonthlyEnergyChart({ chartData, monthKey }: {
+  chartData: { day: number; date: string; calories: number | null | undefined }[];
+  monthKey: string;
+}) {
+  // Calendar ticks are axis presentation only; nutrition records remain untouched.
+  const calendarDays = Array.from({ length: reportMonthLength(monthKey) }, (_, index) => index + 1);
+  return (
+<div className="report-chart bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
+              <h2 className="text-sm font-bold text-slate-800">
+                Xu hướng Năng lượng các ngày trong tháng (kcal)
+              </h2>
+              <p className="text-xs text-slate-400">
+                Chỉ hiển thị ngày đã ghi nhận bữa ăn. Ngày thiếu dữ liệu không được ước tính thêm.
+              </p>
+              <p className="text-sm leading-6 text-nutri-muted">Mỗi mốc N là một ngày trong tháng. Cuộn ngang nếu cần để xem đủ các ngày.</p>
+              <div role="region" aria-label="Biểu đồ năng lượng theo ngày, có thể cuộn ngang" tabIndex={0}
+                className="w-full min-w-0 max-w-full overflow-x-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
+              <div className="h-64 w-full pt-4" style={{ minWidth: calendarDays.length * 32 + 72 }} aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="day"
+                      type="number"
+                      domain={[1, calendarDays.length]}
+                      ticks={calendarDays}
+                      interval={0}
+                      tickMargin={10}
+                      height={36}
+                      tickFormatter={(val) => `N${val}`}
+                      stroke="#475569"
+                      fontSize={13}
+                    />
+                    <YAxis stroke="#475569" fontSize={13} width={52} />
+                    <Tooltip
+                      formatter={(val: number) => [`${val} kcal`, 'Năng lượng']}
+                      labelFormatter={(label) => `Ngày ${label}/${monthKey.slice(5)}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="calories"
+                      stroke="#107C41"
+                      strokeWidth={2.5}
+                      dot={{ r: 3, fill: '#107C41' }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              </div>
+            </div>
+  );
+}
+
 export const MonthlyReportPage: React.FC = () => {
   const currentKey = currentMonthKey();
   const { report, loadState, errorMessage, monthKey, setMonthKey, refetch, isFuture } =
@@ -42,6 +97,7 @@ export const MonthlyReportPage: React.FC = () => {
   const prevMonthKey = shiftMonthKey(monthKey, -1);
   const nextMonthKey = shiftMonthKey(monthKey, 1);
   const canGoNext = !isFutureMonth(nextMonthKey, currentKey);
+
 
   const chartData = (report?.days || [])
     .filter((d) => d.state === 'available' && typeof d.calories === 'number')
@@ -216,40 +272,7 @@ export const MonthlyReportPage: React.FC = () => {
 
           {/* Daily Trend Chart */}
           {chartData.length > 0 && (
-            <div className="report-chart bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-              <h2 className="text-sm font-bold text-slate-800">
-                Xu hướng Năng lượng các ngày trong tháng (kcal)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Chỉ hiển thị ngày đã ghi nhận bữa ăn. Ngày thiếu dữ liệu không được ước tính thêm.
-              </p>
-              <div className="h-64 w-full pt-4 min-w-0" aria-hidden="true">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="day"
-                      tickFormatter={(val) => `N${val}`}
-                      stroke="#475569"
-                      fontSize={13}
-                    />
-                    <YAxis stroke="#475569" fontSize={13} width={52} />
-                    <Tooltip
-                      formatter={(val: number) => [`${val} kcal`, 'Năng lượng']}
-                      labelFormatter={(label) => `Ngày ${label}/${monthKey.slice(5)}`}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="calories"
-                      stroke="#107C41"
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: '#107C41' }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            <MonthlyEnergyChart chartData={chartData} monthKey={monthKey} />
           )}
 
           {/* 3 Fixed Transparent Notices */}

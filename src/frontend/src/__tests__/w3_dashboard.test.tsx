@@ -133,9 +133,9 @@ describe('W3 Dashboard — BasicDashboard Component', () => {
     // 3 thanh tiến độ Macro
     const progressBars = screen.getAllByRole('progressbar');
     expect(progressBars).toHaveLength(3);
-    expect(screen.getByText('Đạm (Protein)')).toBeInTheDocument();
-    expect(screen.getByText('Tinh bột (Carbs)')).toBeInTheDocument();
-    expect(screen.getByText('Chất béo (Fat)')).toBeInTheDocument();
+    expect(screen.getByText('Đạm', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('Tinh bột', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getByText('Chất béo', { selector: 'span' })).toBeInTheDocument();
   });
 
   it('6. Hiển thị màu trung tính hổ phách khi nạp vượt hạn mức (không dùng màu đỏ báo động)', async () => {

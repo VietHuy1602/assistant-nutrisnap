@@ -9,7 +9,6 @@ import { FoodSearchCombobox } from './FoodSearchCombobox';
 import { useMealPreview } from '../../hooks/useMealPreview';
 import { getMealTypeLabel } from '../../constants/copy';
 import type { FoodReferenceItem } from '../../types/api';
-import { VoiceNotePanel } from '../voice/VoiceNotePanel';
 
 interface MealReviewListProps {
   state: MealDraftState;
@@ -180,30 +179,6 @@ export const MealReviewList: React.FC<MealReviewListProps> = ({
         onConfirmSave={onConfirmSave}
         onCancel={onCancel}
       />
-
-      {/* Ghi chú gia vị & Chế biến bằng giọng nói */}
-      <details className="rounded-xl border border-nutri-border bg-nutri-panel p-3">
-        <summary className="min-h-12 cursor-pointer rounded-lg py-3 text-sm font-semibold text-nutri-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">Ghi chú gia vị (tùy chọn)</summary>
-      <VoiceNotePanel
-        initialNote={state.voiceNote ?? ''}
-        currentItems={state.items.map((it) => ({
-          food_id: it.food_id,
-          food_name: it.food_name,
-          estimated_gram: it.estimated_gram,
-        }))}
-        onApply={(result) => {
-          dispatch({
-            type: 'APPLY_VOICE_RESULT',
-            note: result.note,
-            adjustedItems: result.adjustedItems,
-          });
-        }}
-        onUndo={() => {
-          dispatch({ type: 'UNDO_VOICE' });
-        }}
-      />
-      </details>
-
     </div>
   );
 };
