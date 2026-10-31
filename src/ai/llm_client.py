@@ -40,11 +40,31 @@ def record_llm_error(code: str, msg: str) -> None:
     _last_error_at = datetime.now(UTC).isoformat()
 
 
+# Kết quả lần chat gần nhất: health check chỉ "ping" được Gemini, còn đây là trạng thái thật
+# của câu trả lời người dùng vừa nhận (llm hay chế độ cơ bản).
+_last_chat_fell_back = False
+
+
+def record_chat_outcome(used_llm: bool, reason: str = "") -> None:
+    """Ghi nhận lần chat gần nhất có được AI trả lời thật hay phải dùng chế độ cơ bản."""
+    global _last_chat_fell_back, _last_error_code, _last_error_msg, _last_error_at
+    _last_chat_fell_back = not used_llm
+    if used_llm:
+        _last_error_code = None
+        _last_error_msg = None
+        _last_error_at = None
+    else:
+        record_llm_error("CHAT_FALLBACK", reason or "Gemini không trả lời được, đã dùng chế độ cơ bản.")
+
+
 def get_llm_status() -> dict[str, Any]:
     """Lấy trạng thái vận hành của LLM cho endpoint health check (trung thực, có cache 60s)."""
     health = check_gemini_live_health()
     configured = health.get("configured", False)
     status_val = health.get("status", "fallback")
+    # Ping thành công nhưng câu chat vừa rồi vẫn rơi về chế độ cơ bản: báo đúng cho giao diện
+    if status_val == "online" and _last_chat_fell_back:
+        status_val = "fallback"
     return {
         "status": status_val,
         "mode": status_val,

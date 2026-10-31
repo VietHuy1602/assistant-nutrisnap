@@ -10,6 +10,14 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///nutrisnap.db")
 import pytest
 from sqlmodel import Session, select
 
+import src.ai.config  # noqa: F401  (nạp .env trước, để phần dưới có thể ghi đè)
+
+# Bộ test chạy tất định, không gọi Gemini thật dù máy dev có GEMINI_API_KEY trong .env.
+# Muốn chạy cả test gọi API thật: đặt NUTRISNAP_LIVE_LLM_TESTS=1.
+if os.getenv("NUTRISNAP_LIVE_LLM_TESTS") != "1":
+    os.environ["GEMINI_API_KEY"] = ""
+    os.environ.pop("GOOGLE_API_KEY", None)
+
 from src.backend.models.database import engine, init_db
 from src.backend.models.schema import FoodReference
 
@@ -39,3 +47,13 @@ def reset_rate_limit_before_test():
     reset_rate_limiter()
 
 
+
+
+@pytest.fixture(autouse=True)
+def clear_vision_cache():
+    """Mỗi test nhận diện ảnh bắt đầu với bộ nhớ đệm kết quả Vision trống."""
+    from src.ai.vision_recognition import _VISION_CACHE
+
+    _VISION_CACHE.clear()
+    yield
+    _VISION_CACHE.clear()

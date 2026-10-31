@@ -69,6 +69,7 @@ export const recognizedFoodItemSchema = z.object({
   carbs_g: z.number().default(0),
   fat_g: z.number().default(0),
   confidence: z.number().default(1),
+  nutrition_source: z.enum(['database', 'usda', 'ai_estimate']).nullable().optional(),
 });
 
 export const recognizeFoodResponseSchema = z.object({
@@ -79,6 +80,7 @@ export const recognizeFoodResponseSchema = z.object({
   total_estimated_calories: z.number().default(0),
   is_fallback: z.boolean().default(false),
   message: z.string().default(''),
+  reason: z.enum(['not_food', 'unclear', 'service_error']).nullable().optional(),
   disclaimer: z.string().default(''),
 });
 

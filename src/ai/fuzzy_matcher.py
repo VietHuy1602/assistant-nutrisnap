@@ -224,6 +224,11 @@ class FuzzyFoodMatcher:
     def catalog_size(self) -> int:
         return len(self._catalog)
 
+    def register_food(self, food: dict[str, Any]) -> None:
+        """Thêm một món mới (ví dụ món do AI ước tính vừa lưu vào CSDL) vào bộ nhớ đệm để lần sau khớp ngay."""
+        if not any(item["id"] == food["id"] for item in self._catalog):
+            self._catalog.append(food)
+
     def match_dish(self, dish_name: str, threshold: float = 0.5) -> MatchedFood:
         """
         Tìm món ăn khớp nhất trong danh mục cho tên món đầu vào.

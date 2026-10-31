@@ -276,8 +276,28 @@ def test_recognize_food_fallback_when_api_exception():
         data = response.json()
         assert data["success"] is True
         assert data["is_fallback"] is True
-        assert len(data["detected_items"]) >= 2
-        assert data["total_estimated_calories"] > 0
+        # Không hiển thị món mẫu giả: báo lỗi dịch vụ để người dùng thử lại/chọn thủ công
+        assert data["status"] == "unrecognized"
+        assert data["reason"] == "service_error"
+        assert data["detected_items"] == []
+
+
+def test_recognize_food_rejects_non_food_image():
+    """Ảnh không phải món ăn trả về reason='not_food' kèm thông báo chụp lại."""
+    with patch(
+        "src.backend.services.food_recognition.recognize_dishes_from_image",
+        return_value=VisionRecognitionResult(dishes=[], is_food=False, not_food_reason="Ảnh chụp bàn phím"),
+    ):
+        response = client.post(
+            "/api/v1/ai/recognize-food",
+            files={"file": ("keyboard.jpg", SAMPLE_JPEG_BYTES, "image/jpeg")},
+        )
+    data = response.json()
+    assert response.status_code == 200
+    assert data["status"] == "unrecognized"
+    assert data["reason"] == "not_food"
+    assert "không phải là món ăn" in data["message"]
+    assert data["detected_items"] == []
 
 
 def test_recognize_food_fallback_when_no_image_provided():
@@ -286,7 +306,8 @@ def test_recognize_food_fallback_when_no_image_provided():
     assert response.status_code == 200
     data = response.json()
     assert data["success"] is True
-    assert data["is_fallback"] is True
+    assert data["status"] == "unrecognized"
+    assert data["detected_items"] == []
 
 
 # ==============================================================================
@@ -358,3 +379,98 @@ def test_end_to_end_poc_flow():
     assert log_data["success"] is True
     assert log_data["meal_id"] > 0
     assert log_data["total_calories"] == 460.0
+
+
+def test_unknown_global_dish_uses_ai_nutrition_and_is_saved_to_catalog():
+    """Món nước ngoài chưa có trong CSDL: dùng dinh dưỡng AI ước tính, thêm vào food_references để lưu được."""
+    import uuid
+
+    from sqlmodel import Session, select
+
+    from src.backend.models.database import engine
+    from src.backend.models.schema import FoodReference
+
+    dish_name = f"Zqxw {uuid.uuid4().hex}"  # tên ngẫu nhiên, không khớp món nào trong CSDL
+    vision = VisionRecognitionResult(
+        dishes=[
+            DishItem(
+                dish_name=dish_name,
+                estimated_weight_gram=200.0,
+                confidence_score=0.9,
+                calories_per_100g=150.0,
+                protein_per_100g=8.0,
+                carbs_per_100g=25.0,
+                fat_per_100g=2.0,
+            )
+        ],
+        is_mock=False,
+    )
+    with patch("src.backend.services.food_recognition.recognize_dishes_from_image", return_value=vision):
+        response = client.post(
+            "/api/v1/ai/recognize-food",
+            files={"file": ("sushi.jpg", SAMPLE_JPEG_BYTES, "image/jpeg")},
+        )
+    item = response.json()["detected_items"][0]
+    assert item["nutrition_source"] == "ai_estimate"
+    assert item["food_id"] is not None
+    assert item["estimated_calories"] == 300.0
+    assert item["protein_g"] == 16.0
+
+    with Session(engine) as session:
+        ref = session.exec(select(FoodReference).where(FoodReference.food_name == dish_name)).first()
+        assert ref is not None and ref.id == item["food_id"]
+        session.delete(ref)
+        session.commit()
+
+
+def test_foreign_dish_uses_usda_nutrition_by_english_name():
+    """Món nước ngoài không có trong CSDL món Việt: lấy dinh dưỡng chuẩn USDA theo tên tiếng Anh."""
+    import uuid
+
+    from sqlmodel import Session, select
+
+    from src.ai.usda_matcher import usda_matcher
+    from src.backend.models.database import engine, init_db
+    from src.backend.models.schema import FoodReference, UsdaFood
+
+    init_db()
+    fdc_id = 990000000 + uuid.uuid4().int % 1000000
+    with Session(engine) as session:
+        session.add(
+            UsdaFood(
+                fdc_id=fdc_id, description="Qwzt pie, blueberry", source="fndds",
+                calories_per_100g=250.0, protein_per_100g=3.0, carbs_per_100g=35.0, fat_per_100g=11.0,
+            )
+        )
+        session.commit()
+    usda_matcher.reload()
+
+    dish_name = f"Bánh Qwzt việt quất {uuid.uuid4().hex[:6]}"
+    vision = VisionRecognitionResult(
+        dishes=[
+            DishItem(
+                dish_name=dish_name, name_en="Qwzt pie, blueberry", estimated_weight_gram=120.0,
+                confidence_score=0.9, calories_per_100g=900.0, protein_per_100g=1.0,
+            )
+        ],
+    )
+    try:
+        with patch("src.backend.services.food_recognition.recognize_dishes_from_image", return_value=vision):
+            response = client.post(
+                "/api/v1/ai/recognize-food",
+                files={"file": ("pie.jpg", SAMPLE_JPEG_BYTES, "image/jpeg")},
+            )
+        item = response.json()["detected_items"][0]
+        # Dùng số USDA (250 kcal/100g), không dùng số AI ước tính (900)
+        assert item["nutrition_source"] == "usda"
+        assert item["estimated_calories"] == 300.0
+        assert item["food_id"] is not None
+    finally:
+        with Session(engine) as session:
+            for obj in session.exec(select(FoodReference).where(FoodReference.food_name == dish_name)).all():
+                session.delete(obj)
+            obj = session.get(UsdaFood, fdc_id)
+            if obj:
+                session.delete(obj)
+            session.commit()
+        usda_matcher.reload()

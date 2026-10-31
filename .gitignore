@@ -256,3 +256,6 @@ Thumbs.db
 
 # Local draft guides
 docs/readmew*.md
+
+# Dữ liệu USDA FoodData Central tải về (nạp bằng scripts/import_usda.py)
+data/usda/**/*.zip

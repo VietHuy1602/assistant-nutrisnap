@@ -42,6 +42,9 @@ from src.backend.models.schema import (
 )
 from src.backend.schemas.assistant_tools import (
     GetDailyNutritionArgs,
+    GetEatingPatternsArgs,
+    GetHabitSummaryArgs,
+    GetMonthlyReportArgs,
     GetProgressSummaryArgs,
     GetUserProfileArgs,
     LogMealLLMArgs,
@@ -1145,6 +1148,9 @@ TOOL_REGISTRY: frozenset[str] = frozenset({
     "search_foods",
     "suggest_swap",
     "suggest_food_swap",
+    "get_habit_summary",
+    "get_monthly_report",
+    "get_eating_patterns",
 })
 
 
@@ -1211,6 +1217,12 @@ def dispatch_tool_call(
             GetUserProfileArgs.model_validate(safe_args)
         elif clean_name in ("suggest_swap", "suggest_food_swap"):
             SuggestFoodSwapArgs.model_validate(safe_args)
+        elif clean_name == "get_habit_summary":
+            GetHabitSummaryArgs.model_validate(safe_args)
+        elif clean_name == "get_monthly_report":
+            GetMonthlyReportArgs.model_validate(safe_args)
+        elif clean_name == "get_eating_patterns":
+            GetEatingPatternsArgs.model_validate(safe_args)
     except ValidationError as val_err:
         logger.warning(
             "Cảnh báo an ninh: Tham số không hợp lệ cho tool '%s' bởi user_id=%s (caller=%s): %s",
@@ -1380,6 +1392,39 @@ def dispatch_tool_call(
             session=session,
             food_name=str(fname),
             goal=goal_val,
+        )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
+
+    if clean_name == "get_habit_summary":
+        from src.backend.services.habit_service import get_habit_tracker_summary
+
+        res = get_habit_tracker_summary(session=session, authenticated_user_id=ctx.authenticated_user_id)
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
+
+    if clean_name == "get_monthly_report":
+        from src.backend.services.habit_service import generate_monthly_report
+
+        args = GetMonthlyReportArgs.model_validate(safe_args)
+        res = generate_monthly_report(
+            session=session,
+            authenticated_user_id=ctx.authenticated_user_id,
+            year=args.year,
+            month=args.month,
+            days=args.days,
+        )
+        log_tool_audit(ctx, clean_name, "ok")
+        return res
+
+    if clean_name == "get_eating_patterns":
+        from src.backend.services.analytics_service import analyze_user_patterns
+
+        args = GetEatingPatternsArgs.model_validate(safe_args)
+        res = analyze_user_patterns(
+            session=session,
+            authenticated_user_id=ctx.authenticated_user_id,
+            days_range=args.days_range,
         )
         log_tool_audit(ctx, clean_name, "ok")
         return res

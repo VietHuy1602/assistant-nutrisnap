@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { WeightTrendChart } from '../components/analytics/WeightTrendChart';
 import { WeeklyCaloriesChart } from '../components/analytics/WeeklyCaloriesChart';
 import { ChartDataTable } from '../components/analytics/ChartDataTable';
@@ -101,8 +101,28 @@ describe('WeeklyCaloriesChart', () => {
     expect(screen.getByText(/Chưa có số liệu tổng hợp theo tuần/i)).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute(
       'aria-label',
-      expect.stringContaining('Biểu đồ cột calo từng ngày cho 2 ngày')
+      expect.stringContaining('Biểu đồ tròn calo từng ngày cho 2 ngày')
     );
+  });
+
+  it('renders a multi-color pie legend with backend kcal values and the target', () => {
+    const data: NormalizedCalorieBars = {
+      bars: [
+        { dateKey: '2026-10-20', label: '20/10', calories: 1950, daysLogged: 1 },
+        { dateKey: '2026-10-21', label: '21/10', calories: 2100, daysLogged: 1 },
+      ],
+      targetCalories: 2000,
+      mode: 'dailyFallback',
+      warnings: [],
+    };
+    render(<WeeklyCaloriesChart data={data} />);
+    const legend = screen.getByRole('list', { name: 'Chú thích năng lượng theo kỳ' });
+    expect(legend).toHaveTextContent('20/10');
+    expect(legend).toHaveTextContent('1.950 kcal');
+    expect(legend).toHaveTextContent('2.100 kcal');
+    const swatches = legend.querySelectorAll('span[aria-hidden="true"]');
+    expect((swatches[0] as HTMLElement).style.backgroundColor).not.toBe((swatches[1] as HTMLElement).style.backgroundColor);
+    expect(screen.getByText(/Hạn mức mục tiêu/)).toHaveTextContent('2.000 kcal');
   });
 
   it('renders weekly chart without daily fallback disclaimer in weekly mode', () => {
@@ -140,7 +160,8 @@ describe('ChartDataTable', () => {
       { date: '2026-10-20', weight_kg: 65.5, ema_weight: 65.4 },
     ];
     render(<ChartDataTable type="weight" points={points} masked={true} />);
-    const maskedCells = screen.getAllByText('•••');
+    // Chỉ đếm trong bảng: Recharts giữ một span đo chữ ẩn (#recharts_measurement_span) trong body
+    const maskedCells = within(screen.getByRole('table')).getAllByText('•••');
     expect(maskedCells.length).toBe(2);
   });
 

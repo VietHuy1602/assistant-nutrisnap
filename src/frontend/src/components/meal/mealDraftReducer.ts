@@ -14,6 +14,7 @@ export interface DraftMealItem {
   confidence?: number;
   source: 'ai' | 'manual' | 'voice';
   matched_name?: string | null;
+  nutrition_source?: 'database' | 'usda' | 'ai_estimate' | null;
 }
 
 export interface DeletedItemInfo {
@@ -79,6 +80,7 @@ export function mealDraftReducer(state: MealDraftState, action: MealDraftAction)
         confidence: rec.confidence,
         source: 'ai',
         matched_name: rec.matched_name,
+        nutrition_source: rec.nutrition_source,
       }));
 
       return {
@@ -114,6 +116,7 @@ export function mealDraftReducer(state: MealDraftState, action: MealDraftAction)
                 matched_name: action.food.food_name,
                 confidence: 1.0,
                 source: 'manual',
+                nutrition_source: null,
               }
             : item,
         ),

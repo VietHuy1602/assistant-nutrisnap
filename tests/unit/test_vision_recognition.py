@@ -313,10 +313,12 @@ def test_get_gemini_vision_model_rejects_missing_key():
 
 
 def test_get_gemini_vision_model_accepts_valid_key():
-    """Kiểm tra khởi tạo GenerativeModel thành công khi có API Key."""
-    model = get_gemini_vision_model(api_key="AIzaSyDummyKeyForTestingPurposes12345")
+    """Kiểm tra khởi tạo client Vision thành công khi có API Key, dùng model còn hoạt động."""
+    with patch.dict("os.environ", {"GEMINI_VISION_MODEL": ""}):
+        model = get_gemini_vision_model(api_key="AIzaSyDummyKeyForTestingPurposes12345")
     assert model is not None
-    assert model.model_name == "models/gemini-1.5-flash"
+    assert model.model_name == "gemini-flash-lite-latest"
+    assert "gemini-1.5-flash" not in model.candidate_models
 
 
 # ==============================================================================
@@ -393,8 +395,8 @@ def test_recognize_dishes_successful_api_call():
         mock_gemini_model.generate_content.assert_called_once()
 
 
-def test_recognize_dishes_api_failure_triggers_fallback():
-    """Kiểm tra khi Vision API bị sự cố (timeout/mạng), tự động fallback sang kết quả mẫu."""
+def test_recognize_dishes_api_failure_raises_instead_of_fake_dishes():
+    """Khi đã có API key mà Vision API sự cố, không được trả món mẫu giả: ném APIConnectionError."""
     sample_bytes = b"\xff\xd8\xff\xe0sample_image_data"
     mock_gemini_model = MagicMock()
     mock_gemini_model.generate_content.side_effect = RuntimeError(
@@ -405,10 +407,19 @@ def test_recognize_dishes_api_failure_triggers_fallback():
         "src.ai.vision_recognition.get_gemini_vision_model",
         return_value=mock_gemini_model,
     ):
-        result = recognize_dishes_from_image(
-            image_input=sample_bytes,
-            api_key="valid_dummy_key",
-            use_mock_fallback=True,
-        )
-        assert result.is_mock is True
-        assert len(result.dishes) > 0
+        with pytest.raises(APIConnectionError):
+            recognize_dishes_from_image(
+                image_input=sample_bytes,
+                api_key="valid_dummy_key",
+                use_mock_fallback=True,
+            )
+
+
+def test_parse_not_food_json():
+    """Ảnh không phải món ăn: is_food=False, không có món nào."""
+    result = parse_and_validate_vision_json(
+        json.dumps({"is_food": False, "not_food_reason": "Ảnh chụp bàn phím", "dishes": []})
+    )
+    assert result.is_food is False
+    assert result.dishes == []
+    assert result.not_food_reason == "Ảnh chụp bàn phím"

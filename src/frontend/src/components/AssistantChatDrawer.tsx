@@ -39,7 +39,8 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
         else setAiMode('fallback');
       })
       .catch(() => setAiMode('fallback'));
-  }, [isOpen]);
+    // Kiểm tra lại sau mỗi tin nhắn: backend báo "fallback" nếu câu vừa rồi phải dùng chế độ cơ bản
+  }, [isOpen, chat.state.messages.length]);
 
   useEffect(() => {
     if (!isOpen) return;

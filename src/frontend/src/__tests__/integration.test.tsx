@@ -23,6 +23,7 @@ import { AuthResponse, GoalData } from '../types/api';
 import { ApiError } from '../utils/apiError';
 import { AppShell } from '../layouts/AppShell';
 import { DashboardPage } from '../pages/DashboardPage';
+import { DEFAULT_PROMPTS } from '../chat/components/QuickSuggestions';
 
 vi.mock('../api/authApi');
 vi.mock('../api/goalApi');
@@ -545,7 +546,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     expect(screen.getByRole('dialog', { name: 'Trợ lý AI NutriSnap' })).toHaveAttribute('aria-modal', 'true');
     const close = screen.getByRole('button', { name: 'Đóng trợ lý' });
     expect(screen.getByRole('textbox')).toHaveFocus();
-    for (let index = 0; index < 4; index++) await user.tab({ shift: true });
+    for (let index = 0; index <= DEFAULT_PROMPTS.length; index++) await user.tab({ shift: true });
     expect(close).toHaveFocus();
     expect(document.querySelector('[inert]')).not.toBeNull();
     await user.tab({ shift: true });
@@ -590,7 +591,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     await screen.findByRole('button', { name: 'Mở trợ lý AI' });
     await waitFor(() => expect(getSpy).toHaveBeenCalledTimes(1));
     await user.click(screen.getByRole('button', { name: 'Mở trợ lý AI' }));
-    await user.click(screen.getByRole('button', { name: '🍲 Ghi nhận phở bò' }));
+    await user.click(screen.getByRole('button', { name: '🍜 Ghi nhận bữa ăn' }));
     const confirm = await screen.findByRole('button', { name: /^Xác nhận lưu/ });
     if (outcome === 'cancel') {
       await user.click(screen.getByRole('button', { name: 'Hủy' }));

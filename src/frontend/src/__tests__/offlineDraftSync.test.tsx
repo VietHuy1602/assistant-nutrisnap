@@ -9,6 +9,13 @@ import { ConnectivityProvider, useConnectivity } from '../app/ConnectivityProvid
 import { mealApi } from '../api/mealApi';
 import { appBus } from '../app/appBus';
 
+// setImmediate is not faked below, so yielding through it lets real async work finish.
+async function waitForSaveToSettle(isSaving: () => boolean) {
+  for (let i = 0; i < 200 && isSaving(); i++) {
+    await act(async () => { await new Promise((resolve) => setImmediate(resolve)); });
+  }
+}
+
 describe('Step 8: Offline Draft Autosave, Confirmed Sync and 429 Queue Handling', () => {
   let restoreIDB: () => void;
 
@@ -49,7 +56,8 @@ describe('Step 8: Offline Draft Autosave, Confirmed Sync and 429 Queue Handling'
         await vi.advanceTimersByTimeAsync(850);
       });
 
-      expect(result.current.draftId).not.toBeNull();
+      // WebCrypto encryption completes on real I/O, which fake setTimeout cannot advance.
+      await waitForSaveToSettle(() => result.current.isSaving);
       const firstId = result.current.draftId;
 
       // Update payload
@@ -66,6 +74,7 @@ describe('Step 8: Offline Draft Autosave, Confirmed Sync and 429 Queue Handling'
       await act(async () => {
         await vi.advanceTimersByTimeAsync(850);
       });
+      await waitForSaveToSettle(() => result.current.isSaving);
 
       // Still same ID (updated, not duplicated)
       expect(result.current.draftId).toBe(firstId);

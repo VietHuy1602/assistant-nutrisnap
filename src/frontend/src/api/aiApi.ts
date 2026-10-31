@@ -28,8 +28,12 @@ export const aiApi = {
       formData,
       {
         signal,
-        timeout: 15_000,
-        // Để trình duyệt / axios tự gán multipart boundary, không gán cứng Content-Type
+        // Nhận diện ảnh có thể phải thử model dự phòng khi Gemini quá tải
+        timeout: 45_000,
+        // Bắt buộc ghi đè header mặc định 'application/json' của apiClient: nếu giữ nguyên, axios sẽ
+        // chuyển FormData thành JSON và làm mất ảnh. Với 'multipart/form-data', axios/trình duyệt
+        // tự gắn boundary đúng.
+        headers: { 'Content-Type': 'multipart/form-data' },
       },
     );
 

@@ -243,6 +243,41 @@ describe('W3 Orchestrator — MealCaptureFlow (State Machine & Fallbacks)', () =
     expect(screen.getByRole('button', { name: /Chọn món thủ công từ CSDL/ })).toBeInTheDocument();
   });
 
+  it('8b. Ảnh không phải món ăn: báo lỗi và quay lại màn chụp/tải ảnh', async () => {
+    vi.mocked(aiApi.recognizeFood).mockResolvedValueOnce({
+      success: true,
+      status: 'unrecognized',
+      reason: 'not_food',
+      meal_type: 'lunch',
+      detected_items: [],
+      total_estimated_calories: 0,
+      message: 'Đây không phải là món ăn, xin vui lòng chụp lại.',
+    });
+
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <MealCaptureFlow />
+      </MemoryRouter>,
+    );
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await user.upload(fileInput, new File(['fake-img'], 'keyboard.jpg', { type: 'image/jpeg' }));
+    await user.click(await screen.findByRole('button', { name: /Nhận diện món ăn/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Đây không phải là món ăn, xin vui lòng chụp lại');
+    // Đã quay lại màn chụp/tải ảnh, không mở màn xem lại món
+    expect(screen.getByRole('heading', { name: /Tải ảnh đĩa ăn/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Bật Camera/ })).toBeInTheDocument();
+
+    // Chọn ảnh mới thì thông báo biến mất
+    await user.upload(
+      document.querySelector('input[type="file"]') as HTMLInputElement,
+      new File(['fake-img'], 'pho.jpg', { type: 'image/jpeg' }),
+    );
+    expect(screen.queryByText(/Đây không phải là món ăn/)).not.toBeInTheDocument();
+  });
+
   it('9. Cho phép chuyển sang nhập món thủ công khi nhận diện thất bại', async () => {
     vi.mocked(aiApi.recognizeFood).mockRejectedValueOnce(new Error('AI Server Down'));
     const user = userEvent.setup();

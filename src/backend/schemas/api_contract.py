@@ -284,6 +284,10 @@ class RecognizedFoodItem(BaseModel):
     carbs_g: float = Field(default=0.0, description="Tinh bột ước tính (g)")
     fat_g: float = Field(default=0.0, description="Chất béo ước tính (g)")
     confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Độ tự tin của AI Vision")
+    nutrition_source: Literal["database", "usda", "ai_estimate"] | None = Field(
+        default=None,
+        description="Nguồn số liệu dinh dưỡng: CSDL món Việt, bảng chuẩn USDA, hoặc AI ước tính",
+    )
 
 
 class RecognizeFoodRequest(BaseModel):
@@ -312,6 +316,10 @@ class RecognizeFoodResponse(BaseModel):
         description="Cờ báo hiệu kết quả từ cơ chế Fallback khi gặp sự cố API/mạng"
     )
     message: str = Field(default="Nhận diện món ăn thành công.", description="Thông báo phản hồi")
+    reason: Literal["not_food", "unclear", "service_error"] | None = Field(
+        default=None,
+        description="Lý do khi status='unrecognized': ảnh không phải món ăn, ảnh chưa rõ, hoặc dịch vụ AI lỗi",
+    )
     disclaimer: str = Field(
         default=RESPONSIBLE_NUTRITION_DISCLAIMER,
         description="Khuyến cáo miễn trừ trách nhiệm y khoa"

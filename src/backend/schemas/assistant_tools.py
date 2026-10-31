@@ -96,6 +96,27 @@ class GetUserProfileArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class GetHabitSummaryArgs(BaseModel):
+    """Tham số công cụ get_habit_summary (không cần tham số)."""
+    model_config = ConfigDict(extra="forbid")
+
+
+class GetMonthlyReportArgs(BaseModel):
+    """Tham số công cụ get_monthly_report."""
+    year: int | None = Field(default=None, ge=2000, le=2100)
+    month: int | None = Field(default=None, ge=1, le=12)
+    days: int = Field(default=30, ge=7, le=90, description="Số ngày gần nhất khi không chọn tháng cụ thể")
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class GetEatingPatternsArgs(BaseModel):
+    """Tham số công cụ get_eating_patterns."""
+    days_range: int = Field(default=14, ge=7, le=30)
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class SuggestFoodSwapArgs(BaseModel):
     """Tham số công cụ suggest_food_swap."""
     food_name: str = Field(..., min_length=1, description="Tên món ăn muốn thay thế")

@@ -90,6 +90,22 @@ class FoodReference(SQLModel, table=True):
     serving_label: str = Field(default="100g", nullable=False)
 
 
+# 3b. Bảng dinh dưỡng chuẩn quốc tế USDA FoodData Central (FNDDS + SR Legacy), tên tiếng Anh.
+# Chỉ dùng để tra dinh dưỡng cho món AI nhận diện được nhưng chưa có trong food_references;
+# không tham gia gợi ý món theo giá (không có giá VNĐ).
+class UsdaFood(SQLModel, table=True):
+    __tablename__ = "usda_foods"
+
+    fdc_id: int = Field(primary_key=True)
+    description: str = Field(index=True, nullable=False)
+    source: str = Field(nullable=False, description="fndds (món đã chế biến) hoặc sr_legacy (thực phẩm cơ bản)")
+    category: str = Field(default="", nullable=False)
+    calories_per_100g: float = Field(nullable=False)
+    protein_per_100g: float = Field(default=0.0, nullable=False)
+    carbs_per_100g: float = Field(default=0.0, nullable=False)
+    fat_per_100g: float = Field(default=0.0, nullable=False)
+
+
 # 4. Bảng Nhật ký Cân nặng (Khóa ngoại -> users.id, ON DELETE CASCADE)
 # Sử dụng ngày theo giờ Việt Nam (UTC+7)
 class WeightLog(SQLModel, table=True):
