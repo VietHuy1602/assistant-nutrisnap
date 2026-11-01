@@ -5,15 +5,23 @@
  */
 
 import axios, { AxiosError } from 'axios';
+import { Capacitor } from '@capacitor/core';
 import { normalizeAxiosError } from '../utils/apiError';
 
 export const UNAUTHORIZED_EVENT = 'nutrisnap:unauthorized';
 const AUTH_PROBE_PATHS = ['/auth/login', '/auth/register', '/auth/me'];
 
 const rawBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
-const normalizedBaseUrl = rawBaseUrl.endsWith('/api/v1')
-  ? rawBaseUrl
-  : `${rawBaseUrl.replace(/\/+$/, '')}/api/v1`;
+const resolvedBaseUrl =
+  typeof Capacitor !== 'undefined' &&
+  Capacitor.isNativePlatform() &&
+  (rawBaseUrl.includes('localhost') || rawBaseUrl.includes('127.0.0.1'))
+    ? rawBaseUrl.replace('localhost', '10.0.2.2').replace('127.0.0.1', '10.0.2.2')
+    : rawBaseUrl;
+
+const normalizedBaseUrl = resolvedBaseUrl.endsWith('/api/v1')
+  ? resolvedBaseUrl
+  : `${resolvedBaseUrl.replace(/\/+$/, '')}/api/v1`;
 
 export const apiClient = axios.create({
   baseURL: normalizedBaseUrl,
