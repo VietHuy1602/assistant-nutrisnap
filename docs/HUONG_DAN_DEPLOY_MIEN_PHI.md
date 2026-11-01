@@ -111,8 +111,8 @@ Thấy `✅ THÀNH CÔNG: Đã đồng bộ an toàn 504 món ăn` là Neon đã
 | `AUTH_COOKIE_SECURE` | `True` | cookie chỉ gửi qua HTTPS |
 | `AUTH_COOKIE_SAMESITE` | `none` | cho phép app Android gửi cookie tới server |
 | `CORS_ORIGINS` | `https://localhost,capacitor://localhost` | origin của app Android/iOS |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | |
-| `GEMINI_MODEL_NAME` | `gemini-2.5-flash` | |
+| `GEMINI_MODEL` | `gemini-flash-lite-latest` | |
+| `GEMINI_MODEL_NAME` | `gemini-flash-lite-latest` | |
 | `USE_LLM` | `true` | |
 | `SEED_DEMO_ACCOUNTS` | `true` | tạo 3 tài khoản demo **một lần** (đặt `false` nếu không muốn) |
 | `ADMIN_USERNAME` | *tên admin của bạn* | ví dụ `admin` |

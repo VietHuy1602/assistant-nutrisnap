@@ -33,10 +33,15 @@ services:
         value: none
       - key: CORS_ORIGINS
         value: https://localhost,capacitor://localhost
+      # Key Gemini mới không còn dùng được gemini-2.5-flash (404) → dùng bản "latest"
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-flash-lite-latest
       - key: GEMINI_MODEL_NAME
-        value: gemini-2.5-flash
+        value: gemini-flash-lite-latest
+      - key: GEMINI_TIMEOUT_SECONDS
+        value: "20"
+      - key: LLM_TIMEOUT_SECONDS
+        value: "20"
       - key: USE_LLM
         value: "true"
       # Tài khoản demo và admin_user đã có sẵn trên Neon
