@@ -86,3 +86,15 @@ def test_validate_portion_gram():
     assert validate_portion_gram(0.0)[0] is False
     assert validate_portion_gram(-10.0)[0] is False
     assert validate_portion_gram(5000.0)[0] is False
+
+
+def test_max_lose_pace_scales_with_body_weight():
+    """Giảm tối đa ~1% cân nặng/tuần, không dưới 0.75 và không quá 1.0 kg/tuần."""
+    from src.backend.services.validators import max_safe_lose_pace
+
+    assert max_safe_lose_pace(60) == 0.75
+    assert max_safe_lose_pace(90) == 0.9
+    assert max_safe_lose_pace(140) == 1.0
+    assert validate_goal_pace(0.9, "lose_weight", 90)[0] is True
+    assert validate_goal_pace(0.9, "lose_weight", 70)[0] is False
+    assert validate_goal_pace(1.2, "lose_weight", 150)[0] is False

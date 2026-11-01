@@ -37,14 +37,12 @@ export function HabitCalendar({ month, today, days, loadState, source, selectedD
   return <section aria-labelledby={title} className="min-w-0 space-y-4 rounded-3xl border border-slate-100 bg-white py-4 text-nutri-ink shadow-lg shadow-slate-900/5">
     <header className="space-y-3 px-3 sm:px-5"><h2 id={title} className="text-xl font-semibold">Lịch thói quen</h2>
       {source === 'demo' && <p className="text-sm font-semibold text-nutri-dark">Dữ liệu minh họa</p>}
-      <p className="text-sm text-nutri-muted">Ngày theo Asia/Ho_Chi_Minh · Chọn ngày để xem thông tin, không thực hiện check-in.</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <button type="button" aria-label="Xem tháng trước" disabled={!previous} onClick={() => previous && onMonthChange(previous)} className={`min-h-11 min-w-11 rounded-full border border-slate-200 bg-white px-3 shadow-sm hover:bg-slate-50 disabled:opacity-50 ${focus}`}>←</button>
         <p aria-live="polite" aria-atomic="true" className="font-semibold">Tháng {month.month}/{month.year}</p>
         <button type="button" aria-label="Xem tháng sau" disabled={!next} onClick={() => next && onMonthChange(next)} className={`min-h-11 min-w-11 rounded-full border border-slate-200 bg-white px-3 shadow-sm hover:bg-slate-50 disabled:opacity-50 ${focus}`}>→</button>
       </div>
       <button type="button" onClick={() => onMonthChange({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) })} className={`min-h-11 rounded-xl px-3 text-sm text-nutri-dark underline ${focus}`}>Về tháng hiện tại</button>
-      <p className="text-xs leading-5 text-nutri-muted">✓ Hoàn thành đã xác nhận · ○ Chưa xác nhận · — Thiếu dữ liệu · … Đang tải · ! Lỗi · Ngày tương lai không thể chọn.</p>
       {normalized.invalid && <p role="status" className="text-sm text-nutri-muted">Có dữ liệu ngày không hợp lệ, ngoài tháng hoặc bị trùng. Ngày trùng không được đánh dấu hoàn thành.</p>}
       {loadState === 'loading' && <p role="status">Đang tải dữ liệu tháng…</p>}
       {loadState === 'error' && <div role="alert"><p>{errorMessage || 'Không tải được dữ liệu tháng. Chưa thể đánh giá các ngày.'}</p>{onRetry && <button type="button" className={`min-h-11 rounded-xl border border-nutri-border px-3 ${focus}`} onClick={onRetry}>Thử lại</button>}</div>}

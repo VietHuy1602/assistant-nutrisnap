@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
             <span aria-hidden="true">AI Coach</span>
             <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-lime-300" />
           </button>
-          <MobileAccountMenu username={user?.username} onLogout={handleLogout} />
+          <MobileAccountMenu username={user?.username} isAdmin={Boolean(user?.is_admin)} onLogout={handleLogout} />
         </div>
 
         {/* Desktop destinations stay in the header; compact layouts use BottomNav. */}

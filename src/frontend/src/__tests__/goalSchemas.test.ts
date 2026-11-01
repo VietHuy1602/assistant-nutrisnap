@@ -118,3 +118,15 @@ describe('goalSchema validation', () => {
     expect(goalSchema.safeParse({ ...validBaseGoal, daily_budget_vnd: 10000 }).success).toBe(true);
   });
 });
+
+describe('Tốc độ giảm cân theo cân nặng', () => {
+  it('cho phép ~1% cân nặng/tuần (tối thiểu 0,75, tối đa 1,0)', async () => {
+    const { maxSafeLosePace, goalSchema: schema } = await import('../schemas/goalSchemas');
+    expect(maxSafeLosePace(60)).toBe(0.75);
+    expect(maxSafeLosePace(90)).toBe(0.9);
+    expect(maxSafeLosePace(140)).toBe(1);
+    const heavy = { ...validBaseGoal, current_weight_kg: 90, target_weight_kg: 70, goal_type: 'lose_weight' as const };
+    expect(schema.safeParse({ ...heavy, weekly_pace_kg: 0.9 }).success).toBe(true);
+    expect(schema.safeParse({ ...heavy, weekly_pace_kg: 6 }).success).toBe(false);
+  });
+});

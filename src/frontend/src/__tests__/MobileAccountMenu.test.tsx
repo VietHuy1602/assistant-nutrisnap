@@ -21,6 +21,8 @@ describe('Mobile account navigation', () => {
     expect(within(nav).getByRole('link', { name: 'Mục tiêu' })).toHaveAttribute('href', '/goal-setup');
     expect(within(nav).getByRole('link', { name: 'Báo cáo tháng' })).toHaveAttribute('href', '/monthly-report');
     await user.tab();
+    expect(within(nav).getByRole('switch', { name: 'Chế độ tối' })).toHaveFocus();
+    await user.tab();
     expect(within(nav).getByRole('link', { name: 'Mục tiêu' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('navigation', { name: 'Tài khoản' })).not.toBeInTheDocument();
@@ -41,6 +43,8 @@ describe('Mobile account navigation', () => {
   it('dismisses on Tab out and delegates logout exactly once', async () => {
     const { user, trigger, logout } = setup();
     await user.click(trigger);
+    // Công tắc giao diện → Mục tiêu → Báo cáo tháng → Đăng xuất
+    await user.tab();
     await user.tab();
     await user.tab();
     await user.tab();
@@ -51,5 +55,19 @@ describe('Mobile account navigation', () => {
     await user.click(screen.getByRole('button', { name: 'Đăng xuất' }));
     expect(logout).toHaveBeenCalledTimes(1);
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('toggles dark mode from the switch above Mục tiêu and remembers it', async () => {
+    document.documentElement.classList.remove('dark');
+    const { user, trigger } = setup();
+    await user.click(trigger);
+    const toggle = screen.getByRole('switch', { name: 'Chế độ tối' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+    expect(document.documentElement).toHaveClass('dark');
+    expect(window.localStorage.getItem('nutrisnap-theme')).toBe('dark');
+    await user.click(toggle);
+    expect(document.documentElement).not.toHaveClass('dark');
   });
 });

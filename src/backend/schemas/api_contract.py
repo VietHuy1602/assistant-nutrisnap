@@ -96,6 +96,7 @@ class UserPublicResponse(BaseModel):
     email: str = Field(..., description="Địa chỉ email")
     full_name: str | None = Field(default=None, description="Họ và tên")
     is_active: bool = Field(default=True, description="Trạng thái kích hoạt")
+    is_admin: bool = Field(default=False, description="Quyền quản trị viên")
     created_at: datetime = Field(..., description="Thời điểm tạo tài khoản")
 
     model_config = ConfigDict(from_attributes=True)
@@ -182,7 +183,7 @@ class GoalCreateRequest(BaseModel):
     def verify_goal_pace_integrity(self):
         if self.goal_type == "maintain":
             self.weekly_pace_kg = 0.0
-        ok, msg = validate_goal_pace(self.weekly_pace_kg, self.goal_type)
+        ok, msg = validate_goal_pace(self.weekly_pace_kg, self.goal_type, self.current_weight_kg)
         if not ok:
             raise ValueError(msg)
         return self

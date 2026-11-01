@@ -384,12 +384,15 @@ def log_weight_endpoint(
 ):
     """Ghi nhận chỉ số cân nặng hàng ngày vào CSDL."""
     target_date = datetime.strptime(req.logged_date, "%Y-%m-%d").date() if req.logged_date else get_vn_today()
-    weight_entry = log_user_weight(
-        session=session,
-        authenticated_user_id=current_user.id,
-        weight_kg=req.weight_kg,
-        logged_date=target_date,
-    )
+    try:
+        weight_entry = log_user_weight(
+            session=session,
+            authenticated_user_id=current_user.id,
+            weight_kg=req.weight_kg,
+            logged_date=target_date,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     return WeightLogResponse(
         id=weight_entry.id or 1,
         user_id=current_user.id,

@@ -8,6 +8,7 @@ Nhiệm vụ:
 - Lưu trữ và cập nhật vào bảng goals, weight_logs tuân thủ nguyên tắc Zero-Trust Access Control.
 """
 
+import logging
 from datetime import date
 from typing import Literal
 
@@ -16,6 +17,8 @@ from sqlmodel import Session, select
 
 from src.backend.models.schema import Goal, WeightLog, get_vn_today, utc_now
 from src.backend.services.validators import validate_goal_pace
+
+logger = logging.getLogger("nutrisnap.goal")
 
 # Hệ số hoạt động thể chất (Physical Activity Level - PAL)
 ACTIVITY_MULTIPLIERS: dict[str, float] = {
@@ -146,6 +149,7 @@ def calculate_target_calories(
     goal_type: str,
     weekly_pace_kg: float = 0.0,
     gender: str = "male",
+    current_weight_kg: float | None = None,
 ) -> tuple[float, bool]:
     """Tính hạn mức calo mục tiêu hàng ngày kèm rào chắn an toàn y tế (Safety Floor Guardrail).
 
@@ -164,7 +168,7 @@ def calculate_target_calories(
     goal_type_norm = goal_type.strip().lower()
     gender_norm = gender.strip().lower()
 
-    is_valid, msg = validate_goal_pace(weekly_pace_kg, goal_type_norm)
+    is_valid, msg = validate_goal_pace(weekly_pace_kg, goal_type_norm, current_weight_kg)
     if not is_valid:
         raise ValueError(msg)
 
@@ -220,6 +224,48 @@ def calculate_macro_split(target_calories: float, goal_type: str) -> dict[str, f
     }
 
 
+# Cân nặng thật dao động tối đa khoảng 2 kg/ngày (nước, muối, thời điểm cân) và thay đổi
+# thực sự không quá ~1 kg mỗi ngày trôi qua. Vượt mức này gần như chắc chắn là nhập nhầm.
+MAX_DAILY_WEIGHT_SWING_KG = 2.0
+MAX_WEIGHT_CHANGE_PER_DAY_KG = 1.0
+
+
+class ImplausibleWeightChangeError(ValueError):
+    """Cân nặng mới chênh lệch bất thường so với lần ghi gần nhất."""
+
+
+def check_plausible_weight_change(
+    session: Session,
+    authenticated_user_id: int,
+    weight_kg: float,
+    target_date: date,
+) -> None:
+    """Từ chối cân nặng chênh lệch phi thực tế so với lần ghi gần nhất (trước hoặc sau ngày đó)."""
+    neighbors = [
+        session.exec(
+            select(WeightLog)
+            .where(WeightLog.user_id == authenticated_user_id, WeightLog.logged_date < target_date)
+            .order_by(WeightLog.logged_date.desc())
+        ).first(),
+        session.exec(
+            select(WeightLog)
+            .where(WeightLog.user_id == authenticated_user_id, WeightLog.logged_date > target_date)
+            .order_by(WeightLog.logged_date.asc())
+        ).first(),
+    ]
+    for log in neighbors:
+        if log is None:
+            continue
+        days = abs((target_date - log.logged_date).days)
+        allowed = MAX_DAILY_WEIGHT_SWING_KG + MAX_WEIGHT_CHANGE_PER_DAY_KG * max(0, days - 1)
+        if abs(weight_kg - log.weight_kg) > allowed:
+            raise ImplausibleWeightChangeError(
+                f"Cân nặng {weight_kg:g} kg chênh {abs(weight_kg - log.weight_kg):.1f} kg so với lần ghi ngày "
+                f"{log.logged_date.strftime('%d/%m/%Y')} ({log.weight_kg:g} kg) chỉ sau {days} ngày, "
+                "không thể thay đổi nhanh như vậy. Vui lòng kiểm tra lại số cân."
+            )
+
+
 def log_user_weight(
     session: Session,
     authenticated_user_id: int,
@@ -235,6 +281,7 @@ def log_user_weight(
         raise ValueError(f"Cân nặng ({weight_kg} kg) phải nằm trong khoảng từ 30 đến 250 kg.")
 
     target_date = logged_date or get_vn_today()
+    check_plausible_weight_change(session, authenticated_user_id, weight_kg, target_date)
     statement = select(WeightLog).where(
         WeightLog.user_id == authenticated_user_id,
         WeightLog.logged_date == target_date,
@@ -273,6 +320,7 @@ def calculate_goal_plan(plan_input: GoalPlanInput, user_id: int = 0) -> GoalPlan
         goal_type=plan_input.goal_type,
         weekly_pace_kg=plan_input.weekly_pace_kg,
         gender=plan_input.gender,
+        current_weight_kg=plan_input.current_weight_kg,
     )
     macros = calculate_macro_split(target_calories=target_calo, goal_type=plan_input.goal_type)
     target_weight = (
@@ -319,6 +367,7 @@ def save_or_update_user_goal(
         goal_type=plan_input.goal_type,
         weekly_pace_kg=plan_input.weekly_pace_kg,
         gender=plan_input.gender,
+        current_weight_kg=plan_input.current_weight_kg,
     )
     macros = calculate_macro_split(target_calories=target_calo, goal_type=plan_input.goal_type)
 
@@ -373,12 +422,17 @@ def save_or_update_user_goal(
         )
         session.add(goal)
 
-    # Tự động ghi nhận cân nặng hiện tại vào nhật ký cân nặng (weight_logs)
-    log_user_weight(
-        session=session,
-        authenticated_user_id=authenticated_user_id,
-        weight_kg=plan_input.current_weight_kg,
-    )
+    # Tự động ghi nhận cân nặng hiện tại vào nhật ký cân nặng (weight_logs).
+    # Nếu số này chênh bất thường so với nhật ký (thường là nhập nhầm trong form mục tiêu),
+    # vẫn lưu mục tiêu nhưng không ghi điểm cân nặng sai vào biểu đồ xu hướng.
+    try:
+        log_user_weight(
+            session=session,
+            authenticated_user_id=authenticated_user_id,
+            weight_kg=plan_input.current_weight_kg,
+        )
+    except ImplausibleWeightChangeError as exc:
+        logger.warning("Bỏ qua ghi cân nặng tự động khi lưu mục tiêu: %s", exc)
 
     session.commit()
     session.refresh(goal)

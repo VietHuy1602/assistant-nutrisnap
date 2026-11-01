@@ -1,13 +1,15 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, FileText, LogOut, Target } from 'lucide-react';
+import { ChevronDown, FileText, LogOut, Moon, ShieldCheck, Sun, Target } from 'lucide-react';
+import { useTheme } from '../theme/theme';
 
 interface Props {
   username?: string;
+  isAdmin?: boolean;
   onLogout: () => Promise<void>;
 }
 
-export function MobileAccountMenu({ username, onLogout }: Props) {
+export function MobileAccountMenu({ username, isAdmin = false, onLogout }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -25,6 +27,8 @@ export function MobileAccountMenu({ username, onLogout }: Props) {
   }, [open]);
 
   const initial = username?.charAt(0).toUpperCase() || 'U';
+  const [theme, setTheme] = useTheme();
+  const isDark = theme === 'dark';
   const itemClass = 'flex min-h-12 min-w-12 items-center gap-3 rounded-2xl px-3 py-2.5 text-base font-medium text-nutri-ink hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';
 
   return (
@@ -54,6 +58,24 @@ export function MobileAccountMenu({ username, onLogout }: Props) {
             <p className="text-xs text-slate-600">Thành viên NutriSnap <span aria-hidden="true">✨</span></p>
           </div>
         </div>
+        {/* Công tắc chế độ Sáng / Tối */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isDark}
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
+          className={`${itemClass} w-full justify-between bg-slate-50 hover:bg-slate-100`}
+        >
+          <span className="flex items-center gap-3">
+            <span aria-hidden="true" className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-white ${isDark ? 'bg-gradient-to-br from-indigo-500 to-slate-800' : 'bg-gradient-to-br from-amber-300 to-orange-400'}`}>
+              {isDark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </span>
+            Chế độ tối
+          </span>
+          <span aria-hidden="true" className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${isDark ? 'bg-indigo-500' : 'bg-slate-300'}`}>
+            <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${isDark ? 'left-[22px]' : 'left-0.5'}`} />
+          </span>
+        </button>
         <Link to="/goal-setup" className={`${itemClass} bg-emerald-50/80 hover:bg-emerald-100`} onClick={() => setOpen(false)}>
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 to-emerald-400 text-white"><Target className="h-5 w-5" /></span>
           Mục tiêu
@@ -62,6 +84,12 @@ export function MobileAccountMenu({ username, onLogout }: Props) {
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 text-white"><FileText className="h-5 w-5" /></span>
           Báo cáo tháng
         </Link>
+        {isAdmin && (
+          <Link to="/admin" className={itemClass} onClick={() => setOpen(false)}>
+            <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white"><ShieldCheck className="h-5 w-5" /></span>
+            Quản trị
+          </Link>
+        )}
         <div className="mx-2 my-1 border-t border-slate-200" />
         <button type="button" onClick={() => { setOpen(false); void onLogout(); }} className={`${itemClass} w-full border border-rose-300 bg-gradient-to-r from-rose-50 to-orange-50 text-rose-600 hover:from-rose-100 hover:to-orange-100`}>
           <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />Đăng xuất

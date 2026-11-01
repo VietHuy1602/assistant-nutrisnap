@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { Salad, User, Mail, ArrowRight, AlertCircle, CheckCircle2, Circle } from 'lucide-react';
+import { User, Mail, ArrowRight, AlertCircle, CheckCircle2, Circle } from 'lucide-react';
 import { DisclaimerBadge } from '../components/DisclaimerBadge';
 import { FormField } from '../components/FormField';
 import { PasswordField } from '../components/PasswordField';
 import { useAuth } from '../context/AuthContext';
 import { registerSchema, RegisterFormValues } from '../schemas/authSchemas';
 import { isApiError } from '../utils/apiError';
+import styles from './LoginSurface.module.css';
 
 export const RegisterPage: React.FC = () => {
   const { register: registerAuth } = useAuth();
@@ -92,12 +93,12 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[85vh] flex flex-col justify-center items-center px-4 py-8">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl border border-slate-200/80 shadow-sm space-y-6">
+    // Dùng chung giao diện với trang Đăng nhập (LoginSurface) để hai trang đồng bộ
+    <div className={styles.surface}>
+      <aside className={styles.brand} aria-label="NutriSnap — Chụp phát biết liền, ăn ngon bớt phiền"><img src="/branding/nutrisnap-launch.png" alt="NutriSnap — Chụp phát biết liền, ăn ngon bớt phiền" /></aside>
+      <div className={styles.panel}>
+      <div className="w-full space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex w-12 h-12 rounded-2xl bg-emerald-50 text-nutri-primary items-center justify-center mb-2">
-            <Salad className="w-7 h-7" />
-          </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Tạo tài khoản <span className="text-nutri-primary">NutriSnap</span>
           </h1>
@@ -258,6 +259,7 @@ export const RegisterPage: React.FC = () => {
 
       <div className="mt-6 max-w-md w-full">
         <DisclaimerBadge />
+      </div>
       </div>
     </div>
   );

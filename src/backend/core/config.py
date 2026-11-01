@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./nutrisnap.db"
     APP_ENV: str = "development"
     DEV_MOBILE_ORIGIN: str = ""
+    # Danh sách origin được phép khi deploy, phân tách bằng dấu phẩy (vd: https://localhost,capacitor://localhost)
+    CORS_ORIGINS: str = ""
     DEBUG: bool = True
 
     # Cấu hình AI Orchestrator & LLM Client
@@ -89,6 +91,10 @@ class Settings(BaseSettings):
         if self.DEV_MOBILE_ORIGIN:
             origins.append(self.DEV_MOBILE_ORIGIN)
         return origins
+
+    @property
+    def extra_cors_origins(self) -> list[str]:
+        return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod

@@ -34,11 +34,28 @@ def validate_password(password: str) -> tuple[bool, str]:
     return True, "Mật khẩu hợp lệ."
 
 
-def validate_goal_pace(weekly_pace_kg: float, goal_type: str) -> tuple[bool, str]:
+# Giảm cân an toàn tối đa ~1% trọng lượng cơ thể mỗi tuần (không quá 1 kg/tuần),
+# nhưng không thấp hơn mức chuẩn 0.75 kg/tuần.
+LOSE_PACE_MIN = 0.25
+LOSE_PACE_BASE_MAX = 0.75
+LOSE_PACE_HARD_MAX = 1.0
+
+
+def max_safe_lose_pace(current_weight_kg: float | None) -> float:
+    """Tốc độ giảm cân tối đa an toàn theo cân nặng hiện tại (làm tròn xuống bội số 0.05 kg)."""
+    if not current_weight_kg or current_weight_kg <= 0:
+        return LOSE_PACE_BASE_MAX
+    one_percent = int((current_weight_kg * 0.01) / 0.05 + 1e-9) * 0.05
+    return round(max(LOSE_PACE_BASE_MAX, min(LOSE_PACE_HARD_MAX, one_percent)), 2)
+
+
+def validate_goal_pace(
+    weekly_pace_kg: float, goal_type: str, current_weight_kg: float | None = None
+) -> tuple[bool, str]:
     """Ràng buộc an toàn y khoa (Responsible Health Logic theo mục 3.2 trang 5):
 
     - Kiểm tra loại mục tiêu hợp lệ: 'lose_weight', 'maintain', 'gain_muscle'.
-    - Tốc độ giảm cân an toàn: 0.25 kg đến 0.75 kg/tuần (không chấp nhận < 0.25 hoặc > 0.75).
+    - Tốc độ giảm cân an toàn: 0.25 kg đến ~1% cân nặng/tuần (tối thiểu 0.75, tối đa 1.0 kg/tuần).
     - Tốc độ tăng cơ/tăng cân an toàn: 0.10 kg đến 0.50 kg/tuần.
     - Duy trì cân nặng: weekly_pace_kg phải bằng 0.0.
     """
@@ -49,10 +66,11 @@ def validate_goal_pace(weekly_pace_kg: float, goal_type: str) -> tuple[bool, str
         )
 
     if goal_type == "lose_weight":
-        if weekly_pace_kg < 0.25 or weekly_pace_kg > 0.75:
+        max_pace = max_safe_lose_pace(current_weight_kg)
+        if weekly_pace_kg < LOSE_PACE_MIN or weekly_pace_kg > max_pace + 1e-9:
             return (
                 False,
-                "Tốc độ giảm cân an toàn phải từ 0.25kg đến tối đa 0.75kg/tuần theo chuẩn y khoa.",
+                f"Tốc độ giảm cân an toàn phải từ 0.25kg đến tối đa {max_pace:g}kg/tuần theo chuẩn y khoa.",
             )
 
     elif goal_type == "gain_muscle":
