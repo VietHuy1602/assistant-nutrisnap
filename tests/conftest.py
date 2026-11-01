@@ -12,6 +12,9 @@ from sqlmodel import Session, select
 
 import src.ai.config  # noqa: F401  (nạp .env trước, để phần dưới có thể ghi đè)
 
+# Test luôn chạy trên SQLite cục bộ, không bao giờ đụng database thật (Neon) trong .env
+os.environ["DATABASE_URL"] = os.getenv("NUTRISNAP_TEST_DATABASE_URL", "sqlite:///nutrisnap.db")
+
 # Bộ test chạy tất định, không gọi Gemini thật dù máy dev có GEMINI_API_KEY trong .env.
 # Muốn chạy cả test gọi API thật: đặt NUTRISNAP_LIVE_LLM_TESTS=1.
 if os.getenv("NUTRISNAP_LIVE_LLM_TESTS") != "1":

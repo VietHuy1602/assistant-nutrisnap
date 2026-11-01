@@ -76,6 +76,7 @@ export function MobileAccountMenu({ username, isAdmin = false, onLogout }: Props
             <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${isDark ? 'left-[22px]' : 'left-0.5'}`} />
           </span>
         </button>
+        {!isAdmin && <>
         <Link to="/goal-setup" className={`${itemClass} bg-emerald-50/80 hover:bg-emerald-100`} onClick={() => setOpen(false)}>
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 to-emerald-400 text-white"><Target className="h-5 w-5" /></span>
           Mục tiêu
@@ -84,6 +85,7 @@ export function MobileAccountMenu({ username, isAdmin = false, onLogout }: Props
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 text-white"><FileText className="h-5 w-5" /></span>
           Báo cáo tháng
         </Link>
+        </>}
         {isAdmin && (
           <Link to="/admin" className={itemClass} onClick={() => setOpen(false)}>
             <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 text-white"><ShieldCheck className="h-5 w-5" /></span>

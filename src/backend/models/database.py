@@ -15,6 +15,7 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
@@ -25,6 +26,8 @@ logger = logging.getLogger(__name__)
 # Đường dẫn gốc tuyệt đối của dự án (4 cấp thư mục: database.py -> models -> backend -> src -> ROOT)
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DB_PATH = ROOT_DIR / "nutrisnap.db"
+# Đọc .env (vd DATABASE_URL do `neon deploy` ghi vào) trước khi tạo engine; biến môi trường thật vẫn được ưu tiên
+load_dotenv(ROOT_DIR / ".env", override=False)
 
 
 def normalize_database_url(url: str) -> str:

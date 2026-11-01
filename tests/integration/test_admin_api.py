@@ -146,3 +146,11 @@ def test_write_requires_trusted_origin(client: TestClient, db_session: Session):
         f"/api/v1/admin/users/{member.id}", json={"is_active": False}, headers={"Origin": "https://evil.example"}
     )
     assert res.status_code == 403
+
+
+def test_admin_cannot_use_customer_features(client: TestClient, db_session: Session):
+    admin = _user(db_session, "boss", is_admin=True)
+    _login_as(client, admin)
+    assert client.get("/api/v1/meals/daily-dashboard").status_code == 403
+    assert client.get("/api/v1/auth/me").status_code == 200
+    assert client.get("/api/v1/admin/stats").status_code == 200

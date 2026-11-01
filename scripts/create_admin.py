@@ -5,6 +5,7 @@ Cấp quyền quản trị viên (is_admin=True) cho một tài khoản, hoặc 
 Cách dùng:
     python scripts/create_admin.py <username_hoặc_email>                 # cấp quyền cho tài khoản đã đăng ký
     python scripts/create_admin.py <username> --email a@b.com --password "MatKhauManh123"   # tạo mới
+    python scripts/create_admin.py <username_hoặc_email> --password "MatKhauMoi"  # đặt lại mật khẩu
     python scripts/create_admin.py <username_hoặc_email> --revoke        # gỡ quyền
 
 Dùng được với SQLite (máy cá nhân) và PostgreSQL (Neon) – lấy kết nối từ biến DATABASE_URL.
@@ -44,6 +45,12 @@ def make_admin(identifier: str, email: str | None = None, password: str | None =
                 return 1
             user = User(username=identifier, email=email.lower(), password_hash=hash_password(password))
             print(f"Tạo mới tài khoản admin '{identifier}'.")
+        elif password and not revoke:
+            if len(password) < 8:
+                print("❌ Mật khẩu admin phải có ít nhất 8 ký tự.")
+                return 1
+            user.password_hash = hash_password(password)
+            print(f"Đã đặt lại mật khẩu cho '{user.username}'.")
         user.is_admin = not revoke
         user.is_active = True if not revoke else user.is_active
         session.add(user)

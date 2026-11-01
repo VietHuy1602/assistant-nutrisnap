@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const location = useLocation();
   const showSpinner = useDelayedFlag(status === 'loading', 150);
 
@@ -24,6 +24,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (status === 'unauthenticated') {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
+
+  // Tài khoản quản trị chỉ dùng trang Quản trị, không dùng chức năng của khách hàng
+  if (user?.is_admin && location.pathname !== '/admin') {
+    return <Navigate to="/admin" replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;
