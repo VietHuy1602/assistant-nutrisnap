@@ -47,7 +47,7 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
       </div>
 
       {/* Tốc độ thay đổi cân nặng */}
-      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-4">
+      <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-50 via-white to-emerald-50 border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <label htmlFor="weekly_pace_kg" className="text-xs font-semibold uppercase tracking-wider text-slate-700 block">
@@ -80,7 +80,7 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
                 const val = Math.round(parseFloat(e.target.value) * 100) / 100;
                 setValue('weekly_pace_kg', val, { shouldValidate: true });
               }}
-              className="w-full accent-nutri-primary cursor-pointer"
+              className="w-full h-2 cursor-pointer appearance-none rounded-full bg-gradient-to-r from-emerald-100 via-teal-300 to-emerald-600 accent-teal-500"
             />
             <div className="flex justify-between text-[11px] text-slate-400 mt-1 font-mono">
               <span>{paceConfig.min} kg/tuần (chậm)</span>
@@ -115,7 +115,7 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
             {...register('daily_budget_vnd', {
               setValueAs: (v) => (v === '' || isNaN(Number(v)) ? undefined : Number(v)),
             })}
-            className={`w-full px-3.5 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 ${
+            className={`w-full min-h-12 px-3.5 py-2.5 rounded-xl border bg-white text-base shadow-sm focus:outline-none focus:ring-2 ${
               errors.daily_budget_vnd
                 ? 'border-red-300 focus:ring-red-400 bg-red-50/20'
                 : 'border-slate-200 focus:ring-nutri-primary'
@@ -123,13 +123,13 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
           />
           <div className="flex justify-between items-center text-xs text-slate-500 px-1">
             <span>Định dạng:</span>
-            <span className="font-semibold text-slate-700">{formatCurrency(budget)}</span>
+            <span className="font-bold text-emerald-700">{formatCurrency(budget)}</span>
           </div>
         </div>
       </FormField>
 
       {/* Cảnh báo y khoa bắt buộc theo M5 */}
-      <div role="note" className="p-4 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-start gap-3">
+      <div role="note" className="p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200 shadow-sm flex items-start gap-3">
         <ShieldCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-900 leading-relaxed">
           <p className="font-semibold text-amber-950 mb-0.5">Khuyến cáo an toàn dinh dưỡng</p>

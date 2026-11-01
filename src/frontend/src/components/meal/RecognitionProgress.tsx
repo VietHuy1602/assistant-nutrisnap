@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2, X, AlertCircle } from 'lucide-react';
 import { DISCLAIMER_RECOGNITION } from '../../constants/copy';
+import { Mascot } from '../common/Mascot';
 
 interface RecognitionProgressProps {
   slow: boolean;
@@ -20,9 +21,10 @@ export const RecognitionProgress: React.FC<RecognitionProgressProps> = ({
       aria-live="polite"
     >
       <div className="relative flex items-center justify-center">
-        <div className="w-16 h-16 rounded-full bg-emerald-50 border-4 border-emerald-100 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" aria-hidden="true" />
-        </div>
+        <Mascot pose="snap" size={120} className="motion-safe:animate-pulse" />
+        <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-white shadow-md">
+          <Loader2 className="w-5 h-5 text-emerald-600 animate-spin" aria-hidden="true" />
+        </span>
       </div>
 
       <div className="flex flex-col gap-1.5">

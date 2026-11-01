@@ -1,5 +1,6 @@
 import React from 'react';
-import { Camera, Search, HelpCircle } from 'lucide-react';
+import { Camera, Search } from 'lucide-react';
+import { Mascot } from '../common/Mascot';
 
 interface UnrecognizedPanelProps {
   onRetake: () => void;
@@ -38,9 +39,7 @@ export const UnrecognizedPanel: React.FC<UnrecognizedPanelProps> = ({
     <div
       className={`w-full max-w-md mx-auto p-8 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col items-center text-center gap-5 ${className}`}
     >
-      <div className="w-16 h-16 rounded-full bg-amber-50 border-4 border-amber-100 flex items-center justify-center text-amber-600">
-        <HelpCircle className="w-8 h-8" aria-hidden="true" />
-      </div>
+      <Mascot pose="thinking" size={120} />
 
       <div role="alert" className="flex flex-col gap-1.5">
         <h3 className="text-lg font-bold text-slate-900">{copy.title}</h3>

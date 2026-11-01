@@ -10,6 +10,13 @@ interface StepGoalProps {
   form: UseFormReturn<GoalFormValues>;
 }
 
+// Nền pastel & ô biểu tượng màu cho từng loại mục tiêu (chỉ trang trí)
+const GOAL_TONES: Record<GoalType, { card: string; chip: string }> = {
+  lose_weight: { card: 'from-emerald-50 to-teal-50', chip: 'bg-orange-100' },
+  maintain: { card: 'from-sky-50 to-rose-50', chip: 'bg-emerald-100' },
+  gain_muscle: { card: 'from-rose-50 to-amber-50', chip: 'bg-blue-100' },
+};
+
 export const StepGoal: React.FC<StepGoalProps> = ({ form }) => {
   const {
     register,
@@ -80,7 +87,7 @@ export const StepGoal: React.FC<StepGoalProps> = ({ form }) => {
         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700">
           Loại mục tiêu <span className="text-red-500">*</span>
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="grid grid-cols-1 gap-3.5">
           {goalOptions.map((opt) => {
             const isSelected = currentGoalType === opt.type;
             return (
@@ -88,15 +95,15 @@ export const StepGoal: React.FC<StepGoalProps> = ({ form }) => {
                 key={opt.type}
                 type="button"
                 onClick={() => handleSelectGoalType(opt.type)}
-                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between ${
+                className={`p-4 rounded-2xl border text-left transition-all flex flex-col justify-between shadow-sm bg-gradient-to-r ${GOAL_TONES[opt.type].card} ${
                   isSelected
-                    ? 'border-nutri-primary bg-emerald-50/50 ring-2 ring-nutri-primary/20 shadow-xs'
-                    : 'border-slate-200 bg-white hover:border-slate-300'
+                    ? 'border-2 border-emerald-500 ring-4 ring-emerald-500/15 shadow-md'
+                    : 'border-slate-200 hover:border-emerald-300'
                 }`}
               >
                 <div>
-                  <div className="p-2 rounded-lg bg-slate-100 w-fit mb-3">{opt.icon}</div>
-                  <p className={`text-sm font-bold ${isSelected ? 'text-nutri-primary' : 'text-slate-900'}`}>
+                  <div className={`p-2 rounded-xl w-fit mb-3 ${GOAL_TONES[opt.type].chip}`}>{opt.icon}</div>
+                  <p className={`text-base font-bold ${isSelected ? 'text-emerald-800' : 'text-slate-900'}`}>
                     {opt.label}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">{opt.desc}</p>

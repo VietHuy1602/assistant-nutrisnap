@@ -36,6 +36,6 @@ describe('Dashboard visual refinement preserves data and destinations', () => {
     const active = links.filter(link => link.getAttribute('aria-current') === 'page');
     expect(active).toHaveLength(1);
     expect(active[0]).toHaveAttribute('href', path);
-    expect(active[0]).toHaveClass('bg-[#E0F1B8]', 'min-h-12', 'min-w-12');
+    expect(active[0]).toHaveClass('nav-active', 'min-h-12', 'min-w-12');
   });
 });

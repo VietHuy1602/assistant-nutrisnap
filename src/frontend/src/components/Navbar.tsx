@@ -52,9 +52,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
             src="/branding/nutrisnap-logo-icon.webp"
             alt=""
             aria-hidden="true"
-            width={44}
-            height={44}
-            className="h-11 w-11 shrink-0 rounded-2xl bg-slate-950 object-cover shadow-md shadow-emerald-900/20 ring-2 ring-white"
+            width={52}
+            height={52}
+            className="h-[52px] w-[52px] shrink-0 -rotate-6 object-contain drop-shadow-md"
           />
           <div>
             <span className="text-xl font-bold tracking-tight text-slate-900">

@@ -5,6 +5,24 @@ import { FormField } from '../FormField';
 import { ACTIVITY_LEVEL_LABELS } from '../../constants/copy';
 import { ActivityLevel, Gender } from '../../types/api';
 
+// Tông màu pastel cho từng mức vận động (chỉ trang trí)
+const ACTIVITY_TONES: Record<ActivityLevel, string> = {
+  sedentary: 'sand',
+  light: 'peach',
+  moderate: 'mint',
+  active: 'sky',
+  very_active: 'lilac',
+};
+
+// Biểu tượng minh họa, chỉ hiện ở thẻ đang được chọn
+const ACTIVITY_ICONS: Record<ActivityLevel, string> = {
+  sedentary: '🛋️',
+  light: '👟',
+  moderate: '🏃',
+  active: '🏋️',
+  very_active: '🏆',
+};
+
 interface StepBodyProps {
   form: UseFormReturn<GoalFormValues>;
 }
@@ -54,7 +72,7 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
             return (
               <label
                 key={item.value}
-                className="nutri-choice"
+                className="nutri-choice nutri-pill"
                 data-selected={isSelected}
               >
                 <input
@@ -65,7 +83,7 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
                   onChange={() => setValue('gender', item.value, { shouldValidate: true })}
                   aria-invalid={!!errors.gender}
                   aria-describedby={errors.gender ? 'gender-error' : undefined}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-nutri-primary"
+                  className="h-4 w-4 shrink-0 accent-emerald-600"
                 />
                 <span className="text-sm font-semibold">{item.label}</span>
               </label>
@@ -160,6 +178,7 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
                 key={opt.value}
                 className="nutri-choice"
                 data-selected={isSelected}
+                data-tone={ACTIVITY_TONES[opt.value]}
               >
                 <input
                   type="radio"
@@ -170,7 +189,7 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
                   aria-labelledby={`activity-${opt.value}-label`}
                   aria-describedby={`activity-${opt.value}-description${errors.activity_level ? ' activity_level-error' : ''}`}
                   aria-invalid={!!errors.activity_level}
-                  className="mt-1 h-4 w-4 shrink-0 accent-nutri-primary"
+                  className="mt-1 h-4 w-4 shrink-0 accent-emerald-600"
                 />
                 <span className="min-w-0 flex-1">
                   <span id={`activity-${opt.value}-label`} className="block text-sm font-semibold">
@@ -178,6 +197,11 @@ export const StepBody: React.FC<StepBodyProps> = ({ form }) => {
                   </span>
                   <span id={`activity-${opt.value}-description`} className="mt-1 block text-sm leading-5 text-nutri-muted">{opt.desc}</span>
                 </span>
+                {isSelected && (
+                  <span aria-hidden="true" className="absolute right-3 top-1/2 -translate-y-1/2 text-3xl drop-shadow-md motion-safe:animate-in motion-safe:zoom-in-50">
+                    {ACTIVITY_ICONS[opt.value]}
+                  </span>
+                )}
               </label>
             );
           })}

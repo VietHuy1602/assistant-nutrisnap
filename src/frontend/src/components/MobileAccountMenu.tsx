@@ -25,7 +25,7 @@ export function MobileAccountMenu({ username, onLogout }: Props) {
   }, [open]);
 
   const initial = username?.charAt(0).toUpperCase() || 'U';
-  const itemClass = 'flex min-h-12 min-w-12 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-nutri-ink hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';
+  const itemClass = 'flex min-h-12 min-w-12 items-center gap-3 rounded-2xl px-3 py-2.5 text-base font-medium text-nutri-ink hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';
 
   return (
     <div ref={containerRef} className="relative" onBlur={(event) => {
@@ -39,22 +39,33 @@ export function MobileAccountMenu({ username, onLogout }: Props) {
     }}>
       <button ref={triggerRef} type="button" aria-label="Tài khoản" aria-expanded={open} aria-controls={panelId}
         onClick={() => setOpen(value => !value)}
-        className="flex min-h-12 min-w-12 items-center justify-center gap-1 rounded-full border border-nutri-border bg-white py-1 pl-1 pr-2 text-nutri-ink shadow-sm hover:bg-nutri-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
-        <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-sky-500 text-sm font-bold text-white">{initial}</span>
-        <ChevronDown aria-hidden="true" className={`h-4 w-4 text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`} />
+        className="flex min-h-12 min-w-12 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-slate-900 via-indigo-800 to-purple-700 py-1 pl-1 pr-2.5 text-white shadow-[0_0_14px_rgba(99,102,241,0.55)] ring-2 ring-cyan-300/70 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
+        <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-sky-500 text-sm font-bold text-white ring-2 ring-white/30">{initial}</span>
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 text-white transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <nav id={panelId} aria-label="Tài khoản" className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-nutri-border bg-nutri-panel p-2 shadow-lg">
-        <div className="mb-1 flex items-center gap-3 rounded-xl bg-gradient-to-r from-violet-50 to-sky-50 px-3 py-3">
-          <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-sky-500 text-base font-bold text-white">{initial}</span>
+      {open && <nav id={panelId} aria-label="Tài khoản" className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] space-y-1 rounded-3xl border border-slate-100 bg-white p-2.5 shadow-2xl shadow-indigo-900/15">
+        <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-sky-100 via-violet-100 to-pink-100 px-3 py-3.5">
+          {/* Viền cầu vồng quanh ảnh đại diện */}
+          <span aria-hidden="true" className="shrink-0 rounded-full bg-gradient-to-br from-emerald-400 via-sky-400 to-fuchsia-500 p-[3px]">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-violet-500 to-sky-500 text-lg font-bold text-white">{initial}</span>
+          </span>
           <div className="min-w-0">
-            <p className="break-words text-sm font-semibold text-nutri-ink">{username || 'Tài khoản'}</p>
-            <p className="text-xs text-nutri-muted">Thành viên NutriSnap</p>
+            <p className="break-words text-base font-bold text-nutri-ink">{username || 'Tài khoản'}</p>
+            <p className="text-xs text-slate-600">Thành viên NutriSnap <span aria-hidden="true">✨</span></p>
           </div>
         </div>
-        <Link to="/goal-setup" className={itemClass} onClick={() => setOpen(false)}><Target aria-hidden="true" className="h-5 w-5 shrink-0 text-emerald-600" />Mục tiêu</Link>
-        <Link to="/monthly-report" className={itemClass} onClick={() => setOpen(false)}><FileText aria-hidden="true" className="h-5 w-5 shrink-0 text-sky-600" />Báo cáo tháng</Link>
-        <div className="my-1 border-t border-nutri-border/60" />
-        <button type="button" onClick={() => { setOpen(false); void onLogout(); }} className={`${itemClass} w-full text-amber-800 hover:bg-amber-50`}><LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />Đăng xuất</button>
+        <Link to="/goal-setup" className={`${itemClass} bg-emerald-50/80 hover:bg-emerald-100`} onClick={() => setOpen(false)}>
+          <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 to-emerald-400 text-white"><Target className="h-5 w-5" /></span>
+          Mục tiêu
+        </Link>
+        <Link to="/monthly-report" className={itemClass} onClick={() => setOpen(false)}>
+          <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 text-white"><FileText className="h-5 w-5" /></span>
+          Báo cáo tháng
+        </Link>
+        <div className="mx-2 my-1 border-t border-slate-200" />
+        <button type="button" onClick={() => { setOpen(false); void onLogout(); }} className={`${itemClass} w-full border border-rose-300 bg-gradient-to-r from-rose-50 to-orange-50 text-rose-600 hover:from-rose-100 hover:to-orange-100`}>
+          <LogOut aria-hidden="true" className="h-5 w-5 shrink-0" />Đăng xuất
+        </button>
       </nav>}
     </div>
   );

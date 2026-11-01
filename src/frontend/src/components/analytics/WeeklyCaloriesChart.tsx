@@ -13,6 +13,10 @@ import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface WeeklyCaloriesChartProps {
   data: NormalizedCalorieBars;
+  /** Mô tả trợ năng tùy chỉnh (ví dụ biểu đồ tháng ở trang Báo cáo) */
+  ariaLabel?: string;
+  /** Ẩn dòng ghi chú "chưa có số liệu theo tuần" khi dùng ngoài trang Tiến độ */
+  hideModeNote?: boolean;
 }
 
 // Bảng màu tươi, dễ phân biệt; không dùng đỏ/hồng (màu báo động, xem zeroMath.guard)
@@ -31,7 +35,7 @@ export const CALORIE_SLICE_COLORS = [
   '#059669', // lục bảo
 ];
 
-export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }) => {
+export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data, ariaLabel, hideModeNote = false }) => {
   const reducedMotion = useReducedMotion();
   const { bars, targetCalories, mode } = data;
 
@@ -49,14 +53,15 @@ export const WeeklyCaloriesChart: React.FC<WeeklyCaloriesChartProps> = ({ data }
   }
 
   const ariaDescription =
-    mode === 'weekly'
+    ariaLabel ??
+    (mode === 'weekly'
       ? `Biểu đồ tròn calo theo tuần cho ${bars.length} tuần.`
-      : `Biểu đồ tròn calo từng ngày cho ${bars.length} ngày (chưa có số liệu tổng hợp theo tuần).`;
+      : `Biểu đồ tròn calo từng ngày cho ${bars.length} ngày (chưa có số liệu tổng hợp theo tuần).`);
   const colorAt = (index: number) => CALORIE_SLICE_COLORS[index % CALORIE_SLICE_COLORS.length];
 
   return (
     <div className="w-full space-y-3">
-      {mode === 'dailyFallback' && (
+      {mode === 'dailyFallback' && !hideModeNote && (
         <p className="text-xs text-slate-500 italic">
           Chưa có số liệu tổng hợp theo tuần. Hiển thị năng lượng từng ngày.
         </p>

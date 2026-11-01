@@ -13,18 +13,9 @@ import {
   Flame,
   Sparkles,
 } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { WeeklyCaloriesChart } from '../components/analytics/WeeklyCaloriesChart';
 import { useMonthlyReport } from '../hooks/useMonthlyReport';
 import styles from '../components/report/ReportSurface.module.css';
-import { reportMonthLength } from '../utils/monthlyReport';
 import { ReportMetricCard } from '../components/report/ReportMetricCard';
 import { ReportNotice } from '../components/report/ReportNotice';
 import { ExportMenu } from '../components/report/ExportMenu';
@@ -39,53 +30,27 @@ export function MonthlyEnergyChart({ chartData, monthKey }: {
   chartData: { day: number; date: string; calories: number | null | undefined }[];
   monthKey: string;
 }) {
-  // Calendar ticks are axis presentation only; nutrition records remain untouched.
-  const calendarDays = Array.from({ length: reportMonthLength(monthKey) }, (_, index) => index + 1);
+  // Chỉ hiển thị các ngày backend đã có số liệu; không ước tính thêm ngày thiếu dữ liệu.
+  const bars = chartData
+    .filter((d): d is { day: number; date: string; calories: number } => typeof d.calories === 'number')
+    .map((d) => ({ dateKey: d.date, label: `${d.date.slice(8, 10)}/${d.date.slice(5, 7)}`, calories: d.calories, daysLogged: 1 }));
   return (
-<div className="report-chart bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-              <h2 className="text-sm font-bold text-slate-800">
-                Xu hướng Năng lượng các ngày trong tháng (kcal)
-              </h2>
-              <p className="text-xs text-slate-400">
-                Chỉ hiển thị ngày đã ghi nhận bữa ăn. Ngày thiếu dữ liệu không được ước tính thêm.
-              </p>
-              <p className="text-sm leading-6 text-nutri-muted">Mỗi mốc N là một ngày trong tháng. Cuộn ngang nếu cần để xem đủ các ngày.</p>
-              <div role="region" aria-label="Biểu đồ năng lượng theo ngày, có thể cuộn ngang" tabIndex={0}
-                className="w-full min-w-0 max-w-full overflow-x-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2">
-              <div className="h-64 w-full pt-4" style={{ minWidth: calendarDays.length * 32 + 72 }} aria-hidden="true">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="day"
-                      type="number"
-                      domain={[1, calendarDays.length]}
-                      ticks={calendarDays}
-                      interval={0}
-                      tickMargin={10}
-                      height={36}
-                      tickFormatter={(val) => `N${val}`}
-                      stroke="#475569"
-                      fontSize={13}
-                    />
-                    <YAxis stroke="#475569" fontSize={13} width={52} />
-                    <Tooltip
-                      formatter={(val: number) => [`${val} kcal`, 'Năng lượng']}
-                      labelFormatter={(label) => `Ngày ${label}/${monthKey.slice(5)}`}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="calories"
-                      stroke="#107C41"
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: '#107C41' }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              </div>
-            </div>
+    <div className="report-chart bg-white border border-slate-100 rounded-3xl p-5 shadow-lg shadow-slate-900/5 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-bold text-slate-800">Năng lượng nạp vào</h2>
+        <span aria-hidden="true" className="grid h-9 w-9 place-items-center rounded-full bg-orange-50 ring-1 ring-orange-200">
+          <Flame className="h-5 w-5 text-orange-500" />
+        </span>
+      </div>
+      <p className="text-xs text-slate-400">
+        Chỉ hiển thị ngày đã ghi nhận bữa ăn trong tháng {monthKey.slice(5)}/{monthKey.slice(0, 4)}. Ngày thiếu dữ liệu không được ước tính thêm.
+      </p>
+      <WeeklyCaloriesChart
+        data={{ bars, targetCalories: null, mode: 'dailyFallback', warnings: [] }}
+        ariaLabel={`Biểu đồ tròn năng lượng theo ngày trong tháng, ${bars.length} ngày có dữ liệu`}
+        hideModeNote
+      />
+    </div>
   );
 }
 
@@ -207,13 +172,14 @@ export const MonthlyReportPage: React.FC = () => {
       {!isFuture && (loadState === 'ready' || (loadState === 'loading' && report)) && report && (
         <>
           {/* Metrics 4-Column Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <ReportMetricCard
               title="Số ngày có nhật ký"
               value={report.loggingSummary.totalLoggedDays}
               unit="ngày"
               subtitle={`Tổng số ${report.loggingSummary.totalMealsLogged} bữa ăn đã lưu`}
               icon={<Utensils className="w-4 h-4" />}
+              accent="emerald"
             />
 
             <ReportMetricCard
@@ -230,6 +196,7 @@ export const MonthlyReportPage: React.FC = () => {
                   : 'Chưa có đủ số lần đo'
               }
               icon={<Scale className="w-4 h-4" />}
+              accent="sky"
             />
 
             <ReportMetricCard
@@ -238,6 +205,7 @@ export const MonthlyReportPage: React.FC = () => {
               unit={report.nutritionSummary.avgDailyCalories !== null ? 'kcal' : undefined}
               subtitle={`Mục tiêu: ${report.nutritionSummary.targetTdeeCalories || 2000} kcal`}
               icon={<Flame className="w-4 h-4" />}
+              accent="orange"
               isEstimated={true}
             />
 
@@ -246,27 +214,28 @@ export const MonthlyReportPage: React.FC = () => {
               value={`${report.loggingSummary.consistencyRatePct}%`}
               subtitle={`Trong chu kỳ ${report.loggingSummary.periodDays} ngày`}
               icon={<Calendar className="w-4 h-4" />}
+              accent="violet"
             />
           </div>
 
           {/* Positive Strengths Badges */}
           {report.strengths.length > 0 && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span>Điểm mạnh tích cực được ghi nhận trong tháng:</span>
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-lg shadow-slate-900/5 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="text-base font-bold text-slate-800">Điểm mạnh tích cực</h2>
+                <span aria-hidden="true" className="text-xl">🎉</span>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <ul className="space-y-2">
                 {report.strengths.map((str, idx) => (
-                  <span
+                  <li
                     key={idx}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-medium text-emerald-900"
+                    className="flex items-start gap-2.5 rounded-2xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-lime-50 px-3.5 py-2.5 text-sm font-medium text-emerald-900"
                   >
-                    <span>✨</span>
+                    <Sparkles aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                     <span>{str}</span>
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, ArrowRight, Save, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, AlertCircle, Sparkles } from 'lucide-react';
 import { goalSchema, GoalFormValues, STEP_FIELDS } from '../schemas/goalSchemas';
 import { WizardStepper } from '../components/goal/WizardStepper';
 import { StepBody } from '../components/goal/StepBody';
@@ -21,7 +21,7 @@ export const GoalPlannerWizard: React.FC = () => {
   const [maxReachableStep, setMaxReachableStep] = useState(1);
   const [formError, setFormError] = useState<string | null>(null);
   const [resultData, setResultData] = useState<GoalData | null>(null);
-  const [existingGoal, setExistingGoal] = useState<GoalData | null>(null);
+  const [, setExistingGoal] = useState<GoalData | null>(null);
   const stepHeaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -173,21 +173,6 @@ export const GoalPlannerWizard: React.FC = () => {
         </p>
       </div>
 
-      {/* Banner nếu đã có mục tiêu trước đó */}
-      {existingGoal && (
-        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold text-blue-950">Mục tiêu hiện tại</p>
-            <p>
-              Hạn mức hiện tại:{' '}
-              <strong>{existingGoal.target_calories.toLocaleString('vi-VN')} kcal/ngày</strong>.
-              Lưu mới sẽ thay thế và cập nhật lại toàn bộ lộ trình này.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Stepper điều hướng 4 bước */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <WizardStepper
@@ -198,7 +183,7 @@ export const GoalPlannerWizard: React.FC = () => {
       </div>
 
       {/* Form Card chính */}
-      <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/80 shadow-xs space-y-6">
+      <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-100 shadow-xl shadow-slate-900/5 space-y-6">
         {formError && (
           <div
             role="alert"
@@ -226,7 +211,7 @@ export const GoalPlannerWizard: React.FC = () => {
               type="button"
               onClick={handleBack}
               disabled={currentStep === 1 || isSubmitting}
-              className={`px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold transition-all flex items-center gap-2 ${
+              className={`min-h-11 px-5 py-2.5 rounded-full border border-slate-300 bg-white text-slate-700 text-sm font-semibold shadow-sm transition-all flex items-center gap-2 ${
                 currentStep === 1
                   ? 'opacity-0 pointer-events-none'
                   : 'hover:bg-slate-50 active:scale-98'
@@ -240,7 +225,7 @@ export const GoalPlannerWizard: React.FC = () => {
               <button
                 type="button"
                 onClick={handleNext}
-                className="px-6 py-2.5 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-sm active:scale-98"
+                className="min-h-11 px-7 py-2.5 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-500 hover:from-emerald-800 hover:to-emerald-600 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-700/25 active:scale-98"
               >
                 Tiếp tục
                 <ArrowRight className="w-4 h-4" />
@@ -249,7 +234,7 @@ export const GoalPlannerWizard: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-sm font-semibold transition-all flex items-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed active:scale-98"
+                className="min-h-11 px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-700 to-emerald-500 hover:from-emerald-800 hover:to-emerald-600 text-white text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-emerald-700/25 disabled:opacity-60 disabled:cursor-not-allowed active:scale-98"
               >
                 <Save className="w-4 h-4" />
                 {isSubmitting ? 'Đang tính toán & lưu...' : 'Lưu mục tiêu dinh dưỡng'}
