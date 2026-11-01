@@ -209,3 +209,5 @@ html.dark .recharts-default-tooltip { background-color: #121b2e !important; bord
 
 html.dark .calorie-total, html.dark .calorie-total strong, html.dark .calorie-ring-value { color: #eef3fa !important; }
 html.dark [class*="dashboard"] { color: #eef3fa; }
+
+html.dark .divide-slate-100 > :not(:last-child) { border-color: #26344d !important; }

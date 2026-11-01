@@ -1,0 +1,46 @@
+# Render Blueprint – backend NutriSnap trên gói Free (0 đồng).
+# Render Dashboard → New → Blueprint → chọn repo này. Các biến "sync: false" Render sẽ hỏi bạn nhập khi tạo.
+# Hướng dẫn chi tiết: docs/HUONG_DAN_DEPLOY_MIEN_PHI.md
+services:
+  - type: web
+    name: nutrisnap-api
+    runtime: python
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash scripts/start_server.sh
+    healthCheckPath: /docs
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # Bí mật: nhập trên Render khi tạo Blueprint (không ghi vào repo)
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      # Render tự sinh chuỗi ngẫu nhiên an toàn
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: AUTH_COOKIE_SECURE
+        value: "True"
+      - key: AUTH_COOKIE_SAMESITE
+        value: none
+      - key: CORS_ORIGINS
+        value: https://localhost,capacitor://localhost
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_MODEL_NAME
+        value: gemini-2.5-flash
+      - key: USE_LLM
+        value: "true"
+      # Tài khoản demo và admin_user đã có sẵn trên Neon
+      - key: SEED_DEMO_ACCOUNTS
+        value: "false"
+      - key: ADMIN_USERNAME
+        value: admin_user

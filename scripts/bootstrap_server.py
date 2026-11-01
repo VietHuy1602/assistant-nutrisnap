@@ -26,7 +26,9 @@ from src.backend.models.schema import UsdaFood, User  # noqa: E402
 
 
 def run(script: str) -> None:
-    result = subprocess.run([sys.executable, str(ROOT / "scripts" / script)], cwd=ROOT)
+    # Ép UTF-8 để script con in được tiếng Việt trên console Windows (cp1252)
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    result = subprocess.run([sys.executable, str(ROOT / "scripts" / script)], cwd=ROOT, env=env)
     if result.returncode != 0:
         print(f"⚠️ {script} kết thúc với mã {result.returncode} (bỏ qua, server vẫn khởi động).")
 

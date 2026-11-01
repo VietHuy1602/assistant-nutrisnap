@@ -10,6 +10,7 @@ import { authApi } from '../api/authApi';
 import { UNAUTHORIZED_EVENT } from '../api/client';
 import { AuthResponse, LoginRequest, RegisterRequest, UserPublic } from '../types/api';
 import { isApiError } from '../utils/apiError';
+import { cancelMealReminders } from '../notifications/mealReminders';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'unreachable';
 
@@ -181,6 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Dù API thất bại (ví dụ mất mạng), vẫn dọn sạch trạng thái đăng nhập cục bộ
     } finally {
+      void cancelMealReminders();
       setUser(null);
       setHasGoal(false);
       setStatus('unauthenticated');

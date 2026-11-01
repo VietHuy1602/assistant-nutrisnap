@@ -8,6 +8,8 @@ import { ChatProvider, useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { ConnectivityProvider } from '../app/ConnectivityProvider';
 import { DraftBanner } from '../offline/DraftBanner';
+import { useMealReminders } from '../notifications/useMealReminders';
+import { AdminShell } from './AdminShell';
 
 export interface AppShellContext {
   openChat: () => void;
@@ -21,6 +23,7 @@ function AppShellInner() {
   const { isOpen, openChat, closeChat } = useChat();
   const [mealRevision, setMealRevision] = useState(0);
   const pageRef = useRef<HTMLDivElement>(null);
+  useMealReminders(Boolean(user));
 
   return (
     <div className="min-h-screen bg-nutri-surface flex flex-col">
@@ -65,6 +68,7 @@ function AppShellInner() {
 
 export const AppShell: React.FC = () => {
   const { user } = useAuth();
+  if (user?.is_admin) return <AdminShell />;
   return (
     <ConnectivityProvider>
       <ChatProvider key={user?.id ?? 'signed-out'}>

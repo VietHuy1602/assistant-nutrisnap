@@ -124,6 +124,13 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Tài khoản đã bị vô hiệu hóa",
         )
+    # Tài khoản quản trị chỉ dùng API quản trị và xác thực, không dùng chức năng của khách hàng
+    path = request.url.path
+    if user.is_admin and not (path.startswith("/api/v1/admin") or path.startswith("/api/v1/auth")):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản quản trị chỉ dùng để quản lý, không dùng chức năng của người dùng.",
+        )
     return user
 
 
