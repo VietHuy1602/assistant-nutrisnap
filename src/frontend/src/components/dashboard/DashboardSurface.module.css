@@ -5,9 +5,9 @@
 :global(body):has(.dashboard) :global(.bg-nutri-surface) { background-color: #f7f8f5; }
 .dashboard :global(.dashboard-summary) { @apply grid grid-cols-1 gap-4; }
 .dashboard :global(.calorie-summary) {
-  @apply grid items-center gap-x-3 gap-y-2 rounded-[28px] border-0 p-4 shadow-none sm:p-5;
+  @apply grid items-center gap-x-3 gap-y-2 rounded-[28px] border border-emerald-100 p-4 shadow-lg shadow-emerald-900/5 sm:p-5;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
-  background: #e0f1b8;
+  background: linear-gradient(160deg, #ffffff 0%, #ecfdf5 55%, #e0f2fe 100%);
 }
 .dashboard :global(.calorie-ring) { @apply min-w-0 w-full gap-3; }
 .dashboard :global(.calorie-ring-face) { width: max-content; max-width: 100%; min-width: 8rem; aspect-ratio: 1; }
@@ -21,14 +21,13 @@
 .dashboard :global(.macro-summary) > :first-child { @apply flex-wrap gap-2; }
 .dashboard :global(.macro-summary) h3 { @apply text-base normal-case tracking-normal; }
 .dashboard :global(.macro-grid) { @apply grid grid-cols-3 gap-2 sm:gap-3; }
-.dashboard :global(.macro-item) { @apply min-w-0 rounded-2xl bg-white px-3 py-4; }
+.dashboard :global(.macro-item) { @apply min-w-0 rounded-2xl border border-slate-100 bg-white px-3 py-4 shadow-md shadow-slate-900/5; }
 .dashboard :global(.macro-item) > :first-child { @apply flex-col items-start gap-1; }
 .dashboard :global(.macro-item) > :first-child > span { @apply break-words text-sm leading-5; }
-.dashboard :global(.macro-values) { @apply flex w-full flex-col gap-1; }
+.dashboard :global(.macro-values) { @apply flex w-full flex-col items-center gap-0.5 text-sm; }
 .dashboard :global(.macro-target) { @apply text-sm; }
 .dashboard :global(.macro-percent) { @apply text-sm; }
-.dashboard :global(.macro-item) [role='progressbar'] { @apply mt-1 h-2; }
-.dashboard :global(.macro-item) strong { @apply text-lg font-semibold; }
+.dashboard :global(.macro-item) strong { @apply text-base font-bold; }
 .dashboard :global(.diary-meal) { @apply rounded-[24px] border-0 p-4 shadow-none sm:p-5; }
 .dashboard :global(.diary-list) { @apply border-0 pl-0; }
 .dashboard :global(.diary-marker) { @apply hidden; }

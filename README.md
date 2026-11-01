@@ -94,6 +94,12 @@ python scripts/import_usda.py
 Thứ tự tra dinh dưỡng khi nhận diện ảnh: CSDL món Việt → USDA → AI ước tính. Món mới được thêm vào `food_references` để lưu bữa ăn.
 
 ### 4.5. Chạy app Android (emulator / điện thoại)
+Hằng ngày chỉ cần một lệnh (PowerShell, tại thư mục gốc). Lệnh này bật backend trong cửa sổ riêng, build và sync app, rồi mở Android Studio:
+```powershell
+.\scripts\dev_android.ps1
+```
+Trong Android Studio bấm ▶ Run. **Giữ cửa sổ "NutriSnap backend" mở** khi dùng app; đóng nó thì app sẽ báo "Không thể kết nối máy chủ". Lần đầu (hoặc sau khi `git pull`) chạy `npm install` trong `src/frontend` trước.
+Chạy thủ công:
 ```bash
 python run_backend.py --host 127.0.0.1 --port 8000
 cd src/frontend && npm install && npm run android:open

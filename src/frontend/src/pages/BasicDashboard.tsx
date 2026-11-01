@@ -27,6 +27,7 @@ import type { DailyDashboardMeal } from '../types/api';
 import { isApiError } from '../utils/apiError';
 import { formatVNDate, toLocalISODate } from '../utils/date';
 import { MealDeleteDialog } from '../components/dashboard/MealDeleteDialog';
+import { Mascot } from '../components/common/Mascot';
 
 export const BasicDashboard: React.FC = () => {
   const { user, hasGoal } = useAuth();
@@ -147,13 +148,16 @@ export const BasicDashboard: React.FC = () => {
     <>{deletionFeedback}{dateControls}<div className={`${styles.dashboard} w-full max-w-4xl mx-auto px-0 pt-2 pb-4 flex flex-col gap-4 sm:gap-5`}>
       {/* Header chào mừng & Bộ điều hướng ngày */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
+        <div className="flex items-center gap-3">
+          <Mascot pose="wave" size={72} className="shrink-0 -my-2" />
+          <div className="min-w-0">
           <h1 ref={headingRef} tabIndex={-1} className="break-words text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 focus:outline-none">
             Chào {user?.username || 'bạn'}
           </h1>
           <p className="text-sm leading-6 text-nutri-muted mt-1">
             Theo dõi các bữa ăn và dinh dưỡng của bạn.
           </p>
+        </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

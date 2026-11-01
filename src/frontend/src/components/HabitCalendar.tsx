@@ -15,6 +15,16 @@ function describe(day?: HabitDay): string {
     default: return 'Chưa có dữ liệu';
   }
 }
+// Ngày hoàn thành: vòng màu tươi đổi theo tuần trong tháng (xanh lá → mòng két → chanh → hổ phách)
+const COMPLETED_COLORS = [
+  'border-emerald-400 bg-emerald-50 text-emerald-800',
+  'border-teal-400 bg-teal-50 text-teal-800',
+  'border-lime-500 bg-lime-50 text-lime-800',
+  'border-amber-400 bg-amber-50 text-amber-800',
+  'border-sky-400 bg-sky-50 text-sky-800',
+];
+const dayColor = (date: string) => COMPLETED_COLORS[Math.floor((Number(date.slice(8)) - 1) / 7) % COMPLETED_COLORS.length];
+
 export function HabitCalendar({ month, today, days, loadState, source, selectedDate, onMonthChange, onDateSelect, onRetry, errorMessage }: HabitCalendarProps) {
   const title = useId();
   if (!validMonth(month) || !validDate(today)) return <section className="rounded-2xl border border-nutri-border bg-nutri-panel p-4"><p role="alert">Không thể hiển thị lịch: tháng hoặc ngày hiện tại không hợp lệ.</p></section>;
@@ -24,14 +34,14 @@ export function HabitCalendar({ month, today, days, loadState, source, selectedD
   const status = (date: string) => date > today ? 'Ngày tương lai' : loadState === 'loading' ? 'Đang tải' : loadState === 'error' ? 'Không tải được dữ liệu' : describe(normalized.days.get(date));
   const selectedDay = selected ? normalized.days.get(selected) : undefined;
   const dateLabel = (date: string) => date.split('-').reverse().join('/');
-  return <section aria-labelledby={title} className="min-w-0 space-y-4 rounded-2xl border border-nutri-border bg-nutri-panel py-4 text-nutri-ink">
+  return <section aria-labelledby={title} className="min-w-0 space-y-4 rounded-3xl border border-slate-100 bg-white py-4 text-nutri-ink shadow-lg shadow-slate-900/5">
     <header className="space-y-3 px-3 sm:px-5"><h2 id={title} className="text-xl font-semibold">Lịch thói quen</h2>
       {source === 'demo' && <p className="text-sm font-semibold text-nutri-dark">Dữ liệu minh họa</p>}
       <p className="text-sm text-nutri-muted">Ngày theo Asia/Ho_Chi_Minh · Chọn ngày để xem thông tin, không thực hiện check-in.</p>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <button type="button" aria-label="Xem tháng trước" disabled={!previous} onClick={() => previous && onMonthChange(previous)} className={`min-h-11 min-w-11 rounded-xl border border-nutri-border px-3 disabled:opacity-50 ${focus}`}>←</button>
+        <button type="button" aria-label="Xem tháng trước" disabled={!previous} onClick={() => previous && onMonthChange(previous)} className={`min-h-11 min-w-11 rounded-full border border-slate-200 bg-white px-3 shadow-sm hover:bg-slate-50 disabled:opacity-50 ${focus}`}>←</button>
         <p aria-live="polite" aria-atomic="true" className="font-semibold">Tháng {month.month}/{month.year}</p>
-        <button type="button" aria-label="Xem tháng sau" disabled={!next} onClick={() => next && onMonthChange(next)} className={`min-h-11 min-w-11 rounded-xl border border-nutri-border px-3 disabled:opacity-50 ${focus}`}>→</button>
+        <button type="button" aria-label="Xem tháng sau" disabled={!next} onClick={() => next && onMonthChange(next)} className={`min-h-11 min-w-11 rounded-full border border-slate-200 bg-white px-3 shadow-sm hover:bg-slate-50 disabled:opacity-50 ${focus}`}>→</button>
       </div>
       <button type="button" onClick={() => onMonthChange({ year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) })} className={`min-h-11 rounded-xl px-3 text-sm text-nutri-dark underline ${focus}`}>Về tháng hiện tại</button>
       <p className="text-xs leading-5 text-nutri-muted">✓ Hoàn thành đã xác nhận · ○ Chưa xác nhận · — Thiếu dữ liệu · … Đang tải · ! Lỗi · Ngày tương lai không thể chọn.</p>
@@ -45,7 +55,7 @@ export function HabitCalendar({ month, today, days, loadState, source, selectedD
         if (!date) return <td key={`blank-${column}`} aria-hidden="true" />;
         const label = status(date); const completed = label === 'Đã xác nhận hoàn thành';
         const symbol = date > today ? '·' : completed ? '✓' : label === 'Chưa có xác nhận hoàn thành' ? '○' : label === 'Đang tải' ? '…' : label.includes('Lỗi') || loadState === 'error' ? '!' : '—';
-        return <td key={date} className="p-0"><button type="button" disabled={date > today} aria-current={date === today ? 'date' : undefined} aria-pressed={selected === date} aria-label={`${dateLabel(date)} — ${label}${date === today ? ' — Hôm nay' : ''}`} onClick={() => onDateSelect(date)} className={`my-0.5 flex min-h-11 w-full flex-col items-center justify-center rounded-lg border text-sm disabled:cursor-default disabled:opacity-50 ${focus} ${selected === date ? 'border-nutri-primary' : date === today ? 'border-nutri-border' : 'border-transparent'} ${completed ? 'bg-nutri-selected text-nutri-dark' : 'text-nutri-muted'}`}><span>{Number(date.slice(8))}</span><span aria-hidden="true" className="text-xs">{symbol}</span></button></td>;
+        return <td key={date} className="p-0"><button type="button" disabled={date > today} aria-current={date === today ? 'date' : undefined} aria-pressed={selected === date} aria-label={`${dateLabel(date)} — ${label}${date === today ? ' — Hôm nay' : ''}`} onClick={() => onDateSelect(date)} className={`mx-auto my-1 flex aspect-square min-h-11 w-11 max-w-full flex-col items-center justify-center rounded-full border-2 text-sm font-semibold leading-none disabled:cursor-default disabled:opacity-40 ${focus} ${selected === date ? 'ring-2 ring-offset-1 ring-nutri-primary' : ''} ${completed ? dayColor(date) : date === today ? 'border-orange-400 bg-orange-50 text-orange-800' : 'border-slate-200 text-nutri-muted'}`}><span>{Number(date.slice(8))}</span><span aria-hidden="true" className="text-[10px] font-normal">{symbol}</span></button></td>;
       })}</tr>)}</tbody>
     </table></div>
     <div className="space-y-2 px-3 text-sm sm:px-5"><h3 className="font-semibold">{selected ? `Ngày ${dateLabel(selected)}` : 'Thông tin ngày'}</h3><p>{selected ? status(selected) : 'Chọn một ngày trong lịch để xem trạng thái.'}</p>

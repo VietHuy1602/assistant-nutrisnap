@@ -1,4 +1,5 @@
 import React from 'react';
+import { Flame } from 'lucide-react';
 import { formatKcal } from '../../utils/format';
 
 interface CalorieRingProps {
@@ -34,7 +35,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
     : `Đã nạp ${formatKcal(consumed)} trên ${formatKcal(target)} kilocalo (${Math.round(progressPercent)}%), còn lại ${formatKcal(remaining)} kilocalo.`;
 
   // Màu sắc: Khi vượt hạn mức dùng màu trung tính (hổ phách/xám xanh), tuyệt đối không dùng màu đỏ báo động (ADR-002, N6)
-  const strokeColor = isOver ? '#D97706' : '#EA580C';
+  const strokeColor = isOver ? '#D97706' : 'url(#calorieRingGradient)';
 
   return (
     <div
@@ -42,6 +43,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
       role="img"
       aria-label={personalized ? ariaLabel : `Đã nạp ${formatKcal(consumed)} kilocalo. Mức tham khảo ${formatKcal(target)} kilocalo, chưa phải mục tiêu cá nhân.`}
     >
+      <Flame aria-hidden="true" className="calorie-flame absolute right-4 top-4 h-6 w-6 fill-orange-400 text-orange-500" />
       <div className="calorie-total hidden">
         <span className="text-base font-medium">Tổng calo đã nạp</span>
         <div className="flex flex-wrap items-baseline gap-2"><strong>{formatKcal(consumed)}</strong><span className="text-sm">kcal</span></div>
@@ -52,13 +54,22 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
         </span>
         <div className="calorie-ring-face relative grid aspect-square w-max min-w-32 max-w-full place-items-center">
         <svg aria-hidden="true" className="absolute inset-0 w-full h-full -rotate-90 transform" viewBox="0 0 128 128">
+          <defs>
+            {/* Dải màu cam → vàng → xanh lá như thiết kế; không dùng đỏ (ADR-002) */}
+            <linearGradient id="calorieRingGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#F97316" />
+              <stop offset="50%" stopColor="#FACC15" />
+              <stop offset="100%" stopColor="#22C55E" />
+            </linearGradient>
+          </defs>
           {/* Vòng nền mờ */}
           <circle
             cx="64"
             cy="64"
             r={R}
-            stroke="#F1F5F9"
-            strokeWidth="10"
+            stroke="url(#calorieRingGradient)"
+            strokeOpacity="0.22"
+            strokeWidth="11"
             fill="transparent"
           />
           {/* Vòng tiến trình calo */}
@@ -67,7 +78,7 @@ export const CalorieRing: React.FC<CalorieRingProps> = ({
             cy="64"
             r={R}
             stroke={strokeColor}
-            strokeWidth="10"
+            strokeWidth="11"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="round"

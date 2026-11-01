@@ -6,8 +6,9 @@
  */
 
 import React from 'react';
-import { Sparkles, HeartHandshake, ShieldCheck } from 'lucide-react';
+import { Sparkles, ShieldCheck } from 'lucide-react';
 import type { BackOnTrack } from '../../api/habitContract';
+import { Mascot } from '../common/Mascot';
 
 interface BackOnTrackBannerProps {
   backOnTrack: BackOnTrack;
@@ -35,7 +36,7 @@ export const BackOnTrackBanner: React.FC<BackOnTrackBannerProps> = ({ backOnTrac
             {isBackOnTrack ? 'Quay lại đường đua' : 'Trạng thái phong độ'}
           </span>
           {isBackOnTrack ? (
-            <HeartHandshake className="w-5 h-5 text-amber-600" aria-hidden="true" />
+            <Mascot pose="running" size={64} className="-my-3 -mr-2" />
           ) : (
             <Sparkles className="w-5 h-5 text-emerald-600" aria-hidden="true" />
           )}

@@ -27,6 +27,7 @@ import { isNativeCameraAvailable, takeNativePhoto } from '../utils/nativeCamera'
 import { useDraftAutosave } from '../offline/useDraftAutosave';
 import { Check } from 'lucide-react';
 import styles from '../components/meal/CaptureSurface.module.css';
+import { Mascot } from '../components/common/Mascot';
 
 export const NOT_FOOD_MESSAGE = 'Đây không phải là món ăn, xin vui lòng chụp lại';
 
@@ -296,9 +297,9 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       {notFoodNotice && (mode === 'idle' || mode === 'filePicker' || mode === 'cameraLive') && (
         <div
           role="alert"
-          className="w-full max-w-lg mx-auto mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
+          className="w-full max-w-lg mx-auto mb-4 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
         >
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+          <Mascot pose="thinking" size={56} className="shrink-0" />
           <span>{NOT_FOOD_MESSAGE}</span>
         </div>
       )}

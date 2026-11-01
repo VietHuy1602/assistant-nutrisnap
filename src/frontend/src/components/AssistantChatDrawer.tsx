@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
-import { Bot, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../context/ChatContext';
 import { useChatScroll } from '../chat/useChatScroll';
@@ -9,6 +9,7 @@ import { HistorySkeleton } from '../chat/components/HistorySkeleton';
 import { MessageList } from '../chat/components/MessageList';
 import { ActionConfirmationCard } from '../chat/components/ActionConfirmationCard';
 import styles from '../chat/components/AssistantSurface.module.css';
+import { Mascot } from './common/Mascot';
 
 interface Props {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export function AssistantChatDrawer({ isOpen, onClose, username, backgroundRef, 
         className={`${styles.assistant} flex h-[100dvh] min-h-0 w-full max-w-md flex-col bg-nutri-panel text-nutri-ink shadow-2xl`}>
         <div className="flex shrink-0 items-center justify-between gap-2 border-b border-nutri-border/60 bg-nutri-surface p-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="rounded-xl bg-nutri-selected p-2 text-nutri-primary"><Bot aria-hidden="true" size={20} /></span>
+            <Mascot pose="wave" size={48} className="-my-1 shrink-0" />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <h2 id="assistant-title" className="text-base leading-6 font-semibold">Trợ lý AI NutriSnap</h2>

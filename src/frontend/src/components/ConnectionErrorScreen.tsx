@@ -7,6 +7,7 @@
 import React, { useState, useContext } from 'react';
 import { WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { Mascot } from './common/Mascot';
 
 export interface ConnectionErrorScreenProps {
   onRetry?: () => Promise<void>;
@@ -41,8 +42,9 @@ export const ConnectionErrorScreen: React.FC<ConnectionErrorScreenProps> = ({ on
         aria-live="assertive"
         className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center space-y-6"
       >
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-600">
-          <WifiOff className="w-8 h-8" aria-hidden="true" />
+        <div className="relative mx-auto w-fit">
+          <Mascot pose="tired" size={120} />
+          <WifiOff className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-amber-50 p-1.5 text-amber-600 shadow-md" aria-hidden="true" />
         </div>
 
         <div className="space-y-2">
