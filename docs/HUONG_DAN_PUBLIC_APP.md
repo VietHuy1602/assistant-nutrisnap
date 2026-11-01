@@ -196,8 +196,8 @@ Không cần thẻ thanh toán cho gói Free.
 | `AUTH_COOKIE_SECURE` | `True` |
 | `AUTH_COOKIE_SAMESITE` | `none` |
 | `CORS_ORIGINS` | `https://localhost,capacitor://localhost` |
-| `GEMINI_MODEL` | `gemini-2.5-flash` |
-| `GEMINI_MODEL_NAME` | `gemini-2.5-flash` |
+| `GEMINI_MODEL` | `gemini-flash-lite-latest` |
+| `GEMINI_MODEL_NAME` | `gemini-flash-lite-latest` |
 | `USE_LLM` | `true` |
 
    > Đây chính là nơi API key "sống". Render mã hoá và không hiển thị công khai. **Không** đặt key vào file nào trong repo.
