@@ -50,3 +50,162 @@
     @apply cursor-not-allowed opacity-60;
   }
 }
+
+/* ==========================================================================
+   Chế độ tối (html.dark) — bật/tắt từ menu tài khoản (src/theme/theme.ts).
+   Ghi đè các màu nền/chữ/viền dùng chung; trang Đăng nhập/Đăng ký vốn đã tối.
+   ========================================================================== */
+html.dark { color-scheme: dark; }
+html.dark body,
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-slate-50\/50,
+html.dark .bg-nutri-surface { background-color: #0b1220 !important; color: #e5edf7; }
+
+/* Bề mặt thẻ / khung */
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80,
+html.dark .bg-white\/70,
+html.dark .bg-nutri-panel { background-color: #121b2e !important; }
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-gray-50 { background-color: #18233a !important; }
+html.dark .bg-slate-200,
+html.dark .bg-slate-200\/80 { background-color: #22304b !important; }
+
+/* Nền pastel nhạt → tông tối. Dùng ~= để chỉ khớp đúng tên class (không khớp -500). */
+html.dark [class~="bg-emerald-50"],
+html.dark [class~="bg-emerald-50/50"],
+html.dark [class~="bg-emerald-50/60"],
+html.dark [class~="bg-emerald-50/70"],
+html.dark [class~="bg-emerald-50/80"],
+html.dark [class~="bg-green-50"],
+html.dark [class~="bg-green-50/50"],
+html.dark [class~="bg-green-50/60"],
+html.dark [class~="bg-green-50/70"],
+html.dark [class~="bg-green-50/80"],
+html.dark [class~="bg-nutri-selected"],
+html.dark [class~="bg-nutri-selected/50"],
+html.dark [class~="bg-nutri-selected/60"],
+html.dark [class~="bg-nutri-selected/70"],
+html.dark [class~="bg-nutri-selected/80"] { background-color: #0f2e25 !important; }
+html.dark [class~="bg-amber-50"],
+html.dark [class~="bg-amber-50/50"],
+html.dark [class~="bg-amber-50/60"],
+html.dark [class~="bg-amber-50/70"],
+html.dark [class~="bg-amber-50/80"],
+html.dark [class~="bg-yellow-50"],
+html.dark [class~="bg-yellow-50/50"],
+html.dark [class~="bg-yellow-50/60"],
+html.dark [class~="bg-yellow-50/70"],
+html.dark [class~="bg-yellow-50/80"],
+html.dark [class~="bg-orange-50"],
+html.dark [class~="bg-orange-50/50"],
+html.dark [class~="bg-orange-50/60"],
+html.dark [class~="bg-orange-50/70"],
+html.dark [class~="bg-orange-50/80"] { background-color: #33260f !important; }
+html.dark [class~="bg-sky-50"],
+html.dark [class~="bg-sky-50/50"],
+html.dark [class~="bg-sky-50/60"],
+html.dark [class~="bg-sky-50/70"],
+html.dark [class~="bg-sky-50/80"],
+html.dark [class~="bg-blue-50"],
+html.dark [class~="bg-blue-50/50"],
+html.dark [class~="bg-blue-50/60"],
+html.dark [class~="bg-blue-50/70"],
+html.dark [class~="bg-blue-50/80"] { background-color: #10263f !important; }
+html.dark [class~="bg-violet-50"],
+html.dark [class~="bg-violet-50/50"],
+html.dark [class~="bg-violet-50/60"],
+html.dark [class~="bg-violet-50/70"],
+html.dark [class~="bg-violet-50/80"],
+html.dark [class~="bg-purple-50"],
+html.dark [class~="bg-purple-50/50"],
+html.dark [class~="bg-purple-50/60"],
+html.dark [class~="bg-purple-50/70"],
+html.dark [class~="bg-purple-50/80"],
+html.dark [class~="bg-indigo-50"],
+html.dark [class~="bg-indigo-50/50"],
+html.dark [class~="bg-indigo-50/60"],
+html.dark [class~="bg-indigo-50/70"],
+html.dark [class~="bg-indigo-50/80"] { background-color: #221a3f !important; }
+html.dark [class~="bg-rose-50"],
+html.dark [class~="bg-rose-50/50"],
+html.dark [class~="bg-rose-50/60"],
+html.dark [class~="bg-rose-50/70"],
+html.dark [class~="bg-rose-50/80"],
+html.dark [class~="bg-pink-50"],
+html.dark [class~="bg-pink-50/50"],
+html.dark [class~="bg-pink-50/60"],
+html.dark [class~="bg-pink-50/70"],
+html.dark [class~="bg-pink-50/80"],
+html.dark [class~="bg-red-50"],
+html.dark [class~="bg-red-50/50"],
+html.dark [class~="bg-red-50/60"],
+html.dark [class~="bg-red-50/70"],
+html.dark [class~="bg-red-50/80"] { background-color: #3a1626 !important; }
+html.dark [class~="bg-lime-50"],
+html.dark [class~="bg-lime-50/50"],
+html.dark [class~="bg-lime-50/60"],
+html.dark [class~="bg-lime-50/70"],
+html.dark [class~="bg-lime-50/80"],
+html.dark [class~="bg-teal-50"],
+html.dark [class~="bg-teal-50/50"],
+html.dark [class~="bg-teal-50/60"],
+html.dark [class~="bg-teal-50/70"],
+html.dark [class~="bg-teal-50/80"] { background-color: #12301f !important; }
+
+html.dark [class~="from-emerald-50"],
+html.dark [class~="from-sky-50"],
+html.dark [class~="from-rose-50"],
+html.dark [class~="from-amber-50"],
+html.dark [class~="from-violet-50"],
+html.dark [class~="from-slate-50"],
+html.dark [class~="from-white"],
+html.dark [class~="from-lime-50"],
+html.dark [class~="from-teal-50"],
+html.dark [class~="from-green-50"],
+html.dark [class~="from-orange-50"],
+html.dark [class~="from-yellow-50"] {
+  background-image: linear-gradient(135deg, #142038, #18263f) !important;
+}
+html.dark [class~="from-sky-100"][class~="to-pink-100"] {
+  background-image: linear-gradient(90deg, #1b2e52, #2a1f4d, #3b1c45) !important;
+}
+
+/* Chữ */
+html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-nutri-ink, html.dark .text-gray-900, html.dark .text-\[\#171717\] { color: #eef3fa !important; }
+html.dark .text-slate-700, html.dark .text-slate-600 { color: #c6d2e3 !important; }
+html.dark .text-slate-500, html.dark .text-slate-400, html.dark .text-nutri-muted { color: #95a6bf !important; }
+html.dark .text-emerald-900, html.dark .text-emerald-950, html.dark .text-emerald-800 { color: #a7f3d0 !important; }
+html.dark .text-amber-900, html.dark .text-amber-950, html.dark .text-amber-800 { color: #fcd9a0 !important; }
+html.dark .text-nutri-dark { color: #86efac !important; }
+
+/* Viền */
+html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-200\/80, html.dark .border-slate-300,
+html.dark .border-nutri-border, html.dark [class*="border-nutri-border\/"] { border-color: #26344d !important; }
+html.dark [class*="border-emerald-1"], html.dark [class*="border-emerald-2"] { border-color: #1f5a45 !important; }
+html.dark [class*="border-amber-2"], html.dark [class*="border-amber-3"] { border-color: #6b4e1d !important; }
+
+/* Ô nhập, thẻ chọn */
+html.dark .nutri-input, html.dark input:not([type='range']):not([type='radio']):not([type='checkbox']), html.dark select, html.dark textarea {
+  background-color: #0f182a !important; color: #eef3fa !important; border-color: #2b3a56 !important;
+}
+html.dark .nutri-choice { background: #121b2e !important; border-color: #26344d; }
+html.dark .nutri-choice[data-selected='true'] { background: #0f2e25 !important; border-color: #34d399; }
+
+/* Thẻ calo trên Tổng quan & thẻ dinh dưỡng */
+html.dark .calorie-summary { background: linear-gradient(160deg, #13203a 0%, #0f2a2a 55%, #10263f 100%) !important; border-color: #1f3b4f !important; }
+html.dark .macro-item { background-color: #121b2e !important; border-color: #26344d !important; }
+
+/* Bóng đổ nhẹ hơn trên nền tối */
+html.dark [class*="shadow-slate-900"], html.dark [class*="shadow-emerald-"] { --tw-shadow-color: rgb(0 0 0 / 0.35) !important; }
+
+/* Biểu đồ Recharts */
+html.dark .recharts-cartesian-axis-tick-value, html.dark .recharts-legend-item-text { fill: #b7c4d8 !important; color: #b7c4d8 !important; }
+html.dark .recharts-cartesian-grid line { stroke: #26344d !important; }
+html.dark .recharts-default-tooltip { background-color: #121b2e !important; border-color: #26344d !important; color: #eef3fa !important; }
+
+html.dark .calorie-total, html.dark .calorie-total strong, html.dark .calorie-ring-value { color: #eef3fa !important; }
+html.dark [class*="dashboard"] { color: #eef3fa; }

@@ -21,6 +21,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from src.ai.config import is_live_ai_available
 from src.backend.core.config import settings
 from src.backend.models.database import get_session, init_db
+from src.backend.routers.admin_router import router as admin_router
 from src.backend.routers.analytics_router import router as analytics_router
 from src.backend.routers.assistant_router import router as assistant_router
 from src.backend.routers.chat import router as chat_router
@@ -149,6 +150,7 @@ app.add_middleware(
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         *settings.mobile_dev_origins,
+        *settings.extra_cors_origins,
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -166,6 +168,7 @@ app.include_router(assistant_router)
 app.include_router(chat_router)
 app.include_router(analytics_router)
 app.include_router(report_router)
+app.include_router(admin_router)
 
 
 

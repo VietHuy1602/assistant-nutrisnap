@@ -24,6 +24,7 @@ const MonthlyReportView = React.lazy(() => import('./pages/MonthlyReportView'));
 const ProgressAnalyticsPage = React.lazy(() => import('./pages/ProgressAnalyticsPage'));
 const HabitPage = React.lazy(() => import('./pages/HabitPage'));
 const MonthlyReportPage = React.lazy(() => import('./pages/MonthlyReportPage'));
+const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
 import { apiClient } from './api/client';
 
@@ -110,6 +111,7 @@ export const App: React.FC = () => {
               <Route path="/habits" element={<HabitPage />} />
               <Route path="/reports" element={<MonthlyReportPage />} />
               <Route path="/monthly-report" element={<MonthlyReportRoute />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>
 

@@ -15,7 +15,7 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import event
+from sqlalchemy import event, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, SQLModel, create_engine
@@ -25,7 +25,18 @@ logger = logging.getLogger(__name__)
 # Đường dẫn gốc tuyệt đối của dự án (4 cấp thư mục: database.py -> models -> backend -> src -> ROOT)
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 DB_PATH = ROOT_DIR / "nutrisnap.db"
-DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{DB_PATH.as_posix()}"
+
+
+def normalize_database_url(url: str) -> str:
+    """Neon/Supabase/Render cấp URL dạng postgres:// hoặc postgresql://; SQLAlchemy cần chỉ rõ driver psycopg 3."""
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
+DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL") or f"sqlite:///{DB_PATH.as_posix()}")
 
 
 def create_db_engine(
@@ -38,6 +49,10 @@ def create_db_engine(
     if connect_args is None:
         connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
 
+    if not url.startswith("sqlite"):
+        # Postgres miễn phí (Neon) tự ngắt kết nối khi rảnh: kiểm tra kết nối trước khi dùng
+        kwargs.setdefault("pool_pre_ping", True)
+        kwargs.setdefault("pool_recycle", 300)
     engine = create_engine(url, echo=echo, connect_args=connect_args, **kwargs)
 
     if url.startswith("sqlite"):
@@ -65,31 +80,33 @@ def init_db(target_engine: Engine | None = None) -> None:
 
     SQLModel.metadata.create_all(eng)
 
-    # Tự động đồng bộ các cột mới nếu bảng users đã tồn tại từ trước (SQLite migration)
-    with eng.connect() as conn:
-        try:
-            result = conn.exec_driver_sql("PRAGMA table_info(users)")
-            existing_cols = {row[1] for row in result.fetchall()}
-            if existing_cols:
-                if "full_name" not in existing_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN full_name VARCHAR(100)")
-                if "is_active" not in existing_cols:
-                    conn.exec_driver_sql("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT 1 NOT NULL")
-                    logger.warning("Đã tự động bổ sung cột 'is_active' vào bảng 'users'.")
-
-            # Tự động đồng bộ các cột mới nếu bảng food_references đã tồn tại từ trước
-            res_food = conn.exec_driver_sql("PRAGMA table_info(food_references)")
-            existing_food_cols = {row[1] for row in res_food.fetchall()}
-            if existing_food_cols:
-                if "default_serving_g" not in existing_food_cols:
-                    conn.exec_driver_sql("ALTER TABLE food_references ADD COLUMN default_serving_g FLOAT DEFAULT 100.0 NOT NULL")
-                    logger.warning("Đã tự động bổ sung cột 'default_serving_g' vào bảng 'food_references'.")
-                if "serving_label" not in existing_food_cols:
-                    conn.exec_driver_sql("ALTER TABLE food_references ADD COLUMN serving_label VARCHAR(50) DEFAULT '100g' NOT NULL")
-                    logger.warning("Đã tự động bổ sung cột 'serving_label' vào bảng 'food_references'.")
-            conn.commit()
-        except SQLAlchemyError as exc:
-            logger.warning("Không thể tự động cập nhật schema bảng users/food_references: %s", exc)
+    # Tự động bổ sung cột mới cho bảng đã tồn tại từ trước (chạy được trên cả SQLite và PostgreSQL)
+    true_sql = "TRUE" if eng.dialect.name == "postgresql" else "1"
+    false_sql = "FALSE" if eng.dialect.name == "postgresql" else "0"
+    added_columns = {
+        "users": [
+            ("full_name", "VARCHAR(100)"),
+            ("is_active", f"BOOLEAN DEFAULT {true_sql} NOT NULL"),
+            ("is_admin", f"BOOLEAN DEFAULT {false_sql} NOT NULL"),
+        ],
+        "food_references": [
+            ("default_serving_g", "FLOAT DEFAULT 100.0 NOT NULL"),
+            ("serving_label", "VARCHAR(50) DEFAULT '100g' NOT NULL"),
+        ],
+    }
+    try:
+        inspector = inspect(eng)
+        with eng.begin() as conn:
+            for table, columns in added_columns.items():
+                if not inspector.has_table(table):
+                    continue
+                existing_cols = {col["name"] for col in inspector.get_columns(table)}
+                for name, ddl in columns:
+                    if name not in existing_cols:
+                        conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
+                        logger.warning("Đã tự động bổ sung cột '%s' vào bảng '%s'.", name, table)
+    except SQLAlchemyError as exc:
+        logger.warning("Không thể tự động cập nhật schema bảng users/food_references: %s", exc)
 
 
 # Tự động đồng bộ schema CSDL khi module được nạp

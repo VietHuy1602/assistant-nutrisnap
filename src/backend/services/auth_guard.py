@@ -32,6 +32,8 @@ ALLOWED_ORIGINS = {
 
 # Capacitor Android's bundled WebView origin for local development.
 ALLOWED_ORIGINS.update(settings.mobile_dev_origins)
+# Origin của bản deploy công khai (biến môi trường CORS_ORIGINS)
+ALLOWED_ORIGINS.update(settings.extra_cors_origins)
 
 
 def get_current_user(
@@ -115,6 +117,12 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Người dùng không tồn tại.",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    # Tài khoản bị quản trị viên khoá: chặn ngay cả khi cookie còn hạn
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản đã bị vô hiệu hóa",
         )
     return user
 

@@ -12,6 +12,7 @@ export const userPublicSchema = z.object({
   username: z.string(),
   email: z.string(),
   created_at: z.string().optional(), // docs/02 §4.1 không đảm bảo có trường này ở endpoint login
+  is_admin: z.boolean().optional(),
 });
 
 export const authResponseSchema = z.object({

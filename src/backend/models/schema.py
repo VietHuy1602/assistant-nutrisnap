@@ -32,6 +32,7 @@ class User(SQLModel, table=True):
     password_hash: str = Field(nullable=False)
     full_name: str | None = Field(default=None, max_length=100, nullable=True)
     is_active: bool = Field(default=True, nullable=False)
+    is_admin: bool = Field(default=False, nullable=False)
     created_at: datetime = Field(default_factory=utc_now, nullable=False)
 
     @property

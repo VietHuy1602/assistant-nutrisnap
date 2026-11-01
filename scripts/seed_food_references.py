@@ -1,13 +1,12 @@
 """
 scripts/seed_food_references.py
 Nạp dữ liệu dinh dưỡng 500 món ăn Việt Nam từ data/vn_foods.csv vào CSDL.
-Sử dụng kỹ thuật SQLite UPSERT (ON CONFLICT DO UPDATE):
+Sử dụng UPSERT (ON CONFLICT DO UPDATE), chạy được trên cả SQLite và PostgreSQL:
 - Giữ nguyên toàn bộ ID đã cấp phát cho các món ăn cũ.
 - Tuyệt đối KHÔNG xóa bảng (DELETE FROM) để tránh làm mồ côi (orphaned) các bản ghi meal_items đã liên kết.
-- Luôn kích hoạt PRAGMA foreign_keys = ON.
+- Với SQLite luôn kích hoạt PRAGMA foreign_keys = ON (qua engine dùng chung).
 """
 
-import sqlite3
 import sys
 from pathlib import Path
 
@@ -22,7 +21,12 @@ if hasattr(sys.stderr, "reconfigure"):
 root_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(root_dir))
 
-from src.backend.models.database import DB_PATH, init_db
+from sqlalchemy import func, select  # noqa: E402
+from sqlalchemy.dialects.postgresql import insert as pg_insert  # noqa: E402
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert  # noqa: E402
+
+from src.backend.models.database import engine, init_db  # noqa: E402
+from src.backend.models.schema import FoodReference  # noqa: E402
 
 csv_path = root_dir / "data" / "vn_foods.csv"
 
@@ -30,7 +34,7 @@ csv_path = root_dir / "data" / "vn_foods.csv"
 def seed_foods():
     print("=" * 60)
     print("Bắt đầu nạp/cập nhật dữ liệu món ăn từ data/vn_foods.csv vào CSDL...")
-    print(f"Cơ sở dữ liệu đích: {DB_PATH.as_posix()}")
+    print(f"Cơ sở dữ liệu đích: {engine.url.render_as_string(hide_password=True)}")
     print("=" * 60)
 
     # 1. Kiểm tra file CSV và tạo DB nếu chưa có
@@ -45,57 +49,35 @@ def seed_foods():
     df = pd.read_csv(csv_path, encoding="utf-8-sig")
     print(f"Đã đọc thành công {len(df)} món ăn từ file CSV.")
 
-    # 3. Kết nối CSDL SQLite với PRAGMA foreign_keys = ON
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON;")
-
-    # 4. Thực thi UPSERT an toàn (Không làm mất ID và không làm mồ côi dữ liệu meal_items)
-    upsert_sql = """
-    INSERT INTO food_references (
-        food_name,
-        calories_per_100g,
-        protein_per_100g,
-        carbs_per_100g,
-        fat_per_100g,
-        avg_price_vnd,
-        default_serving_g,
-        serving_label
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(food_name) DO UPDATE SET
-        calories_per_100g = excluded.calories_per_100g,
-        protein_per_100g = excluded.protein_per_100g,
-        carbs_per_100g = excluded.carbs_per_100g,
-        fat_per_100g = excluded.fat_per_100g,
-        avg_price_vnd = excluded.avg_price_vnd,
-        default_serving_g = excluded.default_serving_g,
-        serving_label = excluded.serving_label;
-    """
-
+    # 3. UPSERT an toàn (Không làm mất ID và không làm mồ côi dữ liệu meal_items)
     records = [
-        (
-            row["food_name"],
-            float(row["calories_per_100g"]),
-            float(row["protein_per_100g"]),
-            float(row["carbs_per_100g"]),
-            float(row["fat_per_100g"]),
-            int(row["avg_price_vnd"]),
-            float(row.get("default_serving_g", 100.0)),
-            str(row.get("serving_label", "100g")),
-        )
+        {
+            "food_name": row["food_name"],
+            "calories_per_100g": float(row["calories_per_100g"]),
+            "protein_per_100g": float(row["protein_per_100g"]),
+            "carbs_per_100g": float(row["carbs_per_100g"]),
+            "fat_per_100g": float(row["fat_per_100g"]),
+            "avg_price_vnd": int(row["avg_price_vnd"]),
+            "default_serving_g": float(row.get("default_serving_g", 100.0)),
+            "serving_label": str(row.get("serving_label", "100g")),
+        }
         for _, row in df.iterrows()
     ]
+    table = FoodReference.__table__
+    insert = pg_insert if engine.dialect.name == "postgresql" else sqlite_insert
+    stmt = insert(table).values(records)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[table.c.food_name],
+        set_={name: stmt.excluded[name] for name in records[0] if name != "food_name"},
+    )
 
-    cursor.executemany(upsert_sql, records)
-    conn.commit()
-
-    # 5. Kiểm tra kết quả
-    total_rows = cursor.execute("SELECT COUNT(*) FROM food_references;").fetchone()[0]
-    sample_items = cursor.execute(
-        "SELECT id, food_name, calories_per_100g, avg_price_vnd FROM food_references LIMIT 3;"
-    ).fetchall()
-
-    conn.close()
+    with engine.begin() as conn:
+        conn.execute(stmt)
+        # 4. Kiểm tra kết quả
+        total_rows = conn.execute(select(func.count()).select_from(table)).scalar_one()
+        sample_items = conn.execute(
+            select(table.c.id, table.c.food_name, table.c.calories_per_100g, table.c.avg_price_vnd).limit(3)
+        ).all()
 
     print(f"\n✅ THÀNH CÔNG: Đã đồng bộ an toàn {total_rows} món ăn vào bảng 'food_references'!")
     print("Mẫu dữ liệu trong CSDL:")

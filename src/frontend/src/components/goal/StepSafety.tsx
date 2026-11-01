@@ -1,7 +1,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { ShieldCheck } from 'lucide-react';
-import { GoalFormValues } from '../../schemas/goalSchemas';
+import { GoalFormValues, maxSafeLosePace } from '../../schemas/goalSchemas';
 import { FormField } from '../FormField';
 import { DISCLAIMER_WIZARD } from '../../constants/copy';
 
@@ -18,6 +18,8 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
   } = form;
 
   const goalType = watch('goal_type');
+  const currentWeight = Number(watch('current_weight_kg')) || 0;
+  const targetWeight = Number(watch('target_weight_kg')) || 0;
   const weeklyPace = watch('weekly_pace_kg') || 0;
   const budget = watch('daily_budget_vnd') || 60000;
 
@@ -27,7 +29,8 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
 
   const getPaceConfig = () => {
     if (goalType === 'lose_weight') {
-      return { min: 0.25, max: 0.75, step: 0.05, label: 'Giảm an toàn: 0,25 – 0,75 kg/tuần' };
+      const max = maxSafeLosePace(currentWeight);
+      return { min: 0.25, max, step: 0.05, label: `Giảm an toàn: 0,25 – ${max.toFixed(2).replace('.', ',')} kg/tuần (~1% cân nặng)` };
     }
     if (goalType === 'gain_muscle') {
       return { min: 0.1, max: 0.5, step: 0.05, label: 'Tăng an toàn: 0,10 – 0,50 kg/tuần' };
@@ -36,6 +39,23 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
   };
 
   const paceConfig = getPaceConfig();
+
+  // Lộ trình: số kg cần thay đổi, tốc độ đề xuất (đạt mục tiêu trong ~16 tuần nếu an toàn) và thời gian dự kiến
+  const deltaKg = Math.abs(currentWeight - targetWeight);
+  const roundStep = (v: number) => Math.round(v / 0.05) * 0.05;
+  const suggestedPace =
+    goalType === 'maintain' || deltaKg === 0
+      ? 0
+      : Math.round(Math.min(paceConfig.max, Math.max(paceConfig.min, roundStep(deltaKg / 16))) * 100) / 100;
+  const weeksNeeded = weeklyPace > 0 && deltaKg > 0 ? Math.ceil(deltaKg / weeklyPace) : 0;
+  const etaDate = weeksNeeded > 0 ? new Date(Date.now() + weeksNeeded * 7 * 86_400_000) : null;
+
+  // Đổi mục tiêu/cân nặng làm tốc độ cũ vượt khoảng an toàn mới: tự đưa về mức gần nhất
+  React.useEffect(() => {
+    if (goalType === 'maintain' || paceConfig.max === 0) return;
+    if (weeklyPace > paceConfig.max) setValue('weekly_pace_kg', paceConfig.max, { shouldValidate: true });
+    else if (weeklyPace < paceConfig.min) setValue('weekly_pace_kg', paceConfig.min, { shouldValidate: true });
+  }, [goalType, paceConfig.max, paceConfig.min, weeklyPace, setValue]);
 
   return (
     <div className="space-y-6">
@@ -86,6 +106,35 @@ export const StepSafety: React.FC<StepSafetyProps> = ({ form }) => {
               <span>{paceConfig.min} kg/tuần (chậm)</span>
               <span>{paceConfig.max} kg/tuần (tối đa an toàn)</span>
             </div>
+          </div>
+        )}
+
+        {goalType !== 'maintain' && deltaKg > 0 && (
+          <div className="rounded-xl border border-emerald-200 bg-white/80 p-3 text-xs text-slate-700 space-y-1.5">
+            <p>
+              Cần {goalType === 'lose_weight' ? 'giảm' : 'tăng'} <strong>{deltaKg.toLocaleString('vi-VN')} kg</strong>
+              {' '}({currentWeight.toLocaleString('vi-VN')} → {targetWeight.toLocaleString('vi-VN')} kg).
+              {weeksNeeded > 0 && etaDate && (
+                <>
+                  {' '}Với tốc độ hiện tại: khoảng <strong>{weeksNeeded} tuần</strong>, dự kiến đạt vào{' '}
+                  <strong>{etaDate.toLocaleDateString('vi-VN')}</strong>.
+                </>
+              )}
+            </p>
+            {suggestedPace > 0 && Math.abs(suggestedPace - weeklyPace) >= 0.05 && (
+              <button
+                type="button"
+                onClick={() => setValue('weekly_pace_kg', suggestedPace, { shouldValidate: true })}
+                className="min-h-9 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+              >
+                Dùng mức đề xuất {suggestedPace.toFixed(2).replace('.', ',')} kg/tuần
+              </button>
+            )}
+            {deltaKg / paceConfig.max > 52 && (
+              <p className="text-amber-700">
+                Mục tiêu này cần hơn 1 năm ở tốc độ an toàn tối đa. Bạn có thể đặt mốc trung gian gần hơn để dễ duy trì.
+              </p>
+            )}
           </div>
         )}
 

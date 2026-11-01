@@ -11,6 +11,18 @@ const num = (label: string) =>
     error: `Vui lòng nhập ${label}`,
   });
 
+/**
+ * Tốc độ giảm cân tối đa an toàn: ~1% cân nặng/tuần, không dưới 0,75 và không quá 1,0 kg/tuần
+ * (làm tròn xuống bội số 0,05). Khớp với max_safe_lose_pace ở backend.
+ */
+export function maxSafeLosePace(currentWeightKg: number | undefined): number {
+  if (!currentWeightKg || !Number.isFinite(currentWeightKg) || currentWeightKg <= 0) return 0.75;
+  const onePercent = Math.floor((currentWeightKg * 0.01) / 0.05 + 1e-9) * 0.05;
+  return Math.round(Math.max(0.75, Math.min(1.0, onePercent)) * 100) / 100;
+}
+
+const formatKg = (v: number) => v.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
 export const goalSchema = z
   .object({
     gender: z.enum(['male', 'female', 'other'], {
@@ -48,8 +60,9 @@ export const goalSchema = z
     const pace = Math.round(v.weekly_pace_kg * 100) / 100;
 
     if (v.goal_type === 'lose_weight') {
-      if (pace < 0.25 || pace > 0.75) {
-        add('weekly_pace_kg', 'Giảm cân an toàn: 0,25–0,75 kg/tuần');
+      const maxPace = maxSafeLosePace(v.current_weight_kg);
+      if (pace < 0.25 || pace > maxPace) {
+        add('weekly_pace_kg', `Giảm cân an toàn: 0,25–${formatKg(maxPace)} kg/tuần`);
       }
       if (v.target_weight_kg >= v.current_weight_kg) {
         add('target_weight_kg', 'Cân nặng mục tiêu phải thấp hơn cân nặng hiện tại');

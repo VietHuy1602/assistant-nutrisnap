@@ -245,3 +245,46 @@ def test_save_goal_and_weight_log_isolation(db_session: Session):
 
     goal1_db_after = db_session.exec(select(Goal).where(Goal.user_id == 1)).first()
     assert goal1_db_after.target_weight == 68.0
+
+
+def test_implausible_weight_jump_is_rejected_and_goal_save_skips_it():
+    """Không thể giảm 7 kg trong 1 ngày: ghi cân nặng bị từ chối, lưu mục tiêu không ghi điểm sai."""
+    import uuid
+    from datetime import timedelta
+
+    import pytest
+    from sqlmodel import Session, select
+
+    from src.backend.models.database import engine, init_db
+    from src.backend.models.schema import User, WeightLog, get_vn_today
+    from src.backend.services.goal_service import (
+        GoalPlanInput,
+        ImplausibleWeightChangeError,
+        log_user_weight,
+        save_or_update_user_goal,
+    )
+
+    init_db()
+    with Session(engine) as session:
+        user = User(username=f"w_{uuid.uuid4().hex[:8]}", email=f"{uuid.uuid4().hex[:8]}@t.vn", password_hash="x")
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        today = get_vn_today()
+        log_user_weight(session, user.id, 72.0, today - timedelta(days=1))
+
+        with pytest.raises(ImplausibleWeightChangeError):
+            log_user_weight(session, user.id, 65.0, today)
+        # Dao động bình thường vẫn ghi được
+        assert log_user_weight(session, user.id, 71.2, today).weight_kg == 71.2
+
+        save_or_update_user_goal(
+            session,
+            user.id,
+            GoalPlanInput(age=25, height_cm=170, current_weight_kg=60.0, target_weight_kg=58.0,
+                          goal_type="lose_weight", weekly_pace_kg=0.5),
+        )
+        today_log = session.exec(
+            select(WeightLog).where(WeightLog.user_id == user.id, WeightLog.logged_date == today)
+        ).first()
+        assert today_log.weight_kg == 71.2

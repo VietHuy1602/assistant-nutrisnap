@@ -35,6 +35,10 @@
 .surface :global(form) :global(.absolute.left-3\.5) { top: 20px; color: #bac6d8; }
 .surface :global(.text-xs) { font-size: 14px; line-height: 1.6; }
 .surface :global(.text-slate-500), .surface :global(.text-slate-400) { color: #bac6d8; }
+/* Danh sách yêu cầu mật khẩu (trang Đăng ký) trên nền tối */
+.surface :global(.text-slate-600), .surface :global(.text-slate-700) { color: #dfe6f3; }
+.surface :global(.text-slate-300) { color: #8b98ad; }
+.surface :global(.text-emerald-600), .surface :global(.text-emerald-700) { color: #86efac; }
 .surface :global(.bg-slate-50), .surface :global(.bg-slate-100) { background: #ffffff08; border-color: #ffffff1f; }
 .surface :global(.text-nutri-primary) { color: #bbefca; }
 .panel > :last-child > * { background: #ffffff08; border-color: #ffffff1f; color: #bac6d8; font-size: 14px; line-height: 1.6; }

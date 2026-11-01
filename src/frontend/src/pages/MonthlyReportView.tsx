@@ -3,6 +3,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import type { MonthlyReportViewProps } from '../types/monthlyReport';
 import { nutritionValue, prepareReportRows, reportMonthLength, validReportDate } from '../utils/monthlyReport';
 import styles from '../components/report/ReportSurface.module.css';
+import { canvasToPdfBlob } from '../export/exportPdf';
+import { renderDailyReportCanvas } from '../export/renderDailyReportCanvas';
+import { isNativeApp, saveAndShareNativeFile } from '../export/saveNativeFile';
 
 const control = 'min-h-11 rounded-xl border border-nutri-border bg-nutri-panel px-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2 disabled:opacity-50';
 const panel = 'min-w-0 rounded-2xl border border-nutri-border bg-nutri-panel p-4 sm:p-6';
@@ -29,8 +32,22 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
   const title = monthLength ? `Tháng ${Number(month.slice(5))}/${month.slice(0, 4)}` : 'Tháng không hợp lệ';
   const summary = showReport ? data?.summary : undefined;
 
-  const print = () => {
+  const [exporting, setExporting] = useState(false);
+  const print = async () => {
     setPrintError(null);
+    // App Android/iOS: WebView không hỗ trợ window.print(), nên tạo file PDF rồi mở bảng chia sẻ
+    if (isNativeApp()) {
+      setExporting(true);
+      try {
+        const pdf = await canvasToPdfBlob(renderDailyReportCanvas(`Báo cáo ${title}`, rows, summary));
+        await saveAndShareNativeFile(pdf, `NutriSnap_DinhDuong_${month}.pdf`, `Báo cáo ${title} (PDF)`);
+      } catch (err) {
+        setPrintError(err instanceof Error ? err.message : 'Không tạo được file PDF. Vui lòng thử lại.');
+      } finally {
+        setExporting(false);
+      }
+      return;
+    }
     try { window.print(); }
     catch { setPrintError('Không mở được hộp thoại in. Vui lòng thử lại hoặc dùng chức năng in của trình duyệt.'); }
   };
@@ -92,7 +109,7 @@ export function MonthlyReportView({ month, today, loadState, data, errorMessage,
           {valid && <p className="mt-1 text-sm leading-6 text-nutri-muted">Dinh dưỡng từng ngày · 01/{month.slice(5)}/{month.slice(0, 4)} – {monthLength}/{month.slice(5)}/{month.slice(0, 4)} · giờ Việt Nam</p>}
           {matching && data?.source === 'demo' && <p className="mt-3 inline-block rounded-lg border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-semibold text-amber-900">Dữ liệu minh họa</p>}
         </div>
-        <button type="button" className={`${control} report-controls shrink-0 bg-nutri-primary text-white`} disabled={!showReport} onClick={print}>In / Lưu PDF</button>
+        <button type="button" className={`${control} report-controls shrink-0 bg-nutri-primary text-white`} disabled={!showReport || exporting} onClick={() => void print()}>{exporting ? "Đang tạo PDF…" : "In / Lưu PDF"}</button>
       </header>
 
       <div className={`${panel} report-controls grid gap-4 sm:grid-cols-2`}>
