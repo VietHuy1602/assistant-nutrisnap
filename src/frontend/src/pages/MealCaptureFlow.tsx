@@ -28,8 +28,12 @@ import { useDraftAutosave } from '../offline/useDraftAutosave';
 import { Check } from 'lucide-react';
 import styles from '../components/meal/CaptureSurface.module.css';
 import { Mascot } from '../components/common/Mascot';
+import { useSearchParams } from 'react-router-dom';
+
+const MEAL_TYPES = ['breakfast', 'lunch', 'snack', 'dinner'];
 
 export const NOT_FOOD_MESSAGE = 'Đây không phải là món ăn, xin vui lòng chụp lại';
+export const BLURRY_MESSAGE = 'Ảnh này bị mờ, xin vui lòng chụp lại!';
 
 export type CaptureMode =
   | 'idle'
@@ -59,14 +63,17 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
     return 'idle';
   });
   const [capturedBlob, setCapturedBlob] = useState<Blob | null>(null);
-  const [selectedMealType, setSelectedMealType] = useState<string>(getDefaultMealTypeByHour());
+  const [searchParams] = useSearchParams();
+  // Mở từ thẻ "Thực đơn hôm nay": chọn sẵn đúng bữa
+  const presetMeal = searchParams.get('meal');
+  const [selectedMealType, setSelectedMealType] = useState<string>(presetMeal && MEAL_TYPES.includes(presetMeal) ? presetMeal : getDefaultMealTypeByHour());
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [manualReason, setManualReason] = useState<string | undefined>();
-  const [unrecognized, setUnrecognized] = useState<{ reason?: 'not_food' | 'unclear' | 'service_error' | null; message?: string }>({});
+  const [unrecognized, setUnrecognized] = useState<{ reason?: 'not_food' | 'blurry' | 'unclear' | 'service_error' | null; message?: string }>({});
   const [isSavedOffline, setIsSavedOffline] = useState(false);
   // Ảnh vừa gửi không phải món ăn: quay lại màn chụp và hiện thông báo cho tới khi chọn ảnh mới
-  const [notFoodNotice, setNotFoodNotice] = useState(false);
+  const [notFoodNotice, setNotFoodNotice] = useState<string | null>(null);
   const [cameraNotice, setCameraNotice] = useState<string | null>(null);
   const nativeCameraOpenedRef = useRef(false);
 
@@ -136,7 +143,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
     if (isNativeCameraAvailable()) {
       const result = await takeNativePhoto();
       if (result.status === 'ok') {
-        setNotFoodNotice(false);
+        setNotFoodNotice(null);
         setCameraNotice(null);
         setCapturedBlob(result.blob);
         setMode('captured');
@@ -158,14 +165,14 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
   const handleCapturePhoto = async () => {
     const photo = await captureFrame();
     if (photo) {
-      setNotFoodNotice(false);
+      setNotFoodNotice(null);
       setCapturedBlob(photo.blob);
       setMode('captured');
     }
   };
 
   const handleImageFileSelected = (file: File) => {
-    setNotFoodNotice(false);
+    setNotFoodNotice(null);
     setCapturedBlob(file);
     setMode('captured');
   };
@@ -182,9 +189,9 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
       return;
     }
 
-    if (result.reason === 'not_food') {
+    if (result.reason === 'not_food' || result.reason === 'blurry') {
       setCapturedBlob(null);
-      setNotFoodNotice(true);
+      setNotFoodNotice(result.reason === 'blurry' ? BLURRY_MESSAGE : NOT_FOOD_MESSAGE);
       setMode('idle');
       return;
     }
@@ -300,7 +307,7 @@ export const MealCaptureFlow: React.FC<MealCaptureFlowProps> = ({
           className="w-full max-w-lg mx-auto mb-4 flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900"
         >
           <Mascot pose="thinking" size={56} className="shrink-0" />
-          <span>{NOT_FOOD_MESSAGE}</span>
+          <span>{notFoodNotice}</span>
         </div>
       )}
 

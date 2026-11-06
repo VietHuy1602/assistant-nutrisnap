@@ -8,9 +8,9 @@
 import React, { useMemo } from 'react';
 import {
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,22 +25,32 @@ interface WeightTrendChartProps {
   points: readonly WeightPoint[];
   status: TrendStatus;
   masked?: boolean;
+  /** Calo đã nạp mỗi ngày: hiện thành cột dưới đường cân nặng */
+  calories?: ReadonlyArray<{ date: string; calories: number }>;
 }
 
 export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
   points,
   status,
   masked = false,
+  calories,
 }) => {
   const reducedMotion = useReducedMotion();
 
   // Pure mapping for chart display without mutating or computing numbers
   const chartData = useMemo(() => {
-    return points.map((p) => ({
-      ...p,
-      displayDate: formatDayMonth(p.date),
-    }));
-  }, [points]);
+    if (!calories?.length) {
+      return points.map((p) => ({ ...p, displayDate: formatDayMonth(p.date) }));
+    }
+    // Ghép theo ngày: mỗi ngày trong khoảng có cột calo, ngày có cân nặng thì có thêm điểm cân nặng
+    const byDate = new Map<string, Record<string, unknown>>();
+    for (const c of calories) byDate.set(c.date, { date: c.date, kcal: c.calories > 0 ? c.calories : null });  // ngày không ăn: không có điểm
+    for (const p of points) byDate.set(p.date, { ...(byDate.get(p.date) ?? {}), ...p });
+    return [...byDate.values()]
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+      .map((d) => ({ ...d, displayDate: formatDayMonth(String(d.date)) }));
+  }, [points, calories]);
+  const hasKcal = !!calories?.some((c) => c.calories > 0);
 
   const firstDate = points.length > 0 ? formatDayMonth(points[0].date) : '';
   const lastDate = points.length > 0 ? formatDayMonth(points[points.length - 1].date) : '';
@@ -70,7 +80,7 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
   return (
     <div role="img" aria-label={ariaDescription} className="w-full h-80">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
+        <ComposedChart
           data={chartData}
           accessibilityLayer
           margin={{ top: 12, right: 16, bottom: 4, left: -10 }}
@@ -78,38 +88,72 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
           <XAxis
             dataKey="displayDate"
-            interval="preserveStartEnd"
-            tick={{ fontSize: 13, fill: '#475569' }}
+            interval={hasKcal ? 0 : 'preserveStartEnd'}
+            {...(hasKcal
+              ? {
+                  angle: -45,
+                  textAnchor: 'end',
+                  height: 46,
+                  tick: { fontSize: 10, fill: '#9A3412', fontWeight: 700 },
+                  // Mỗi ngày hiện số calo; khoảng dài thì cách quãng để không chồng chữ
+                  tickFormatter: (_: string, i: number) => {
+                    const step = Math.ceil(chartData.length / 14);
+                    const v = Number((chartData[i] as { kcal?: number })?.kcal ?? 0);
+                    return v > 0 && i % step === 0 ? Math.round(v).toLocaleString('vi-VN') : '';  // chỉ ghi số ở ngày có dữ liệu
+                  },
+                }
+              : { tick: { fontSize: 13, fill: '#475569' } })}
             tickMargin={8}
             axisLine={{ stroke: '#CBD5E1' }}
           />
           {/* zero-math-ok: padding trục do Recharts xử lý, không phải phép tính dữ liệu sức khỏe */}
+          {hasKcal && <YAxis yAxisId="kcal" orientation="right" hide domain={[(min: number) => min * 0.6, (max: number) => max * 1.15]} />}
           <YAxis
             domain={['dataMin - 1', 'dataMax + 1']}
-            width={44}
+            width={52}
             tick={{ fontSize: 13, fill: '#475569' }}
-            tickFormatter={(v: number) => (masked ? '•••' : String(v))}
+            tickFormatter={(v: number) => (masked ? '•••' : (Math.round(v * 10) / 10).toLocaleString('vi-VN'))}
             axisLine={{ stroke: '#CBD5E1' }}
           />
           <Tooltip
-            contentStyle={{
-              backgroundColor: '#FFFFFF',
-              borderRadius: '0.75rem',
-              border: '1px solid #E2E8F0',
-              boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-              fontSize: '14px',
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const row = payload[0].payload as { weight_kg?: number | null; kcal?: number | null };
+              return (
+                <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm shadow-md">
+                  <p className="mb-1 text-slate-900">Ngày {label}</p>
+                  {row.weight_kg != null && (
+                    <p className="text-[#107C41]">Cân nặng ghi nhận : {masked ? '•••' : formatKg(row.weight_kg)}</p>
+                  )}
+                  {hasKcal && (
+                    <p className="text-orange-700">
+                      Calo đã nạp vào : {row.kcal ? `${Math.round(row.kcal).toLocaleString('vi-VN')} kcal` : 'chưa ghi nhận'}
+                    </p>
+                  )}
+                </div>
+              );
             }}
-            formatter={(value: number, name: string) => {
-              if (masked) return ['•••', name];
-              return [formatKg(value), name];
-            }}
-            labelFormatter={(label: string) => `Ngày ${label}`}
           />
           <Legend
             verticalAlign="top"
             height={56}
             wrapperStyle={{ fontSize: '14px', paddingBottom: '8px' }}
           />
+          {/* Calo đã nạp: không vẽ đường, chỉ để hiện trong ô chú thích khi chạm (số calo ghi dưới trục ngang) */}
+          {hasKcal && (
+            <Line
+              yAxisId="kcal"
+              type="monotone"
+              dataKey="kcal"
+              name="Calo đã nạp vào"
+              stroke="transparent"
+              legendType="none"
+              dot={false}
+              activeDot={false}
+              connectNulls={false}
+              isAnimationActive={!reducedMotion}
+            />
+          )}
           {/* Đường 1: Cân nặng ghi nhận thực tế (nét liền, có điểm, màu xanh thương hiệu #107C41) */}
           <Line
             type="monotone"
@@ -119,25 +163,10 @@ export const WeightTrendChart: React.FC<WeightTrendChartProps> = ({
             strokeWidth={2.5}
             dot={{ r: 3.5, fill: '#107C41', strokeWidth: 1, stroke: '#FFFFFF' }}
             activeDot={{ r: 5 }}
-            connectNulls={false}
+            connectNulls
             isAnimationActive={!reducedMotion}
           />
-          {/* Đường 2: Xu hướng EMA làm mịn (nét đứt, không điểm, màu slate #475569) - CHỈ hiển thị khi có EMA */}
-          {status !== 'unavailable' && (
-            <Line
-              type="monotone"
-              dataKey="ema_weight"
-              name="Xu hướng EMA (tham khảo)"
-              stroke="#475569"
-              strokeWidth={2}
-              strokeDasharray="6 4"
-              dot={false}
-              activeDot={{ r: 4 }}
-              connectNulls={false}
-              isAnimationActive={!reducedMotion}
-            />
-          )}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

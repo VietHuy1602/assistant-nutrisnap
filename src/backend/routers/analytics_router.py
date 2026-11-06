@@ -166,3 +166,38 @@ def verify_calorie_stability_endpoint(
         authenticated_user_id=current_user.id,
         yesterday_consumed_calories=req.yesterday_consumed_calories,
     )
+
+
+@router.get("/daily-calories", summary="Tổng calo đã nạp mỗi ngày (giờ Việt Nam) trong N ngày gần nhất")
+def get_daily_calories(
+    days: int = Query(default=14, ge=1, le=120),
+    current_user: AuthenticatedUser = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> dict[str, Any]:
+    from collections import defaultdict
+    from datetime import datetime, timedelta, timezone
+
+    from sqlmodel import select
+
+    from src.backend.models.schema import Meal, MealItem, get_vn_today
+
+    vn = timezone(timedelta(hours=7))
+    today = get_vn_today()
+    start = today - timedelta(days=days - 1)
+    since = datetime(start.year, start.month, start.day, tzinfo=vn).astimezone(timezone.utc)
+    rows = session.exec(
+        select(Meal.logged_at, MealItem.estimated_calories)
+        .join(MealItem, MealItem.meal_id == Meal.id)
+        .where(Meal.user_id == current_user.id, Meal.logged_at >= since)
+    ).all()
+    totals: dict[str, float] = defaultdict(float)
+    for logged_at, kcal in rows:
+        ts = logged_at if logged_at.tzinfo else logged_at.replace(tzinfo=timezone.utc)
+        totals[ts.astimezone(vn).date().isoformat()] += float(kcal or 0)
+    return {
+        "days": days,
+        "points": [
+            {"date": (start + timedelta(days=i)).isoformat(), "calories": round(totals.get((start + timedelta(days=i)).isoformat(), 0.0))}
+            for i in range(days)
+        ],
+    }

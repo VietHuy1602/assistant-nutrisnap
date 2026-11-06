@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, FileText, LogOut, Moon, ShieldCheck, Sun, Target } from 'lucide-react';
+import { ChevronDown, FileText, LogOut, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useTheme } from '../theme/theme';
 
 interface Props {
@@ -77,10 +77,6 @@ export function MobileAccountMenu({ username, isAdmin = false, onLogout }: Props
           </span>
         </button>
         {!isAdmin && <>
-        <Link to="/goal-setup" className={`${itemClass} bg-emerald-50/80 hover:bg-emerald-100`} onClick={() => setOpen(false)}>
-          <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-400 to-emerald-400 text-white"><Target className="h-5 w-5" /></span>
-          Mục tiêu
-        </Link>
         <Link to="/monthly-report" className={itemClass} onClick={() => setOpen(false)}>
           <span aria-hidden="true" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-sky-400 to-violet-500 text-white"><FileText className="h-5 w-5" /></span>
           Báo cáo tháng

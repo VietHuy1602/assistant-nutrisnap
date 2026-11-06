@@ -317,7 +317,7 @@ class RecognizeFoodResponse(BaseModel):
         description="Cờ báo hiệu kết quả từ cơ chế Fallback khi gặp sự cố API/mạng"
     )
     message: str = Field(default="Nhận diện món ăn thành công.", description="Thông báo phản hồi")
-    reason: Literal["not_food", "unclear", "service_error"] | None = Field(
+    reason: Literal["not_food", "blurry", "unclear", "service_error"] | None = Field(
         default=None,
         description="Lý do khi status='unrecognized': ảnh không phải món ăn, ảnh chưa rõ, hoặc dịch vụ AI lỗi",
     )

@@ -278,6 +278,28 @@ describe('W3 Orchestrator — MealCaptureFlow (State Machine & Fallbacks)', () =
     expect(screen.queryByText(/Đây không phải là món ăn/)).not.toBeInTheDocument();
   });
 
+  it('8c. Ảnh mờ: báo "Ảnh này bị mờ, xin vui lòng chụp lại!" và quay lại màn chụp', async () => {
+    vi.mocked(aiApi.recognizeFood).mockResolvedValueOnce({
+      success: true,
+      status: 'unrecognized',
+      reason: 'blurry',
+      meal_type: 'lunch',
+      detected_items: [],
+      total_estimated_calories: 0,
+      message: 'Ảnh này bị mờ, xin vui lòng chụp lại!',
+    });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <MealCaptureFlow />
+      </MemoryRouter>,
+    );
+    await user.upload(document.querySelector('input[type="file"]') as HTMLInputElement, new File(['fake-img'], 'blur.jpg', { type: 'image/jpeg' }));
+    await user.click(await screen.findByRole('button', { name: /Nhận diện món ăn/ }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Ảnh này bị mờ, xin vui lòng chụp lại!');
+    expect(screen.getByRole('heading', { name: /Tải ảnh đĩa ăn/ })).toBeInTheDocument();
+  });
+
   it('9. Cho phép chuyển sang nhập món thủ công khi nhận diện thất bại', async () => {
     vi.mocked(aiApi.recognizeFood).mockRejectedValueOnce(new Error('AI Server Down'));
     const user = userEvent.setup();

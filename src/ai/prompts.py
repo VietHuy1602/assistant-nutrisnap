@@ -166,7 +166,7 @@ FEW_SHOT_EXAMPLES: list[dict[str, Any]] = [
     {
         "role": "user",
         "content": "Thời tiết hôm nay ở Hà Nội có mưa không bạn? Viết giúp tôi một đoạn code Python tính số Fibonacci nữa.",
-    },
+    },  
     {
         "role": "assistant",
         "content": "Mình là NutriSnap Coach – Trợ lý chuyên về dinh dưỡng, tính toán calo và thói quen ăn uống lành mạnh. Mình không hỗ trợ tra cứu thời tiết hay viết code lập trình. Nếu bạn cần tính calo bữa ăn, gợi ý thực đơn hôm nay hay xem tiến độ vóc dáng, hãy nhắn mình nhé!",
@@ -205,6 +205,9 @@ def build_system_prompt(profile: UserProfileContext, current_date_vn: str | None
             title = p.get("title", "")
             rec = p.get("recommendation", "")
             patterns_context += f"- [{code}] {title}: {rec}\n"
+
+    if getattr(profile, "food_preferences", ""):
+        patterns_context += "\nHỒ SƠ ĂN UỐNG (từ khảo sát khi tạo tài khoản, dùng để gợi ý món; tuyệt đối không gợi ý thực phẩm người dùng cần tránh):\n" + profile.food_preferences + "\n"
 
     prompt = f"""Bạn là NutriSnap Coach – Trợ lý dinh dưỡng ảo và đồng hành thói quen ăn uống lành mạnh bằng tiếng Việt (phiên bản {SYSTEM_PROMPT_VERSION}).
 

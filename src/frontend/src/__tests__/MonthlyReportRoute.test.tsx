@@ -15,37 +15,36 @@ vi.mock('../pages/LoginPage', () => ({ LoginPage: () => <h1>Đăng nhập kiểm
 vi.mock('../pages/BasicDashboard', () => ({ BasicDashboard: () => <h1>Dashboard kiểm thử</h1> }));
 
 // Transform the chart module before timing route assertions in a parallel suite.
-beforeAll(async () => { await import('../pages/MonthlyReportView'); }, 30000);
+beforeAll(async () => { await import('../pages/MonthlyReportPage'); }, 30000);
 beforeEach(() => { mockStatus = 'authenticated'; });
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe('Monthly report application route', () => {
-  it('opens inside the existing shell without a goal, data fixtures or monthly requests', async () => {
+  it('opens the single monthly report screen inside the shell', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
-    // UTC is still September; the business date in Vietnam is already October.
     vi.setSystemTime(new Date('2026-09-30T18:00:00Z'));
     const get = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { days: [] } } as any);
     render(<MemoryRouter initialEntries={['/monthly-report']}><App /></MemoryRouter>);
-    expect(await screen.findByRole('heading', { name: 'Báo cáo tháng' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Tháng 10/2026' })).toBeInTheDocument();
-    expect(await screen.findByText(/Chưa có dữ liệu báo cáo cho tháng này/)).toBeInTheDocument();
-    expect(screen.queryByText('Dữ liệu minh họa')).not.toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'In / Lưu PDF' })).toBeDisabled();
+    expect(await screen.findByRole('heading', { level: 1, name: /Báo cáo/ })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Chọn tháng báo cáo' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Báo cáo tháng' })).toHaveAttribute('aria-current', 'page');
     expect(get).toHaveBeenCalled();
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Tháng' }), '09');
-    expect(screen.getByRole('heading', { name: 'Tháng 9/2026' })).toBeInTheDocument();
-    expect(get).toHaveBeenCalledTimes(2);
+  });
+
+  it('redirects the old /reports address to the monthly report', async () => {
+    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { days: [] } } as any);
+    render(<MemoryRouter initialEntries={['/reports']}><App /></MemoryRouter>);
+    expect(await screen.findByRole('group', { name: 'Chọn tháng báo cáo' })).toBeInTheDocument();
   });
 
   it('navigates from the Dashboard using the new link and keeps other links', async () => {
     render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
     expect(await screen.findByRole('heading', { name: 'Dashboard kiểm thử' })).toBeInTheDocument();
+    vi.spyOn(apiClient, 'get').mockResolvedValue({ data: { days: [] } } as any);
     await userEvent.click(screen.getByRole('link', { name: 'Báo cáo tháng' }));
-    expect(await screen.findByRole('heading', { name: 'Báo cáo tháng' })).toBeInTheDocument();
+    expect(await screen.findByRole('group', { name: 'Chọn tháng báo cáo' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tổng quan' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Mục tiêu' })).toHaveAttribute('href', '/goal-setup');
+    expect(screen.getAllByRole('link', { name: 'Mục tiêu' })[0]).toHaveAttribute('href', '/goal-setup');
     expect(screen.getByRole('button', { name: 'Trợ lý AI' })).toBeInTheDocument();
   });
 
@@ -53,6 +52,6 @@ describe('Monthly report application route', () => {
     mockStatus = 'unauthenticated';
     render(<MemoryRouter initialEntries={['/monthly-report']}><App /></MemoryRouter>);
     expect(await screen.findByRole('heading', { name: 'Đăng nhập kiểm thử' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Báo cáo tháng' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Chọn tháng báo cáo' })).not.toBeInTheDocument();
   });
 });

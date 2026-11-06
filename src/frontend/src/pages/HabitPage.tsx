@@ -48,13 +48,6 @@ export const HabitPage: React.FC = () => {
           </p>
         </div>
 
-        <Link
-          to="/capture"
-          className="inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2 rounded-xl bg-nutri-primary hover:bg-nutri-dark text-white text-sm font-semibold shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus shrink-0"
-        >
-          <Camera className="w-4 h-4" aria-hidden="true" />
-          <span>Ghi nhận bữa ăn</span>
-        </Link>
       </div>
 
       {/* Cards Summary Grid */}

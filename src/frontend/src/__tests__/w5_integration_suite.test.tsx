@@ -93,7 +93,7 @@ describe('W5 Track B Comprehensive Integration Suite', () => {
       expect(screen.queryByText('Đường xu hướng đang chờ hệ thống tính')).not.toBeInTheDocument();
       // Both lines appear in legend
       expect(screen.getByText('Cân nặng ghi nhận')).toBeInTheDocument();
-      expect(screen.getByText('Xu hướng EMA (tham khảo)')).toBeInTheDocument();
+      expect(screen.queryByText('Xu hướng EMA (tham khảo)')).not.toBeInTheDocument(); // chỉ còn một đường cân nặng
     });
   });
 

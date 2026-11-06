@@ -125,7 +125,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
     });
   });
 
-  it('2. Luồng E2E: Register hợp lệ -> Tự động Login -> Chuyển hướng sang /goal-setup', async () => {
+  it('2. Luồng E2E: Register hợp lệ -> Tự động Login -> Chuyển hướng sang /onboarding', async () => {
     vi.mocked(authApi.me).mockRejectedValueOnce(new Error('Unauthorized')); // khởi đầu chưa login
     vi.mocked(authApi.register).mockResolvedValueOnce({
       success: true,
@@ -153,7 +153,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
         <AuthProvider>
           <Routes>
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/goal-setup" element={<div>Trang Thiết Lập Mục Tiêu</div>} />
+            <Route path="/onboarding" element={<div>Trang Thiết Lập Mục Tiêu</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
@@ -511,7 +511,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<div>Trang Đăng Nhập</div>} />
             </Route>
-            <Route path="/goal-setup" element={<div>Trang Wizard Setup</div>} />
+            <Route path="/onboarding" element={<div>Trang Wizard Setup</div>} />
           </Routes>
         </AuthProvider>
       </MemoryRouter>,
@@ -539,7 +539,7 @@ describe('End-to-End & Integration Test Suite (Track B, Step 7)', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByRole('link', { name: 'Thiết lập ngay' })).toHaveAttribute('href', '/goal-setup');
-    expect(screen.getByRole('link', { name: /Mục tiêu/ })).toHaveAttribute('href', '/goal-setup');
+    expect(screen.getAllByRole('link', { name: /Mục tiêu/ })[0]).toHaveAttribute('href', '/goal-setup');
     expect(await screen.findByText(/chưa phải mục tiêu cá nhân/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Mở trợ lý AI' }));
     expect(screen.getByRole('heading', { name: 'Trợ lý AI NutriSnap' })).toBeInTheDocument();

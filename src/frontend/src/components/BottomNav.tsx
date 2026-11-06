@@ -6,9 +6,9 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutGrid, Camera, TrendingUp, FileText } from 'lucide-react';
+import { LayoutGrid, Camera, Target, UtensilsCrossed } from 'lucide-react';
 
-type IconKind = 'grid' | 'flame' | 'trend' | 'report';
+type IconKind = 'grid' | 'flame' | 'target' | 'menu';
 
 // Biểu tượng nhiều màu: dùng chung các dải màu khai báo một lần trong <defs> bên dưới
 function NavIcon({ kind, active }: { kind: IconKind; active: boolean }) {
@@ -19,10 +19,10 @@ function NavIcon({ kind, active }: { kind: IconKind; active: boolean }) {
   if (kind === 'grid') {
     return <LayoutGrid aria-hidden="true" className={size} stroke="url(#navGradBlue)" fill="url(#navGradBlue)" strokeWidth={1.5} />;
   }
-  if (kind === 'trend') {
-    return <TrendingUp aria-hidden="true" className={size} stroke="url(#navGradBlue)" strokeWidth={2.75} />;
+  if (kind === 'target') {
+    return <Target aria-hidden="true" className={size} stroke="url(#navGradBlue)" strokeWidth={2.5} />;
   }
-  return <FileText aria-hidden="true" className={size} stroke="#ffffff" fill="url(#navGradViolet)" strokeWidth={1.5} />;
+  return <UtensilsCrossed aria-hidden="true" className={size} stroke="url(#navGradViolet)" strokeWidth={2.4} />;
 }
 
 export const BottomNav: React.FC = () => {
@@ -30,8 +30,8 @@ export const BottomNav: React.FC = () => {
     { to: '/', label: 'Tổng quan', ariaLabel: 'Tổng quan (di động)', icon: 'grid', end: true },
     { to: '/habits', label: 'Thói quen', icon: 'flame' },
     { to: '/capture', label: 'Chụp ảnh', isAction: true },
-    { to: '/progress', label: 'Tiến độ', icon: 'trend' },
-    { to: '/reports', label: 'Báo cáo', icon: 'report' },
+    { to: '/goal-setup', label: 'Mục tiêu', icon: 'target' },
+    { to: '/meal-plan', label: 'Thực đơn', icon: 'menu' },
   ];
 
   const focus = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus focus-visible:ring-offset-2';

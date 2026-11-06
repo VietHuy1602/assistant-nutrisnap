@@ -192,6 +192,7 @@ class UserProfileContext(BaseModel):
         default=None,
         description="Chỉ số thống kê hành vi (tỷ lệ bữa sáng, ăn khuya, đạm trung bình)",
     )
+    food_preferences: str = Field(default="", description="Hồ sơ ăn uống AI tổng hợp từ bộ câu hỏi khi tạo tài khoản")
     has_pattern_insights: bool = Field(
         default=False,
         description="True nếu người dùng có ít nhất một mẫu thói quen hành vi được nhận diện",
@@ -264,6 +265,24 @@ def fetch_user_profile_context(
             logger.debug("Không thể phân tích mẫu hành vi người dùng: %s", exc)
 
     has_patterns = len(b_patterns) > 0
+    food_pref = ""
+    try:
+        from src.backend.services.preference_service import get_preferences
+
+        pref = get_preferences(session, user_id)
+        if pref:
+            # Dị ứng / thực phẩm cần tránh luôn được ghi rõ riêng, không chỉ nằm trong đoạn tóm tắt
+            avoid = pref.allergies or ""
+            food_pref = (pref.summary or "") + (f"\nDỊ ỨNG / CẦN TRÁNH TUYỆT ĐỐI: {avoid}" if avoid else "\nDị ứng: không có.")
+            if pref.analysis_json:
+                import json as _json
+
+                an = _json.loads(pref.analysis_json)
+                food_pref += "\nPHÂN TÍCH NHU CẦU (khảo sát + mục tiêu): " + an.get("headline", "") + " Đề xuất: " + "; ".join(an.get("recommendations", []))
+            if pref.daily_budget_vnd:
+                food_pref += f"\nNgân sách ăn uống CẢ NGÀY (không phải mỗi bữa): {pref.daily_budget_vnd:,} đ.".replace(",", ".")
+    except Exception as exc:
+        logger.debug("Không đọc được hồ sơ ăn uống: %s", exc)
 
     if not goal:
         return UserProfileContext(
@@ -272,6 +291,7 @@ def fetch_user_profile_context(
             behavioral_patterns=b_patterns,
             behavioral_summary=b_summary,
             has_pattern_insights=has_patterns,
+            food_preferences=food_pref,
         )
 
     target_w = getattr(goal, "target_weight", getattr(goal, "target_weight_kg", 65.0))
@@ -297,6 +317,7 @@ def fetch_user_profile_context(
         behavioral_patterns=b_patterns,
         behavioral_summary=b_summary,
         has_pattern_insights=has_patterns,
+        food_preferences=food_pref,
     )
 
 

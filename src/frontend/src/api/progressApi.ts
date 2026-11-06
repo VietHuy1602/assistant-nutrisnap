@@ -48,6 +48,12 @@ export const progressApi = {
   /**
    * Fetches calories data (either weekly aggregated or daily fallback points).
    */
+  /** Tổng calo đã nạp từng ngày (giờ Việt Nam) cho biểu đồ cân nặng. */
+  async getDailyCalories(days = 14, signal?: AbortSignal): Promise<Array<{ date: string; calories: number }>> {
+    const res = await apiClient.get<{ points: Array<{ date: string; calories: number }> }>('/analytics/daily-calories', { params: { days }, signal });
+    return res.data.points ?? [];
+  },
+
   async getWeeklyCalories(
     rangeDays = 30,
     signal?: AbortSignal,

@@ -8,8 +8,7 @@
 
 import styles from '../components/dashboard/DashboardSurface.module.css';
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, AlertTriangle, RefreshCw, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { AlertTriangle, RefreshCw, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDailyDashboard } from '../hooks/useDailyDashboard';
 import { CalorieRing } from '../components/dashboard/CalorieRing';
@@ -18,7 +17,6 @@ import { MealTimeline } from '../components/dashboard/MealTimeline';
 import { DashboardSkeleton } from '../components/dashboard/DashboardSkeleton';
 import { DateNavigator } from '../components/dashboard/DateNavigator';
 import { NoGoalNotice } from '../components/dashboard/NoGoalNotice';
-import { DashboardEmpty } from '../components/dashboard/DashboardEmpty';
 import { DisclaimerBadge } from '../components/DisclaimerBadge';
 import { mealApi } from '../api/mealApi';
 import { emitMealLogged } from '../utils/mealEvents';
@@ -28,6 +26,10 @@ import { isApiError } from '../utils/apiError';
 import { formatVNDate, toLocalISODate } from '../utils/date';
 import { MealDeleteDialog } from '../components/dashboard/MealDeleteDialog';
 import { Mascot } from '../components/common/Mascot';
+import { TodayPlanCard } from '../components/dashboard/TodayPlanCard';
+import { DashboardWeightTrend } from '../components/dashboard/DashboardWeightTrend';
+import { PatternInsightsPanel } from '../components/analytics/PatternInsightsPanel';
+import { useProgressAnalytics } from '../hooks/useProgressAnalytics';
 
 export const BasicDashboard: React.FC = () => {
   const { user, hasGoal } = useAuth();
@@ -51,6 +53,8 @@ export const BasicDashboard: React.FC = () => {
     setSelectedDate,
     refetch,
   } = useDailyDashboard();
+  // Xu hướng cân nặng + nhận diện thói quen (chuyển từ trang Tiến độ cũ)
+  const analytics = useProgressAnalytics(14);
 
   const dateLabel = selectedDate === toLocalISODate() ? 'Hôm nay' : `Ngày ${formatVNDate(selectedDate)}`;
   const dateControls = <div className="mx-auto w-full max-w-4xl pb-2"><DateNavigator currentDate={selectedDate} onDateChange={setSelectedDate} /></div>;
@@ -160,17 +164,6 @@ export const BasicDashboard: React.FC = () => {
         </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-
-          <Link
-            to="/capture"
-            className="inline-flex min-h-12 min-w-12 items-center gap-2 px-4 py-2.5 bg-[#9ADA26] hover:bg-[#E0F1B8] text-[#171717] text-xs font-bold rounded-2xl shadow-sm shadow-emerald-600/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 motion-reduce:transition-none"
-          >
-            <Camera className="w-4 h-4" aria-hidden="true" />
-            <span>Chụp bữa ăn</span>
-          </Link>
-
-        </div>
       </div>
 
       {/* Thông báo nếu chưa tạo mục tiêu cá nhân */}
@@ -187,17 +180,22 @@ export const BasicDashboard: React.FC = () => {
           progressPercent={data.calories_progress_percent}
         />
 
+
         <MacroBar macros={data.macros} personalized={hasGoal} />
+
+        <DashboardWeightTrend analytics={analytics} />
       </div>
 
       {/* Danh sách các bữa ăn trong ngày */}
       <div>
-        {hasMeals ? (
-          <MealTimeline meals={meals} onDeleteMeal={requestDeleteMeal} />
-        ) : (
-          <DashboardEmpty selectedDate={selectedDate} />
-        )}
+        {hasMeals && <MealTimeline meals={meals} onDeleteMeal={requestDeleteMeal} />}
       </div>
+
+      {/* Thực đơn + chụp ảnh: checklist từng món, cuối trang */}
+      <TodayPlanCard date={selectedDate} meals={meals} />
+
+      {/* Nhận diện thói quen & xu hướng: cuối trang */}
+      <PatternInsightsPanel data={analytics.insightsData} loading={analytics.insightsStatus === 'loading' && !analytics.insightsData} />
 
       {/* Footer Disclaimer minh bạch y khoa (Guardrail M3, M4) */}
       <div className="pt-3 border-t border-slate-200/80 flex flex-col gap-2 text-sm leading-6 text-nutri-muted">

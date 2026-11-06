@@ -1,0 +1,311 @@
+sample_id,dish_name,image_file,source_page,license,author,accept
+R002_1,Cơm tấm sườn nướng,R002_1.jpg,"https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_SG,_s%C6%B0%E1%BB%9Dn_c%E1%BB%8Dng_n%C6%B0%E1%BB%9Bng,_ng23th8n2022_(3).jpg",CC0,Phương Huy,
+R002_2,Cơm tấm sườn bì chả,R002_2.jpg,"https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_SG_l%E1%BB%81_%C4%91%C6%B0%E1%BB%9Dng_(c%C6%A1m_s%C6%B0%E1%BB%9Dn,_mi%E1%BA%BFng_s%C6%B0%E1%BB%9Dn_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong)_ng30th7n2022_(4).jpg",CC0,Phương Huy,Cơm tấm sườn nướng
+R003_1,Cơm tấm sườn bì chả,R003_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_b%C3%AC_ch%E1%BA%A3.jpg,CC BY-SA 2.0,"Alpha from Melbourne, Australia",
+R003_2,Cơm tấm sườn bì chả,R003_2.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_T%E1%BA%A5m_B%C3%AC_S%C6%B0%E1%BB%9Dn_Ch%E1%BA%A3.jpg,CC BY-SA 2.0,Charles Haynes,
+R004_1,Phở bò tái,R004_1.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4_ph%E1%BB%9F_b%C3%B2_t%C3%A1i_ch%C3%ADn,_ng14th7n2019_(2).jpg",CC0,Phương Huy,
+R004_2,Phở bò tái,R004_2.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4_ph%E1%BB%9F_b%C3%B2_t%C3%A1i_ch%C3%ADn,_ng14th7n2019_(1).jpg",CC0,Phương Huy,Phở bò chín
+R006_2,Bún bò Huế,R006_2.jpg,https://commons.wikimedia.org/wiki/File:Bun-Bo-Hue-from-Huong-Giang-2011.jpg,CC BY 3.0,Kham Tran - www.khamtran.com,
+R007_1,Bún chả Hà Nội,R007_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_ch%E1%BA%A3_H%C3%A0_N%E1%BB%99i_(th%C3%A1ng_7_n%C4%83m_2018)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R007_2,Bún chả Hà Nội,R007_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_ch%E1%BA%A3_H%C3%A0_N%E1%BB%99i_(th%C3%A1ng_7_n%C4%83m_2018)_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R008_1,Bún thịt nướng,R008_1.jpg,https://commons.wikimedia.org/wiki/File:Bun_thit_nuong.jpg,Public domain,Lưu Ly,
+R008_2,Bún thịt nướng,R008_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_Th%E1%BB%8Bt_N%C6%B0%E1%BB%9Bng_Ch%E1%BA%A3_Gi%C3%B2.JPG,CC BY-SA 3.0,Calvin Neonardi,
+R009_1,Bún riêu cua,R009_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_ri%C3%AAu_cua_n%C6%B0%E1%BB%9Bc.jpg,CC BY-SA 2.0,Alpha,
+R009_2,Bún thịt nướng,R009_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_ri%C3%AAu_cua_kh%C3%B4.jpg,CC BY-SA 2.0,Alpha,
+R010_1,Bánh mì thịt nguội,R010_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_ngu%E1%BB%99i.jpg,CC BY-SA 4.0,Minh Nguyen,Bánh mì kẹp thịt pate
+R014_2,Thịt heo luộc,R014_2.jpg,https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFng_th%E1%BB%8Bt_heo_lu%E1%BB%99c_%C4%91%E1%BB%83_c%C3%BAng_%E1%BB%9F_Ph%C6%B0%E1%BB%9Dng_1_%C4%90%C3%B4ng_H%C3%A0.jpg,Public domain,Phương Huy (thảo luận),
+R016_1,Canh chua cá lóc,R016_1.jpg,"https://commons.wikimedia.org/wiki/File:Canh_chua_c%C3%A1_l%C3%B3c_%E1%BB%9F_Th%E1%BB%A7y_Tr%C3%BAc_Qu%C3%A1n,_%C4%91%C6%B0%E1%BB%9Dng_Nguy%E1%BB%85n_Nh%E1%BB%AF_L%C3%A3m_(4).jpg",Public domain,Phương Huy (thảo luận),
+R016_2,Canh chua cá lóc,R016_2.jpg,"https://commons.wikimedia.org/wiki/File:Canh_chua_c%C3%A1_l%C3%B3c_%E1%BB%9F_Th%E1%BB%A7y_Tr%C3%BAc_Qu%C3%A1n,_%C4%91%C6%B0%E1%BB%9Dng_Nguy%E1%BB%85n_Nh%E1%BB%AF_L%C3%A3m_(3).jpg",Public domain,Phương Huy (thảo luận),
+R017_1,Rau muống xào tỏi,R017_1.jpg,"https://commons.wikimedia.org/wiki/File:Rau_mu%E1%BB%91ng_x%C3%A0o_t%E1%BB%8Fi,_th%C3%A1ng_4_n%C4%83m_2018.jpg",Public domain,Phương Huy (thảo luận),
+R017_2,Rau muống xào tỏi,R017_2.jpg,https://commons.wikimedia.org/wiki/File:Rau_mu%E1%BB%91ng_x%C3%A0o_t%E1%BB%8Fi_(th%C3%A1ng_9_n%C4%83m_2018)_(2).jpg,Public domain,Phương Huy (thảo luận),
+R019_1,Đậu hũ rán,R019_1.jpg,"https://commons.wikimedia.org/wiki/File:%C4%90%E1%BA%ADu_h%C5%A9_r%C3%A1n_chay,_t%E1%BA%A5t_ni%C3%AAn_nh%C3%A0_m%E1%BB%87_2018.jpg",Public domain,Phương Huy (thảo luận),
+R021_1,Chả giò rán,R021_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%E1%BA%A3_gi%C3%B2_SG_(nem_r%C3%A1n_gi%C3%B2n)_%E1%BB%9F_qu%C3%A1n_b%C3%BAn_ri%C3%AAu_B%C3%A0_Ti_ng26th7n2023_(3).jpg,CC BY-SA 4.0,Phương Huy,
+R021_2,Chả giò rán,R021_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%E1%BA%A3_gi%C3%B2_SG_(nem_r%C3%A1n_gi%C3%B2n)_%E1%BB%9F_qu%C3%A1n_b%C3%BAn_ri%C3%AAu_B%C3%A0_Ti_ng26th7n2023_(7).jpg,CC BY-SA 4.0,Phương Huy,
+R024_1,Hủ tiếu Nam Vang,R024_1.jpg,https://commons.wikimedia.org/wiki/File:H%E1%BB%A7_ti%E1%BA%BFu_Nam_Vang_S%C3%A0i_G%C3%B2n.jpg,CC BY-SA 4.0,Tonbi ko,
+R026_1,Bò né,R026_1.jpg,"https://commons.wikimedia.org/wiki/File:Cafe_UK_ng2th10n2022_(B%C3%B2_x%C3%A0o_h%C3%A0nh_t%C3%A2y,_khoai_t%C3%A2y).jpg",CC0,Phương Huy,Bò xào hành tây
+R026_2,Bò né,R026_2.jpg,https://commons.wikimedia.org/wiki/File:Cafe_UK_ng2th10n2022_(B%C3%B2_x%C3%A0o_h%C3%A0nh_t%C3%A2y)_(5).jpg,CC0,Phương Huy,Bò xào hành tây
+R030_1,Cơm chiên dương châu,R030_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_chi%C3%AAn_D%C6%B0%C6%A1ng_Ch%C3%A2u_%E1%BB%9F_%C4%90%C3%B4ng_H%C3%A0_n%C4%83m_2017.jpg,CC BY-SA 4.0,Phương Huy,
+R032_1,Cơm tấm chả trứng,R032_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_tr%E1%BB%A9ng_chi%C3%AAn_t%E1%BA%A1i_s%C3%A2n_bay_Ph%C3%BA_B%C3%A0i_(th%C3%A1ng_9_n%C4%83m_2018)_(3).jpg,Public domain,Phương Huy (thảo luận),Cơm trắng|Chả trứng
+R032_2,Cơm tấm chả trứng,R032_2.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_tr%E1%BB%A9ng_chi%C3%AAn_t%E1%BA%A1i_s%C3%A2n_bay_Ph%C3%BA_B%C3%A0i_(th%C3%A1ng_9_n%C4%83m_2018)_(1).jpg,Public domain,Phương Huy (thảo luận),Cơm trắng|Chả trứng
+R033_1,Cơm trắng,R033_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_chi%C3%AAn_c%C3%A1_m%E1%BA%B7n_%E1%BB%9F_cf_Qu%E1%BB%91c_H%C3%B9ng_ng%C3%A0y_01.10_n%C4%83m_2018_(2).jpg,CC BY-SA 4.0,Phương Huy,Cá nục chiên
+R033_2,Cơm trắng,R033_2.jpg,https://commons.wikimedia.org/wiki/File:S%C3%A2m_d%E1%BB%A9a_s%E1%BB%AFa_v%C3%A0_c%C6%A1m_chi%C3%AAn_c%C3%A1_m%E1%BA%B7n_t%E1%BA%A1i_Cf_Qu%E1%BB%91c_h%C3%B9ng_ng%C3%A0y_01.10_n%C4%83m_2018_(3).jpg,CC BY-SA 4.0,Phương Huy,Cá nục chiên
+R034_1,Cơm rang thập cẩm,R034_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_rang_c%E1%BB%A7a_%C4%91%E1%BA%A7u_b%E1%BA%BFp_T%C3%A0n_Ki%E1%BA%BFm.jpg,CC BY-SA 4.0,Tàn Kiếm,Cơm chiên chay|Cơm chiên dương châu
+R035_1,Cơm niêu,R035_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_ni%C3%AAu_Kombo.jpg,CC BY-SA 4.0,Tuantq89,
+R039_1,Cơm bò lúc lắc,R039_1.jpg,"https://commons.wikimedia.org/wiki/File:C%C6%A1m_tay_c%E1%BA%A7m_b%C3%B2_l%C3%BAc_l%E1%BA%AFc_at_Nha_Trang,_Eden_Center,_January_2025.jpg",CC0,Ser Amantio di Nicolao,
+R040_2,Cá lóc kho tộ,R040_2.jpg,https://commons.wikimedia.org/wiki/File:B%E1%BB%AFa_c%C6%A1m_tr%C6%B0a_%E1%BB%9F_B%C3%ACnh_Long_ng1th10n2023_(d%C4%A9a_c%C3%A1_h%C3%BA_kho_b%C3%A9o_ng%E1%BA%ADy)_(2).jpg,CC BY-SA 4.0,Phương Huy,Cơm cá kho
+R044_1,Cơm sườn non,R044_1.jpg,"https://commons.wikimedia.org/wiki/File:C%C6%A1m_B%C3%B2_X%C3%A0o_C%E1%BA%A7n_T%E1%BB%8Fi_(Pho_Hanoi),_Amsterdam_(2021).jpg",CC BY-SA 4.0,Donald Trung Quoc Don (Chữ Hán: 徵國單) - Wikimedia Commons - © CC BY-SA 4.0 Intern,Cơm tấm sườn nướng|Cơm bò xào
+R044_2,Cơm bò xào,R044_2.jpg,https://commons.wikimedia.org/wiki/File:%C4%82n_c%C6%A1m_ti%E1%BB%87m_SG_th%C3%A1ng_10_n%C4%83m_2015_b%C3%B2_x%C3%A0o_h%C3%A0nh_t%C3%A2y_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R048_1,Xôi xéo,R048_1.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_x%C3%A9o.jpg,CC BY-SA 4.0,Viethavvh,
+R049_1,Xôi gấc,R049_1.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_g%E1%BA%A5c.JPG,Public domain,"Nguyễn Thanh Quang 07:20, 3 December 2007 (UTC)",
+R049_2,Xôi gấc,R049_2.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_g%E1%BA%A5c_%C4%91%C3%A1m_c%C6%B0%E1%BB%9Bi.JPG,Public domain,"07:27, 3 December 2007 (UTC)",
+R053_1,Xôi mặn,R053_1.jpg,"https://commons.wikimedia.org/wiki/File:X%C3%B4i_G%C3%A0_Tr%E1%BB%A9ng_Non_L%E1%BA%A1p_X%C6%B0%E1%BB%9Bng_(Sticky_rice_with_chicken_and_eggs,_and_chinese_sausages).jpg",CC0,Souradeep.Dasgupta,Xôi gà
+R053_2,Xôi gà,R053_2.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_g%C3%A0.jpg,CC BY 2.0,Yuichi Kosio,
+R055_1,Xôi lạp xưởng,R055_1.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_gi%C3%B2_l%E1%BA%A1p_x%C6%B0%E1%BB%9Dng.jpg,CC BY-SA 4.0,Viethavvh,
+R055_2,Xôi mặn,R055_2.jpg,"https://commons.wikimedia.org/wiki/File:X%C3%B4i_G%C3%A0_Tr%E1%BB%A9ng_Non_L%E1%BA%A1p_X%C6%B0%E1%BB%9Bng_(Sticky_rice_with_chicken_and_eggs,_and_chinese_sausages).jpg",CC0,Souradeep.Dasgupta,Xôi lạp xưởng
+R058_1,Xôi lá cẩm,R058_1.jpg,https://commons.wikimedia.org/wiki/File:X%C3%B4i_l%C3%A1_c%E1%BA%A9m_c%E1%BA%AFt_ngang.jpg,CC BY-SA 4.0,Baoothersks,
+R061_1,Cơm hến,R061_1.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BB%85_h%E1%BB%99i_%E1%BA%A9m_th%E1%BB%B1c_C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023_(gian_h%C3%A0ng_c%C6%A1m_h%E1%BA%BFn_Th%C3%B4n_V%C4%A9).jpg,CC BY-SA 4.0,Phương Huy,
+R061_2,Cơm hến,R061_2.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BB%85_h%E1%BB%99i_%E1%BA%A9m_th%E1%BB%B1c_C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023_%C4%91%E1%BA%B7c_s%E1%BA%A3n_c%C6%A1m_h%E1%BA%BFn_V%C4%A9_D%E1%BA%A1_(3).jpg,CC BY-SA 4.0,Phương Huy,
+R063_1,Cơm tấm bì,R063_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_b%C3%AC_ch%E1%BA%A3.jpg,CC BY-SA 4.0,Vietcuongdao,Cơm tấm sườn bì chả
+R063_2,Cơm tấm sườn bì chả,R063_2.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_T%E1%BA%A5m_B%C3%AC_S%C6%B0%E1%BB%9Dn_Ch%E1%BA%A3.jpg,CC BY-SA 2.0,Charles Haynes,Cơm tấm bì
+R064_1,Cơm tấm chả trứng,R064_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_ch%E1%BA%A3_(ch%E1%BA%A3_tr%E1%BB%A9ng)_t%E1%BA%A1i_qu%C3%A1n_c%C6%A1m_b%C3%ACnh_d%C3%A2n_%C4%91%C6%B0%E1%BB%9Dng_NS_ng25th9n2022_(mi%E1%BA%BFng_ch%E1%BA%A3_tr%E1%BB%A9ng)_(2).jpg,CC0,Phương Huy,
+R064_2,Cơm tấm chả trứng,R064_2.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_t%E1%BA%A5m_s%C6%B0%E1%BB%9Dn_ch%E1%BA%A3_(ch%E1%BA%A3_tr%E1%BB%A9ng)_t%E1%BA%A1i_qu%C3%A1n_c%C6%A1m_b%C3%ACnh_d%C3%A2n_%C4%91%C6%B0%E1%BB%9Dng_NS_ng25th9n2022_(mi%E1%BA%BFng_ch%E1%BA%A3_tr%E1%BB%A9ng)_(1).jpg,CC0,Phương Huy,Cơm tấm sườn bì chả
+R068_1,Phở bò chín,R068_1.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4_ph%E1%BB%9F_b%C3%B2_t%C3%A1i_ch%C3%ADn,_ng14th7n2019_(1).jpg",CC0,Phương Huy,
+R068_2,Phở bò chín,R068_2.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4_ph%E1%BB%9F_b%C3%B2_t%C3%A1i_ch%C3%ADn,_ng14th7n2019_(2).jpg",CC0,Phương Huy,Phở bò tái
+R075_1,Bún mọc,R075_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn.jpg,CC BY-SA 4.0,Viethavvh,
+R075_2,Bún mọc,R075_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn_non_(th%C3%A1ng_8_n%C4%83m_2018)_(1).jpg,Public domain,Phương Huy (thảo luận),
+R076_1,Bún măng vịt,R076_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%C4%83ng_th%E1%BB%8Bt_v%E1%BB%8Bt.jpg,CC BY 2.0,yuchinkay,
+R078_1,Bún cá Nha Trang,R078_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_c%C3%A1_Nha_Trang.jpg,CC BY-SA 3.0,Harry Pham (thảo luận),Bún chả cá
+R079_1,Bún cá rô,R079_1.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%BAn_c%C3%A1_r%C3%B4,_ng14th8n2022_(4).jpg",CC BY-SA 4.0,Phương Huy,
+R079_2,Bún cá rô,R079_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%BAn_c%C3%A1_r%C3%B4,_ng14th8n2022_(3).jpg",CC BY-SA 4.0,Phương Huy,Bún chả cá
+R080_1,Bún thang,R080_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_thang.JPG,CC BY-SA 3.0,Nguyễn Thanh Quang,
+R080_2,Bún thang,R080_2.jpg,https://commons.wikimedia.org/wiki/File:Bun_Thang_-_Vietnamese_egg_and_pork_soup_with_shrimp_paste.jpg,CC BY 2.0,HungryHuy,
+R081_1,Bún ốc,R081_1.jpg,https://commons.wikimedia.org/wiki/File:Bun_oc_Hoe_Nhai.JPG,CC BY-SA 3.0,vi:thành viên:Rungbachduong,Bún riêu cua
+R081_2,Bún ốc,R081_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_%E1%BB%91c_2.jpg,CC0,chuong nguyen,Bún riêu cua
+R083_1,Bún cá cay,R083_1.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_d%E1%BB%8Bp_L%E1%BB%85_2th9n2023_(b%C3%BAn_c%C3%A1_cay_%C4%90%C3%B4ng_H%C3%A0)_(4).jpg,CC BY-SA 4.0,Phương Huy,
+R083_2,Bún cá cay,R083_2.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_d%E1%BB%8Bp_L%E1%BB%85_2th9n2023_(b%C3%BAn_c%C3%A1_cay_%C4%90%C3%B4ng_H%C3%A0)_(1).jpg,CC BY-SA 4.0,Phương Huy,Bún cá Nha Trang
+R084_2,Bún mắm,R084_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_N%C6%B0%E1%BB%9Bc_L%C3%A8o.jpg,CC BY-SA 4.0,Tribaochi,Bún nước lèo
+R086_1,Bún mắm,R086_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_M%E1%BA%AFm_S%C3%B3c_Tr%C4%83ng.jpg,CC BY-SA 2.0,Alpha,Bún hải sản
+R086_2,Bún đậu mắm tôm,R086_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%BAn_%C4%91%E1%BA%ADu_m%E1%BA%AFm_t%C3%B4m,_b%C3%BAn_nem_r%C3%A1n.JPG",CC BY-SA 4.0,Viethavvh,
+R089_1,Bún mọc,R089_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn_non_(th%C3%A1ng_8_n%C4%83m_2018)_(1).jpg,Public domain,Phương Huy (thảo luận),Bún sườn
+R089_2,Bún mọc,R089_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%E1%BB%8Dc_s%C6%B0%E1%BB%9Dn.jpg,CC BY-SA 4.0,Viethavvh,Bún sườn
+R091_1,Bún thang,R091_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_v%E1%BB%8Bt_V%C3%A2n_%C4%90%C3%ACnh_(H%C3%A0_N%E1%BB%99i_th%C3%A1ng_7_n%C4%83m_2018).jpg,CC BY-SA 4.0,Phương Huy,Bún vịt
+R091_2,Bún măng vịt,R091_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_m%C4%83ng_th%E1%BB%8Bt_v%E1%BB%8Bt.jpg,CC BY 2.0,yuchinkay,Bún vịt
+R092_1,Bún chả cá,R092_1.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%BAn_ch%E1%BA%A3_c%C3%A1,_th%C3%A1ng_8_n%C4%83m_2018.JPG",Public domain,Phương Huy (thảo luận),
+R092_2,Bún chả Hà Nội,R092_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_ch%E1%BA%A3_H%C3%A0ng_M%C3%A0nh_(2).jpg,CC BY-SA 4.0,Viethavvh,Bún chả cá
+R093_1,Bún đậu mắm tôm,R093_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_%C4%91%E1%BA%ADu_m%E1%BA%AFm_t%C3%B4m.jpg,CC BY-SA 2.0,trungnguyen299,
+R093_2,Bún đậu mắm tôm,R093_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%BAn_%C4%91%E1%BA%ADu_m%E1%BA%AFm_t%C3%B4m_(2019).jpg,CC BY-SA 4.0,Baoothersks,
+R095_1,Hủ tiếu bò kho,R095_1.jpg,https://commons.wikimedia.org/wiki/File:H%E1%BB%A7_ti%E1%BA%BFu_b%C3%B2_kho.jpg,CC BY-SA 4.0,Tonbi ko,Phở sốt vang
+R101_1,Mì Quảng tôm thịt,R101_1.jpg,https://commons.wikimedia.org/wiki/File:Mi_Quang_1A_Danang.jpg,CC BY-SA 4.0,Jpatokal,
+R103_1,Mì vịt tiềm,R103_1.jpg,https://commons.wikimedia.org/wiki/File:M%C3%AC_v%E1%BB%8Bt_ti%E1%BB%81m.jpg,CC BY 2.0,SauceSupreme,
+R108_1,Miến gà,R108_1.jpg,https://commons.wikimedia.org/wiki/File:V%C3%B9ng_C%C3%B9a_%E1%BB%9F_Cam_L%E1%BB%99_th5n2023-Ph%C6%B0%C6%A1ng_Gia_Trang_(t%C3%B4_mi%E1%BA%BFn_g%C3%A0)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R108_2,Miến gà,R108_2.jpg,https://commons.wikimedia.org/wiki/File:V%C3%B9ng_C%C3%B9a_%E1%BB%9F_Cam_L%E1%BB%99_th5n2023-Ph%C6%B0%C6%A1ng_Gia_Trang_(t%C3%B4_mi%E1%BA%BFn_g%C3%A0)_(5).jpg,CC BY-SA 4.0,Phương Huy,
+R109_1,Miến lươn,R109_1.jpg,https://commons.wikimedia.org/wiki/File:Mien_luon_Hang_Dieu.JPG,CC BY-SA 3.0,vi:User:Rungbachduong,
+R110_1,Miến ngan,R110_1.jpg,https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFn_ngan_t%E1%BA%A1i_Ninh_B%C3%ACnh.jpg,CC BY-SA 4.0,Tonbi ko,
+R112_2,Miến cua,R112_2.jpg,https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFn_ch%E1%BA%A3_cua_Nguy%E1%BB%85n_Nh%E1%BB%AF_L%C3%A3m_n%C4%83m_2016_(2).jpg,Public domain,Phương Huy (thảo luận),
+R113_1,Miến xào hải sản,R113_1.jpg,"https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFn_x%C3%A0o_h%E1%BA%A3i_s%E1%BA%A3n_t%E1%BA%A1i_L%C3%A2u_%C4%90%C3%A0i_%C4%90%C3%A1,_T%C3%A2n_Ph%C3%BA,_th%C3%A1ng_12_n%C4%83m_2021_(4).jpg",CC BY-SA 4.0,Phương Huy,
+R113_2,Miến xào hải sản,R113_2.jpg,"https://commons.wikimedia.org/wiki/File:Mi%E1%BA%BFn_x%C3%A0o_h%E1%BA%A3i_s%E1%BA%A3n_t%E1%BA%A1i_L%C3%A2u_%C4%90%C3%A0i_%C4%90%C3%A1,_T%C3%A2n_Ph%C3%BA,_th%C3%A1ng_12_n%C4%83m_2021_(3).jpg",CC BY-SA 4.0,Phương Huy,
+R114_1,Bánh canh cua,R114_1.jpg,https://commons.wikimedia.org/wiki/File:T%C3%B4_b%C3%A1nh_canh_cua_%E1%BB%9F_Q1_ng6th1n2022_(b%C3%A1nh_canh_b%E1%BB%99t_g%E1%BA%A1o_n%C4%83ng)_(2).jpg,CC0,Phương Huy,Bánh canh tôm|Bánh canh ghẹ
+R114_2,Bánh canh cua,R114_2.jpg,https://commons.wikimedia.org/wiki/File:T%C3%B4_b%C3%A1nh_canh_cua_%E1%BB%9F_Q1_ng6th1n2022_(b%C3%A1nh_canh_b%E1%BB%99t_g%E1%BA%A1o_n%C4%83ng)_(1).jpg,CC0,Phương Huy,Bánh canh tôm|Bánh canh ghẹ
+R117_1,Bánh canh cá lóc,R117_1.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_canh_c%C3%A1_l%C3%B3c_(b%C3%A1nh_canh_b%E1%BB%99t_m%C3%AC)_%E1%BB%9F_P1_%C4%90%C3%B4ng_H%C3%A0,_T%E1%BA%BFt_n%C4%83m_2019_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R117_2,Bánh canh cá lóc,R117_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_canh_c%C3%A1_l%C3%B3c_(b%C3%A1nh_canh_b%E1%BB%99t_m%C3%AC)_%E1%BB%9F_P1_%C4%90%C3%B4ng_H%C3%A0,_T%E1%BA%BFt_n%C4%83m_2019_(2).jpg",CC BY-SA 4.0,Phương Huy,
+R119_2,Bánh canh tôm,R119_2.jpg,https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_T%E1%BA%BFt_2023_(b%C3%A1nh_canh_t%C3%B4m_th%E1%BB%8Bt)_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R120_1,Bánh đa cua,R120_1.jpg,https://commons.wikimedia.org/wiki/File:BANH_DA_CUA_1.jpg,CC BY-SA 3.0,HoangTuanAnh,
+R120_2,Bánh đa cua,R120_2.jpg,https://commons.wikimedia.org/wiki/File:BANH_DA_CUA_2.jpg,CC BY-SA 3.0,HoangTuanAnh,
+R122_1,Gà xé phay,R122_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_g%C3%A0_x%C3%A9_phay_(t%C3%B4_g%C3%A0_x%C3%A9_phay)_%E1%BB%9F_P3_%C4%90%C3%B4ng_H%C3%A0_n%C4%83m_2018.jpg,CC BY-SA 4.0,Phương Huy,
+R122_2,Cháo trắng,R122_2.jpg,"https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_g%C3%A0_nh%C3%A0_l%C3%A0m,_th%C3%A1ng_5_n%C4%83m_2020_(1).jpg",CC BY-SA 4.0,Phương Huy,Cháo gà
+R123_1,Bánh canh vịt,R123_1.jpg,"https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_v%E1%BB%8Bt_(%C4%91%C3%B9i_v%E1%BB%8Bt)_c%E1%BB%A7a_Chu%E1%BB%93n_con_m%E1%BB%A5_Qu%E1%BB%B5,_T%E1%BA%BFt_n%C4%83m_2020_(4).jpg",CC BY-SA 4.0,Phương Huy,Bún măng vịt|Cháo vịt
+R123_2,Bún măng vịt,R123_2.jpg,"https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_v%E1%BB%8Bt_(%C4%91%C3%B9i_v%E1%BB%8Bt)_c%E1%BB%A7a_Chu%E1%BB%93n_con_m%E1%BB%A5_Qu%E1%BB%B5,_T%E1%BA%BFt_n%C4%83m_2020_(1).jpg",CC BY-SA 4.0,Phương Huy,Bánh canh vịt|Cháo vịt
+R124_1,Bánh canh chả cá,R124_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_c%C3%A1_%C4%90%C3%B4ng_H%C3%A0_(b%C3%A1nh_canh_c%C3%A1_l%C3%B3c)_(2).jpg,Public domain,Phương Huy (thảo luận),Cháo cá
+R125_1,Cháo lòng,R125_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_l%C3%B2ng.jpg,CC BY 2.0,hongnhung106,
+R125_2,Cháo lòng,R125_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_l%C3%B2ng_B%C3%ACnh_Long_ng%C3%A0y_02_th%C3%A1ng_11_n%C4%83m_2018_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R127_1,Nem nướng Nha Trang,R127_1.jpg,https://commons.wikimedia.org/wiki/File:Chao_tom.jpg,CC BY-SA 2.0,Charles Haynes,
+R127_2,Bún thịt nướng,R127_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%E1%BA%A1o_t%C3%B4m.jpg,CC BY 2.0,SauceSupreme,Bún gà nướng
+R129_1,Cháo trắng,R129_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A1o_tr%E1%BA%AFng_h%E1%BB%99t_v%E1%BB%8Bt_mu%E1%BB%91i.JPG,CC BY-SA 3.0,Memberofc1,
+R130_1,Súp cua,R130_1.jpg,https://commons.wikimedia.org/wiki/File:S%C3%BAp_cua_Vi%E1%BB%87t_Nam.jpg,Public domain,Phương Huy (thảo luận),
+R130_2,Súp cua,R130_2.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(s%C3%BAp_cua_rong_bi%E1%BB%83n_c%C3%A0_r%E1%BB%91t)_(1).jpg,CC BY-SA 4.0,Phương Huy,Súp gà
+R133_1,Canh bún,R133_1.jpg,https://commons.wikimedia.org/wiki/File:T%C3%B4_b%C3%BAn_ri%C3%AAu_(canh_b%C3%BAn)_ng12th8n2022_(1).jpg,CC0,Phương Huy,Bún riêu cua
+R133_2,Canh bún,R133_2.jpg,https://commons.wikimedia.org/wiki/File:T%C3%B4_b%C3%BAn_ri%C3%AAu_(canh_b%C3%BAn)_ng12th8n2022_(2).jpg,CC0,Phương Huy,Bún riêu cua
+R139_2,Lẩu bò,R139_2.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BA%A9u_b%C3%B2_t%E1%BA%A1i_qu%C3%A1n_B%C3%B2_c%C6%B0%E1%BB%9Di_(3).jpg,Public domain,Phương Huy (thảo luận),
+R141_1,Bánh mì thịt nướng,R141_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_n%C6%B0%E1%BB%9Bng.png,CC BY-SA 3.0,nsaum75¡שיחת!‎,
+R141_2,Bánh mì thịt nướng,R141_2.jpg,"https://commons.wikimedia.org/wiki/File:Vietnamese_Grilled_Pork_B%C3%A1nh_M%C3%AC,_B%C3%A1nh_M%C3%AC_B%C3%A1nh_M%C3%AC_Westfield_Carousel,_2026_(01).jpg",CC BY-SA 4.0,Bahnfrend,
+R142_1,Bánh mì xíu mại,R142_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_x%C3%ADu_m%E1%BA%A1i-meatball-sandwich.jpg,Public domain,Nummymuffin,
+R142_2,Bánh mì thịt nướng,R142_2.jpg,https://commons.wikimedia.org/wiki/File:Viet_McRib_Banh_Mi.jpg,CC BY 2.0,Andrea Nguyen,Bánh mì xíu mại
+R143_1,Bánh mì chả lụa,R143_1.jpg,"https://commons.wikimedia.org/wiki/File:Traditional_Viet_Pork_Sausage_B%C3%A1nh_M%C3%AC,_B%C3%A1nh_M%C3%AC_B%C3%A1nh_M%C3%AC_Westfield_Carousel,_2026_(01).jpg",CC BY-SA 4.0,Bahnfrend,
+R143_2,Bánh mì chả lụa,R143_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_nh%C3%A2n_ch%C3%A0_b%C3%B4ng,_gi%C3%B2_l%E1%BB%A5a,_%E1%BB%9Bt.jpg",CC BY-SA 4.0,Lệ Xuân,Bánh mì kẹp thịt pate
+R145_1,Bánh mì bò kho,R145_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_b%C3%B2_kho_%E1%BB%9F_c%C3%A0_ph%C3%AA_Nguy%E1%BB%87t_Ca.jpg,Public domain,Phương Huy (thảo luận),
+R148_1,Bánh mì thịt nguội,R148_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_th%E1%BB%8Bt_ngu%E1%BB%99i.jpg,CC BY-SA 4.0,Minh Nguyen,
+R149_1,Bánh mì chà bông,R149_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_ch%C3%A0_b%C3%B4ng_Staff.jpg,CC BY-SA 4.0,Kiepbinong769937,
+R149_2,Bánh mì chả lụa,R149_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_nh%C3%A2n_ch%C3%A0_b%C3%B4ng,_gi%C3%B2_l%E1%BB%A5a,_%E1%BB%9Bt.jpg",CC BY-SA 4.0,Lệ Xuân,Bánh mì kẹp thịt pate|Bánh mì chà bông
+R152_1,Bánh bao xá xíu,R152_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_bao_x%C3%A1_x%C3%ADu.jpeg,CC BY-SA 3.0,User:nguyennhattu,
+R154_1,Bánh bao nhân thịt,R154_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_bao_chay_ng%E1%BB%8Dt_c%C3%BAng_t%E1%BA%A5t_ni%C3%AAn_M%E1%BA%ADu_Tu%E1%BA%A5t_2018_(1).jpg,Public domain,Phương Huy (thảo luận),Bánh bao chay
+R154_2,Bánh bao nhân thịt,R154_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_bao_chay_ng%E1%BB%8Dt_c%C3%BAng_t%E1%BA%A5t_ni%C3%AAn_M%E1%BA%ADu_Tu%E1%BA%A5t_2018_(2).jpg,Public domain,Phương Huy (thảo luận),Bánh bao chay
+R155_1,Bánh giò,R155_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_gi%C3%B2.jpg,CC BY-SA 2.0,"Thang Nguyen from Nottingham, United Kingdom",
+R155_2,Bánh dày kẹp chả,R155_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_gi%E1%BA%A7y_gi%C3%B2_2.jpg,CC BY-SA 4.0,Viethavvh,Bánh giò
+R156_1,Bánh cuốn nhân thịt,R156_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_cu%E1%BB%91n_nh%C3%A2n_th%E1%BB%8Bt.JPG,Public domain,Casablanca1911 at vi.wikipedia,
+R156_2,Bánh cuốn chả lụa,R156_2.jpg,"https://commons.wikimedia.org/wiki/File:Banh_cuon_nhan_thit_cha_lua,_Banh_Cuon_Thang_Long.jpg",CC BY-SA 4.0,Ser Amantio di Nicolao,Bánh cuốn nhân thịt
+R157_1,Bánh cuốn chả lụa,R157_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_cu%E1%BB%91n_ch%E1%BA%A3_l%E1%BB%A5a.jpg,CC BY-SA 2.0,stu_spivack,
+R157_2,Bánh cuốn chả lụa,R157_2.jpg,"https://commons.wikimedia.org/wiki/File:Banh_cuon_nhan_thit_cha_lua,_Banh_Cuon_Thang_Long.jpg",CC BY-SA 4.0,Ser Amantio di Nicolao,
+R158_1,Bánh ướt thịt nướng,R158_1.jpg,"https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(b%C3%A1nh_%C6%B0%E1%BB%9Bt_Ph%C6%B0%C6%A1ng_Lang,_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_%C4%83n_k%C3%A8m)_(2).jpg",CC BY-SA 4.0,Phương Huy,
+R158_2,Bánh ướt thịt nướng,R158_2.jpg,"https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(b%C3%A1nh_%C6%B0%E1%BB%9Bt_Ph%C6%B0%C6%A1ng_Lang,_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_%C4%83n_k%C3%A8m)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R160_1,Bánh nậm,R160_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_n%E1%BA%ADm_Th%E1%BB%A7_%C4%90%E1%BB%A9c.jpg,Public domain,Phương Huy (thảo luận),
+R160_2,Bánh mì kẹp thịt pate,R160_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_k%E1%BA%B9p_b%C3%A1nh_l%E1%BB%8Dc_%E1%BB%9F_%C4%90%C3%B4ng_H%C3%A0_n%C4%83m_2018.jpg,CC BY-SA 4.0,Phương Huy,
+R162_1,Bánh ít trần,R162_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_%C3%ADt_tr%E1%BA%A7n.JPG,CC BY-SA 3.0,Memberofc1,
+R162_2,Bánh ít trần,R162_2.jpg,https://commons.wikimedia.org/wiki/File:%C4%90%C4%A9a_b%C3%A1nh_%C3%ADt_tr%E1%BA%A7n.jpg,CC BY-SA 4.0,Hoangkid,
+R163_1,Bánh khọt,R163_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_kh%E1%BB%8Dt_by_Nguyenhai314.jpg,CC BY-SA 4.0,Nguyenhai314,
+R163_2,Bánh khọt,R163_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_kh%E1%BB%8Dt_by_Baoothersks.jpg,CC BY-SA 4.0,Baoothersks,
+R164_1,Bánh canh cua,R164_1.jpg,https://commons.wikimedia.org/wiki/File:Banhcanhcua.jpg,CC0,bánh canh cu,Bánh canh tôm
+R168_1,Bánh hỏi heo quay,R168_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_h%E1%BB%8Fi_tr%C3%ACnh_b%C3%A0y_tr%C3%AAn_%C4%91%C4%A9a.jpg,CC BY-SA 3.0,Ngô Trung,
+R170_1,Bánh tráng nướng,R170_1.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_tr%C3%A1ng_n%C6%B0%E1%BB%9Bng_TP._H%E1%BB%93_Ch%C3%AD_Minh_-_street_food_in_Ho_Chi_Minh_City,_Vietnam.jpg",CC BY-SA 2.0,Light Write,
+R170_2,Bánh tráng nướng,R170_2.jpg,https://commons.wikimedia.org/wiki/File:Pizzabanhtrangnuong1.jpg,CC BY-SA 3.0,Huutai11791,
+R171_1,Bánh tráng cuốn thịt heo,R171_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_tr%C3%A1ng_cu%E1%BB%91n_th%E1%BB%8Bt_heo_(18521).jpg,CC BY-SA 4.0,Lê Huỳnh Bộ,
+R171_2,Bánh tráng cuốn thịt heo,R171_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_tr%C3%A1ng_cu%E1%BB%91n_th%E1%BB%8Bt_heo.jpg,CC BY-SA 4.0,Lê Huỳnh Bộ,
+R175_1,Bánh chưng,R175_1.jpg,https://commons.wikimedia.org/wiki/File:Banh_chung_vuong.jpg,Public domain,vi:user:Viethavvh,
+R175_2,Bánh chưng,R175_2.jpg,https://commons.wikimedia.org/wiki/File:Banh_Chung_in_Vietnam.jpg,CC0,Syced,
+R177_1,Bánh tét chuối,R177_1.jpg,https://commons.wikimedia.org/wiki/File:Banana_cake_(b%C3%A1nh_tet_chu%E1%BB%91i).jpg,CC BY 3.0,Photo by ChildofMidnight.,Bánh chuối hấp|Bánh tét nhân thịt
+R177_2,Bánh tét chuối,R177_2.jpg,https://commons.wikimedia.org/wiki/File:BanhTet.jpg,Public domain,Lưu Ly,Bánh tét nhân thịt|Bánh chuối hấp
+R179_1,Bánh tiêu,R179_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_ti%C3%AAu.jpg,CC BY-SA 4.0,Baoothersks,
+R182_1,Bánh mì que,R182_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_que_v%E1%BB%9Bi_th%E1%BB%8Bt_x%C3%B4ng_kh%C3%B3i.jpg,CC BY-SA 4.0,Baoothersks,
+R182_2,Bánh mì que,R182_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_que.jpg,CC BY-SA 4.0,Baoothersks,
+R183_1,Bánh mì chảo,R183_1.jpg,https://commons.wikimedia.org/wiki/File:M%E1%BB%99t_ph%E1%BA%A7n_b%C3%A1nh_m%C3%AC_ch%E1%BA%A3o_v%E1%BB%9Bi_tr%E1%BB%A9ng_v%C3%A0_ch%E1%BA%A3_(38657217774).jpg,CC BY 2.0,Vinnie Cartabiano,
+R184_1,Bánh mì nướng muối ớt,R184_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_m%C3%AC_n%C6%B0%E1%BB%9Bng_mu%E1%BB%91i_%E1%BB%9Bt.jpg,CC BY-SA 4.0,Baoothersks,
+R187_1,Bánh gối,R187_1.jpg,https://commons.wikimedia.org/wiki/File:Banh_goi_03.JPG,Public domain,Binh Giang,
+R187_2,Bánh gối,R187_2.jpg,https://commons.wikimedia.org/wiki/File:Banh_goi_01.JPG,Public domain,Binh Giang,
+R188_1,Bánh rán mặn,R188_1.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_R%C3%A1n_H%C3%A0_N%E1%BB%99i,_Vi%E1%BB%87t_Nam.jpg",CC BY-SA 4.0,Dangthu.ylinhbn94,
+R189_1,Bánh tôm Hồ Tây,R189_1.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BB%85_h%E1%BB%99i_%E1%BA%A9m_th%E1%BB%B1c_C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023_%C4%91%E1%BA%B7c_s%E1%BA%A3n_b%C3%A1nh_t%C3%B4m_H%E1%BB%93_T%C3%A2y_(7).jpg,CC BY-SA 4.0,Phương Huy,
+R189_2,Bánh tôm Hồ Tây,R189_2.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BB%85_h%E1%BB%99i_%E1%BA%A9m_th%E1%BB%B1c_C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023_%C4%91%E1%BA%B7c_s%E1%BA%A3n_b%C3%A1nh_t%C3%B4m_H%E1%BB%93_T%C3%A2y_(4).jpg,CC BY-SA 4.0,Phương Huy,
+R190_1,Bánh cuốn trứng,R190_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_cu%E1%BB%91n_tr%E1%BB%A9ng_%E1%BB%9F_BL_ng30th10n2020_(3).jpg,CC0,Phương Huy,
+R190_2,Bánh cuốn trứng,R190_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_cu%E1%BB%91n_tr%E1%BB%A9ng_%E1%BB%9F_BL_ng30th10n2020_(2).jpg,CC0,Phương Huy,
+R193_1,Gà nướng mật ong,R193_1.jpg,"https://commons.wikimedia.org/wiki/File:Li%C3%AAn_hoan_SNMheo_ng13th9n2020_(g%C3%A0_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong,_%C4%91%C3%B9i_g%C3%A0).jpg",CC0,Phương Huy,
+R193_2,Gà nướng mật ong,R193_2.jpg,https://commons.wikimedia.org/wiki/File:Li%C3%AAn_hoan_SNMheo_ng13th9n2020_(g%C3%A0_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong_nguy%C3%AAn_con)_(2).jpg,CC0,Phương Huy,
+R194_1,Chân gà nướng,R194_1.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_%C4%91%C6%B0%E1%BB%9Dng_NS_ng27th4n2013_(2).jpg,CC BY-SA 4.0,Phương Huy,Gà nướng sả
+R194_2,Chân gà nướng,R194_2.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_%C4%91%C6%B0%E1%BB%9Dng_NS_ng27th4n2013_(4).jpg,CC BY-SA 4.0,Phương Huy,Gà nướng sả
+R195_1,Gà chiên nước mắm,R195_1.jpg,"https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_chi%C3%AAn_n%C6%B0%E1%BB%9Bc_m%E1%BA%AFm,_th%C3%A1ng_8_n%C4%83m_2018_(1).JPG",Public domain,Phương Huy (thảo luận),
+R195_2,Gà chiên nước mắm,R195_2.jpg,"https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_chi%C3%AAn_n%C6%B0%E1%BB%9Bc_m%E1%BA%AFm,_th%C3%A1ng_8_n%C4%83m_2018_(2).JPG",Public domain,Phương Huy (thảo luận),
+R196_1,Gà nướng mật ong,R196_1.jpg,https://commons.wikimedia.org/wiki/File:Th%E1%BB%8Fi_ba_ch%E1%BB%89_heo_chi%C3%AAn_gi%C3%B2n_r%E1%BB%A5m_v%C3%A0_g%C3%A0_quay_ng11th6n2023.jpg,CC BY-SA 4.0,Phương Huy,Gà chiên giòn
+R196_2,Gà nướng mật ong,R196_2.jpg,https://commons.wikimedia.org/wiki/File:Th%E1%BB%8Fi_ba_ch%E1%BB%89_heo_chi%C3%AAn_gi%C3%B2n_r%E1%BB%A5m_v%C3%A0_g%C3%A0_quay_ng11th6n2023_(2).jpg,CC BY-SA 4.0,Phương Huy,Gà chiên giòn
+R199_1,Gà kho sả,R199_1.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_d%E1%BB%8Bp_L%E1%BB%85_2th9n2023_(g%C3%A0_kho_s%E1%BA%A3)_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R199_2,Gà kho sả,R199_2.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_d%E1%BB%8Bp_L%E1%BB%85_2th9n2023_(g%C3%A0_kho_s%E1%BA%A3)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R203_1,Chân gà nướng,R203_1.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_%C4%91%C6%B0%E1%BB%9Dng_NS_ng27th4n2013_(2).jpg,CC BY-SA 4.0,Phương Huy,Cánh gà nướng
+R203_2,Cánh gà nướng,R203_2.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_%C4%91%C6%B0%E1%BB%9Dng_NS_ng27th4n2013_(3).jpg,CC BY-SA 4.0,Phương Huy,
+R204_1,Đùi gà chiên,R204_1.jpg,https://commons.wikimedia.org/wiki/File:Th%E1%BB%8Fi_ba_ch%E1%BB%89_heo_chi%C3%AAn_gi%C3%B2n_r%E1%BB%A5m_v%C3%A0_%C4%91%C3%B9i_g%C3%A0_quay_ng12th5n2023_(3).jpg,CC BY-SA 4.0,Phương Huy,
+R204_2,Gà nướng mật ong,R204_2.jpg,https://commons.wikimedia.org/wiki/File:Th%E1%BB%8Fi_ba_ch%E1%BB%89_heo_chi%C3%AAn_gi%C3%B2n_r%E1%BB%A5m_v%C3%A0_%C4%91%C3%B9i_g%C3%A0_quay_ng12th5n2023_(1).jpg,CC BY-SA 4.0,Phương Huy,Đùi gà chiên|Gà chiên giòn
+R208_1,Gỏi gà bắp cải,R208_1.jpg,https://commons.wikimedia.org/wiki/File:G%C3%A0_x%C3%A9_phay_(2).jpg,CC BY-SA 4.0,Baoothersks,Gà xé phay
+R208_2,Gà xé phay,R208_2.jpg,https://commons.wikimedia.org/wiki/File:G%C3%A0_x%C3%A9_phay_(3).jpg,CC BY-SA 4.0,Baoothersks,
+R211_1,Vịt quay,R211_1.jpg,https://commons.wikimedia.org/wiki/File:Vit-quay-bac-kinh-by-vit-quay-to-thi.jpg,CC BY-SA 4.0,Vitquaytothi,
+R216_1,Heo quay,R216_1.jpg,https://commons.wikimedia.org/wiki/File:Th%E1%BB%8Bt_heo_quay_c%C3%BAng.jpg,CC BY-SA 4.0,Hongtrakemsua7,
+R220_1,Thịt heo nướng sả,R220_1.jpg,https://commons.wikimedia.org/wiki/File:%C4%90%E1%BB%93_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_ch%E1%BB%A3_BL_ng18th3n2023_(x%C3%A2u_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_than)_(1).jpg,CC BY-SA 4.0,Phương Huy,Sườn heo nướng
+R220_2,Thịt heo nướng sả,R220_2.jpg,https://commons.wikimedia.org/wiki/File:%C4%90%E1%BB%93_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_ch%E1%BB%A3_BL_ng18th3n2023_(x%C3%A2u_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_than)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R223_1,Sườn xào chua ngọt,R223_1.jpg,https://commons.wikimedia.org/wiki/File:Suon_xao_chua_ngot.png,CC BY 3.0,Nguyen Thi Quynh Tram,
+R223_2,Sườn xào chua ngọt,R223_2.jpg,https://commons.wikimedia.org/wiki/File:Suon_xao_chua_ngot_bac_ninh.jpg,CC BY-SA 4.0,Blemo25,Sườn rim mặn ngọt
+R224_1,Sườn non kho,R224_1.jpg,https://commons.wikimedia.org/wiki/File:S%C6%B0%E1%BB%9Dn_non_kho.jpg,Public domain,Phương Huy (thảo luận),
+R224_2,Tôm rim thịt,R224_2.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(m%C3%B3n_t%C3%B4m_kho_s%C6%B0%E1%BB%9Dn_non)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R229_1,Bánh cuốn chả lụa,R229_1.jpg,"https://commons.wikimedia.org/wiki/File:Banh_cuon_nhan_thit_cha_lua,_Banh_Cuon_Thang_Long.jpg",CC BY-SA 4.0,Ser Amantio di Nicolao,Chả lụa
+R229_2,Bánh cuốn chả lụa,R229_2.jpg,https://commons.wikimedia.org/wiki/File:Chalua.jpg,CC BY-SA 2.0,stu_spivack,Chả lụa
+R231_1,Nem chua,R231_1.jpg,https://commons.wikimedia.org/wiki/File:Nem_chua.jpg,CC BY 2.0,Ron Diggity,
+R231_2,Nem chua rán,R231_2.jpg,https://commons.wikimedia.org/wiki/File:Nem_chua_nuong.JPG,CC BY-SA 3.0,Rungbachduong at Vietnamese Wikipedia,Nem chua|Nem nướng Nha Trang
+R232_1,Nem nướng Nha Trang,R232_1.jpg,https://commons.wikimedia.org/wiki/File:M%E1%BA%B9t_nem_n%C6%B0%E1%BB%9Bng_Nha_Trang.jpg,CC BY-SA 4.0,Letruongan1122,
+R232_2,Nem nướng Nha Trang,R232_2.jpg,https://commons.wikimedia.org/wiki/File:L%E1%BB%85_h%E1%BB%99i_%E1%BA%A9m_th%E1%BB%B1c_C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023_%C4%91%E1%BA%B7c_s%E1%BA%A3n_nem_l%E1%BB%A5i_n%C6%B0%E1%BB%9Bng_Nha_Trang_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R235_1,Giò thủ,R235_1.jpg,https://commons.wikimedia.org/wiki/File:Gi%C3%B2_th%E1%BB%A7.jpg,CC BY-SA 4.0,Viethavvh,Thịt đông
+R235_2,Giò thủ,R235_2.jpg,https://commons.wikimedia.org/wiki/File:Khoanh_gi%C3%B2_th%E1%BB%A7_(2).jpg,CC BY-SA 4.0,Viethavvh,Thịt đông
+R242_1,Bò lúc lắc,R242_1.jpg,https://commons.wikimedia.org/wiki/File:Sachko_lok_lak_-_beef_lok_lak_th%E1%BB%8Bt_b%C3%B2_l%C3%BAc_l%E1%BA%AFc_Khmer_food.jpg,CC0,Alexandersingh9,Cơm bò lúc lắc
+R242_2,Bò lúc lắc,R242_2.jpg,https://commons.wikimedia.org/wiki/File:Product_Shots_of_Food-Bo_Luc_Lac.jpg,CC BY-SA 2.0,Nick Nguyen,
+R243_1,Bò kho,R243_1.jpg,https://commons.wikimedia.org/wiki/File:Bo_Kho.jpg,CC BY 2.0,Jason Hutchens,Bánh mì bò kho
+R243_2,Bò kho,R243_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%B2_kho_(b%C3%B2_Ph%C3%BA_Y%C3%AAn)_%E1%BB%9F_Nguy%E1%BB%85n_Nh%E1%BB%AF_L%C3%A3m,_T%C3%A2n_Ph%C3%BA_n%C4%83m_2015_(6).jpg",CC BY-SA 4.0,Phương Huy,Phở sốt vang|Hủ tiếu bò kho
+R244_1,Bò né,R244_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_n%C3%A9_(b%C3%B2_Gia_Lai)_ng12th4n2021_(3).jpg,CC0,Phương Huy,
+R244_2,Bò bít tết,R244_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_n%C3%A9_(b%C3%B2_Gia_Lai)_ng15th12n2020_(2).jpg,CC0,Phương Huy,Bò né
+R246_1,Bò nướng lá lốt,R246_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_n%C6%B0%E1%BB%9Bng_l%C3%A1_l%E1%BB%91t_t%E1%BA%A1i_Manchester.jpg,CC BY-SA 4.0,Minh28397,Bò cuốn lá lốt
+R246_2,Bò nướng lá lốt,R246_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_n%C6%B0%E1%BB%9Bng_l%C3%A1_l%E1%BB%91t_(39354093491).jpg,CC BY 2.0,Vinnie Cartabiano,Bò cuốn lá lốt
+R247_1,Bò né,R247_1.jpg,"https://commons.wikimedia.org/wiki/File:Cafe_UK_ng2th10n2022_(B%C3%B2_x%C3%A0o_h%C3%A0nh_t%C3%A2y,_khoai_t%C3%A2y).jpg",CC0,Phương Huy,Bò xào cần tây
+R247_2,Bò né,R247_2.jpg,https://commons.wikimedia.org/wiki/File:Cafe_UK_ng2th10n2022_(B%C3%B2_x%C3%A0o_h%C3%A0nh_t%C3%A2y)_(5).jpg,CC0,Phương Huy,Bò xào cần tây
+R249_1,Bò bít tết,R249_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_s%E1%BB%91t_vang_ng%C3%A0y_21_th%C3%A1ng_1_n%C4%83m_2019_(2).jpg,CC BY-SA 4.0,Phương Huy,Bò sốt vang
+R258_1,Bò bít tết,R258_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_B%C3%ADt_t%E1%BA%BFt_Vi%E1%BB%87t_Nam.JPG,Public domain,Phương Huy at Vietnamese Wikipedia,Bò né
+R258_2,Bò bít tết,R258_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_b%C3%ADt_t%E1%BA%BFt_2.JPG,Public domain,Phương Huy (thảo luận),Bò né
+R269_1,Cá thu sốt cà,R269_1.jpg,"https://commons.wikimedia.org/wiki/File:C%C3%A1_thu_s%E1%BB%91t_c%C3%A0,_th%C3%A1ng_4_n%C4%83m_2018_(1).jpg",Public domain,Phương Huy (thảo luận),
+R269_2,Cá thu sốt cà,R269_2.jpg,"https://commons.wikimedia.org/wiki/File:C%C3%A1_thu_s%E1%BB%91t_c%C3%A0,_th%C3%A1ng_4_n%C4%83m_2018_(2).jpg",Public domain,Phương Huy (thảo luận),
+R273_1,Cá hồi nướng,R273_1.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1_h%E1%BB%93i_n%C6%B0%E1%BB%9Bng_ng2th5n2022_(4).jpg,CC BY-SA 4.0,Phương Huy,
+R273_2,Cá hồi nướng,R273_2.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1_h%E1%BB%93i_n%C6%B0%E1%BB%9Bng_ng2th5n2022_(5).jpg,CC BY-SA 4.0,Phương Huy,Cá hồi áp chảo
+R276_1,Cá diêu hồng chiên,R276_1.jpg,https://commons.wikimedia.org/wiki/File:M%C3%B3n_c%C3%A1_di%C3%AAu_h%E1%BB%93ng_chi%C3%AAn_2012_(2).jpg,Public domain,Phương Huy (thảo luận),
+R276_2,Cá diêu hồng chiên,R276_2.jpg,"https://commons.wikimedia.org/wiki/File:%C4%90%E1%BA%A7u_c%C3%A1_di%C3%AAu_h%E1%BB%93ng_chi%C3%AAn,_n%C4%83m_2018.jpg",Public domain,Phương Huy (thảo luận),
+R287_1,Cá chim nướng,R287_1.jpg,"https://commons.wikimedia.org/wiki/File:N%E1%BA%A5u_n%C6%B0%E1%BB%9Bng_c%C3%A1_chim_r%C3%A1n_ch%E1%BA%A3o,_ng26th5n2020_(5).jpg",CC BY-SA 4.0,Phương Huy,Cá chim chiên
+R287_2,Cá chim nướng,R287_2.jpg,"https://commons.wikimedia.org/wiki/File:N%E1%BA%A5u_n%C6%B0%E1%BB%9Bng_c%C3%A1_chim_r%C3%A1n_ch%E1%BA%A3o,_ng26th5n2020_(2).jpg",CC BY-SA 4.0,Phương Huy,Cá chim chiên
+R290_1,Mực hấp gừng,R290_1.jpg,https://commons.wikimedia.org/wiki/File:M%E1%BB%B1c_h%E1%BA%A5p_g%E1%BB%ABng_%C4%90%C3%B4ng_H%C3%A0_4.jpg,Public domain,Phương Huy (thảo luận),
+R290_2,Mực hấp gừng,R290_2.jpg,https://commons.wikimedia.org/wiki/File:M%E1%BB%B1c_h%E1%BA%A5p_g%E1%BB%ABng_%C4%90%C3%B4ng_H%C3%A0_2.jpg,Public domain,Phương Huy (thảo luận),
+R292_1,Mực chiên giòn,R292_1.jpg,"https://commons.wikimedia.org/wiki/File:Khoanh_m%E1%BB%B1c_chi%C3%AAn_gi%C3%B2n_t%E1%BA%A1i_Pizza_company_Nguy%E1%BB%85n_S%C6%A1n,_th%C3%A1ng_8_n%C4%83m_2018_(1).jpg",Public domain,Phương Huy (thảo luận),
+R292_2,Mực chiên giòn,R292_2.jpg,"https://commons.wikimedia.org/wiki/File:Khoanh_m%E1%BB%B1c_chi%C3%AAn_gi%C3%B2n_t%E1%BA%A1i_Pizza_company_Nguy%E1%BB%85n_S%C6%A1n,_th%C3%A1ng_8_n%C4%83m_2018_(2).jpg",Public domain,Phương Huy (thảo luận),
+R295_1,Bạch tuộc nướng,R295_1.jpg,https://commons.wikimedia.org/wiki/File:B%E1%BA%A1ch_tu%E1%BB%99c_n%C6%B0%E1%BB%9Bng.jpg,CC BY-SA 4.0,Baoothersks,
+R295_2,Hải sản nướng,R295_2.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_n%C6%B0%E1%BB%9Bng_qu%C3%A1n_Ch%C3%BA_T%C3%A8o_ng%C3%A0y_04_th%C3%A1ng_8_n%C4%83m_2016,_m%E1%BB%B1c_v%C3%A0_b%E1%BA%A1ch_tu%E1%BB%99c_(27).jpg",CC BY-SA 4.0,Phương Huy,Bạch tuộc nướng
+R297_1,Tôm nướng muối ớt,R297_1.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(m%C3%B3n_t%C3%B4m_h%E1%BA%A5p)_(2).jpg,CC BY-SA 4.0,Phương Huy,Tôm hấp|Tôm rim
+R297_2,Tôm nướng muối ớt,R297_2.jpg,https://commons.wikimedia.org/wiki/File:Nh%C3%A0_m%C3%ACnh_L%E1%BB%85_30th4n2023_(m%C3%B3n_t%C3%B4m_h%E1%BA%A5p)_(6).jpg,CC BY-SA 4.0,Phương Huy,Tôm hấp|Tôm rim
+R299_2,Tôm rim thịt,R299_2.jpg,https://commons.wikimedia.org/wiki/File:T%E1%BA%BFt_2024_nh%C3%A0_m%C3%ACnh_(rim_t%C3%B4m_th%E1%BB%8Bt)_(6).jpg,CC0,Phương Huy,
+R301_1,Tôm chiên bột,R301_1.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4m_t%E1%BA%A9m_b%E1%BB%99t_chi%C3%AAn,_th%C3%A1ng_4_n%C4%83m_2018_(1).jpg",Public domain,Phương Huy (thảo luận),
+R301_2,Tôm chiên bột,R301_2.jpg,"https://commons.wikimedia.org/wiki/File:T%C3%B4m_t%E1%BA%A9m_b%E1%BB%99t_chi%C3%AAn,_th%C3%A1ng_4_n%C4%83m_2018_(2).jpg",Public domain,Phương Huy (thảo luận),
+R304_1,Mực hấp gừng,R304_1.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_C%E1%BB%ADa_Vi%E1%BB%87t,_T%E1%BA%BFt_2022_(m%E1%BB%B1c_h%E1%BA%A5p_g%E1%BB%ABng)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R304_2,Mực hấp gừng,R304_2.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_C%E1%BB%ADa_Vi%E1%BB%87t,_T%E1%BA%BFt_2022_(m%E1%BB%B1c_h%E1%BA%A5p_g%E1%BB%ABng)_(2).jpg",CC BY-SA 4.0,Phương Huy,
+R306_1,Cua rang me,R306_1.jpg,"https://commons.wikimedia.org/wiki/File:Cua_s%E1%BB%91t_%E1%BB%9Bt_KingCrab,_qu%E1%BA%ADn_3.jpg",Public domain,Phương Huy (thảo luận),Cua sốt ớt
+R309_1,Nghêu hấp sả,R309_1.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_C%E1%BB%ADa_Vi%E1%BB%87t,_T%E1%BA%BFt_2022_(ngh%C3%AAu_h%E1%BA%A5p_s%E1%BA%A3,_d%C4%A9a_ngh%C3%AAu)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R309_2,Nghêu hấp sả,R309_2.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_C%E1%BB%ADa_Vi%E1%BB%87t,_T%E1%BA%BFt_2022_(ngh%C3%AAu_h%E1%BA%A5p_s%E1%BA%A3,_d%C4%A9a_ngh%C3%AAu)_(2b).jpg",CC BY-SA 4.0,Phương Huy,
+R311_1,Sò huyết rang me,R311_1.jpg,https://commons.wikimedia.org/wiki/File:S%C3%B2_huy%E1%BA%BFt_rang_me.jpg,CC BY-SA 4.0,Baoothersks,
+R313_1,Hàu nướng phô mai,R313_1.jpg,https://commons.wikimedia.org/wiki/File:H%C3%A0u_n%C6%B0%E1%BB%9Bng_ph%C3%B4_mai_n%C4%83m_2016_v%E1%BB%9Bi_e.Hy_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R313_2,Hàu nướng phô mai,R313_2.jpg,https://commons.wikimedia.org/wiki/File:H%C3%A0u_n%C6%B0%E1%BB%9Bng_ph%C3%B4_mai_n%C4%83m_2016_v%E1%BB%9Bi_e.Hy_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R314_1,Hàu nướng mỡ hành,R314_1.jpg,"https://commons.wikimedia.org/wiki/File:C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023,_Ks_Song_Ph%C6%B0%C6%A1ng_(%C4%91%E1%BB%93_%C4%83n,_m%C3%B3n_h%C3%A0u_n%C6%B0%E1%BB%9Bng_m%E1%BB%A1_h%C3%A0nh)_(9).jpg",CC BY-SA 4.0,Phương Huy,
+R314_2,Hàu nướng mỡ hành,R314_2.jpg,"https://commons.wikimedia.org/wiki/File:C%E1%BB%ADa_Vi%E1%BB%87t_th4n2023,_Ks_Song_Ph%C6%B0%C6%A1ng_(%C4%91%E1%BB%93_%C4%83n,_m%C3%B3n_h%C3%A0u_n%C6%B0%E1%BB%9Bng_m%E1%BB%A1_h%C3%A0nh)_(10).jpg",CC BY-SA 4.0,Phương Huy,
+R317_1,Ốc bươu nhồi thịt,R317_1.jpg,https://commons.wikimedia.org/wiki/File:%E1%BB%90c_b%C6%B0%C6%A1u_nh%E1%BB%93i_th%E1%BB%8Bt_1.jpg,CC BY-SA 2.0,Charles Haynes,
+R317_2,Ốc bươu nhồi thịt,R317_2.jpg,https://commons.wikimedia.org/wiki/File:%E1%BB%90c_b%C6%B0%C6%A1u_nh%E1%BB%93i_th%E1%BB%8Bt.jpg,CC BY-SA 2.0,Charles Haynes,
+R318_1,Ốc móng tay xào rau muống,R318_1.jpg,https://commons.wikimedia.org/wiki/File:%E1%BB%90c_m%C3%B3ng_tay_x%C3%A0o_rau_mu%E1%BB%91ng_n%C4%83m_2016_(6).jpg,CC BY-SA 4.0,Phương Huy,
+R318_2,Ốc móng tay xào rau muống,R318_2.jpg,https://commons.wikimedia.org/wiki/File:%E1%BB%90c_m%C3%B3ng_tay_x%C3%A0o_rau_mu%E1%BB%91ng_n%C4%83m_2016_(5).jpg,CC BY-SA 4.0,Phương Huy,
+R320_1,Chả mực Hạ Long,R320_1.jpg,"https://commons.wikimedia.org/wiki/File:Ch%E1%BA%A3_m%E1%BB%B1c_H%E1%BA%A1_Long,_Qu%E1%BA%A3ng_Ninh,_Vi%E1%BB%87t_Nam.jpg",CC BY-SA 4.0,Quyentruongrohgf,Chả cá chiên
+R320_2,Chả mực Hạ Long,R320_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%E1%BA%A3_m%E1%BB%B1c.jpg,CC BY-SA 4.0,Hoangkid (Đặng Thái Hoàng),Chả cá chiên
+R324_1,Rau muống xào tỏi,R324_1.jpg,"https://commons.wikimedia.org/wiki/File:Khu_ngh%E1%BB%89_d%C6%B0%E1%BB%A1ng_%E1%BB%9F_C%C3%A1i_B%C3%A8_(%C4%90%E1%BB%93_%C4%83n,_d%C4%A9a_rau_mu%E1%BB%91ng_x%C3%A0o_t%E1%BB%8Fi).jpg",CC BY-SA 4.0,Phương Huy,Rau cải xào tỏi
+R324_2,Rau muống xào tỏi,R324_2.jpg,"https://commons.wikimedia.org/wiki/File:Khu_ngh%E1%BB%89_d%C6%B0%E1%BB%A1ng_%E1%BB%9F_C%C3%A1i_B%C3%A8_(%C4%90%E1%BB%93_%C4%83n,_ch%C3%A9n_rau_mu%E1%BB%91ng_x%C3%A0o_t%E1%BB%8Fi_%E1%BB%9Bt).jpg",CC BY-SA 4.0,Phương Huy,Rau cải xào tỏi
+R333_1,Canh khổ qua nhồi thịt,R333_1.jpg,https://commons.wikimedia.org/wiki/File:Canh_kh%E1%BB%95_qua_nh%E1%BB%93i_th%E1%BB%8Bt.png,CC BY 3.0,Sài Gòn Ăn Chơi 24h,
+R333_2,Canh khổ qua nhồi thịt,R333_2.jpg,"https://commons.wikimedia.org/wiki/File:Soup_made_from_stuffed_bitter_melon,_Canh_Kho_Qua.jpg",CC BY 2.0,HungryHuy,
+R338_1,Canh khoai mỡ,R338_1.jpg,https://commons.wikimedia.org/wiki/File:Canh_Khoai_M%E1%BB%A1.jpg,CC BY-SA 4.0,OlBoes,
+R350_1,Gà nướng mật ong,R350_1.jpg,https://commons.wikimedia.org/wiki/File:D%C4%A9a_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_v%C3%A0_%C4%91%C3%B9i_g%C3%A0_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong_%E1%BB%9F_BigC_ng%C3%A0y_12_th%C3%A1ng_5_n%C4%83m_2021_(8).jpg,CC0,Phương Huy,Đùi gà nướng
+R350_2,Gà nướng mật ong,R350_2.jpg,https://commons.wikimedia.org/wiki/File:D%C4%A9a_th%E1%BB%8Bt_heo_n%C6%B0%E1%BB%9Bng_v%C3%A0_%C4%91%C3%B9i_g%C3%A0_n%C6%B0%E1%BB%9Bng_m%E1%BA%ADt_ong_%E1%BB%9F_BigC_ng%C3%A0y_12_th%C3%A1ng_5_n%C4%83m_2021_(9).jpg,CC0,Phương Huy,Đùi gà nướng
+R359_1,Chả giò chay,R359_1.jpg,"https://commons.wikimedia.org/wiki/File:Cha_Gio_Chay_-_Amazing_Taste_(%E6%9D%B1%E6%96%B9%E4%B9%8B%E5%91%B3),_Charlois,_Rotterdam_(2023).jpg",CC BY-SA 4.0,Donald Trung Quoc Don (Chữ Hán: 徵國單) - Wikimedia Commons - © CC BY-SA 4.0 Intern,
+R359_2,Chả giò rán,R359_2.jpg,https://commons.wikimedia.org/wiki/File:Chagiochay.JPG,CC BY 3.0,Nguyen Thi Quynh Tram,Chả giò chay
+R361_1,Phở chay,R361_1.jpg,https://commons.wikimedia.org/wiki/File:Tofu_noodle_soup_(Ph%E1%BB%9F_chay)_-_Pho_Hanoi_Authentic_2024-12-01.jpg,CC0,Andy Li,Bún riêu chay
+R364_1,Gỏi cuốn chay,R364_1.jpg,https://commons.wikimedia.org/wiki/File:G%E1%BB%8Fi_Cu%E1%BB%91n_Chay_Vietnamese_Fresh_Vegetarian_Spring_Roll_2019-1599.jpg,CC BY-SA 4.0,Paul R. Burley,
+R366_1,Nộm hoa chuối,R366_1.jpg,https://commons.wikimedia.org/wiki/File:N%E1%BB%99m_hoa_chu%E1%BB%91i.png,CC BY-SA 4.0,Jicara Foodie Traveller,
+R371_1,Kho quẹt ăn rau luộc,R371_1.jpg,https://commons.wikimedia.org/wiki/File:C%C6%A1m_ch%C3%A1y_kho_qu%E1%BA%B9t.jpg,CC BY-SA 4.0,Viethavvh,
+R376_1,Bông cải xanh xào mộc nhĩ,R376_1.jpg,https://commons.wikimedia.org/wiki/File:S%C3%BAp_l%C6%A1_x%C3%A0o_m%E1%BB%99c_nh%C4%A9_ng%C3%A0y_17_th%C3%A1ng_6_n%C4%83m_2019_t%E1%BA%A1i_B%C3%ACnh_Long_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R376_2,Bông cải xanh xào mộc nhĩ,R376_2.jpg,https://commons.wikimedia.org/wiki/File:S%C3%BAp_l%C6%A1_x%C3%A0o_m%E1%BB%99c_nh%C4%A9_ng%C3%A0y_17_th%C3%A1ng_6_n%C4%83m_2019_t%E1%BA%A1i_B%C3%ACnh_Long_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R377_1,Khoai lang luộc,R377_1.jpg,https://commons.wikimedia.org/wiki/File:Khoai_lang_lu%E1%BB%99c.jpg,CC BY-SA 4.0,Baoothersks,
+R380_1,Bắp xào tép,R380_1.jpg,https://commons.wikimedia.org/wiki/File:B%E1%BA%AFp_x%C3%A0o_b%C6%A1_(b%E1%BA%AFp_n%E1%BA%BFp)_%E1%BB%9F_B%C3%ACnh_T%C3%A2n_(2).jpg,Public domain,Phương Huy (thảo luận),Bắp xào bơ
+R380_2,Bắp xào tép,R380_2.jpg,https://commons.wikimedia.org/wiki/File:B%E1%BA%AFp_x%C3%A0o_b%C6%A1_(b%E1%BA%AFp_n%E1%BA%BFp)_%E1%BB%9F_B%C3%ACnh_T%C3%A2n_(1).jpg,Public domain,Phương Huy (thảo luận),Bắp xào bơ
+R387_1,Bắp xào tép,R387_1.jpg,"https://commons.wikimedia.org/wiki/File:B%E1%BB%AFa_%C4%83n_gia_%C4%91%C3%ACnh_m%C3%B3n_b%E1%BA%AFp_x%C3%A0o_t%C3%A9p_hay_ru%E1%BB%91c,_ng1th12n2019_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R387_2,Bắp xào tép,R387_2.jpg,"https://commons.wikimedia.org/wiki/File:B%E1%BB%AFa_%C4%83n_gia_%C4%91%C3%ACnh_m%C3%B3n_b%E1%BA%AFp_x%C3%A0o_t%C3%A9p_hay_ru%E1%BB%91c,_ng1th12n2019_(3).jpg",CC BY-SA 4.0,Phương Huy,
+R390_1,Xúc xích nướng,R390_1.jpg,https://commons.wikimedia.org/wiki/File:X%C3%BAc_x%C3%ADch_chi%C3%AAn_ng19th4n2022_(1).jpg,CC0,Phương Huy,Xúc xích chiên
+R390_2,Xúc xích nướng,R390_2.jpg,https://commons.wikimedia.org/wiki/File:X%C3%BAc_x%C3%ADch_chi%C3%AAn_ng19th4n2022_(2).jpg,CC0,Phương Huy,Xúc xích chiên
+R391_1,Xúc xích nướng,R391_1.jpg,https://commons.wikimedia.org/wiki/File:Si%C3%AAu_th%E1%BB%8B_ng10th8n2022_(x%C3%BAc_x%C3%ADch_n%C6%B0%E1%BB%9Bng)_(1).jpg,CC0,Phương Huy,
+R391_2,Xúc xích nướng,R391_2.jpg,https://commons.wikimedia.org/wiki/File:Si%C3%AAu_th%E1%BB%8B_ng10th8n2022_(x%C3%BAc_x%C3%ADch_n%C6%B0%E1%BB%9Bng)_(2).jpg,CC0,Phương Huy,
+R392_1,Nem chua rán,R392_1.jpg,https://commons.wikimedia.org/wiki/File:Nem-chua-ran2.jpg,CC BY-SA 4.0,Group6gma04,
+R397_1,Chân gà nướng,R397_1.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_%C4%91%C6%B0%E1%BB%9Dng_NS_ng27th4n2013_(4).jpg,CC BY-SA 4.0,Phương Huy,
+R397_2,Chân gà nướng,R397_2.jpg,https://commons.wikimedia.org/wiki/File:C%C3%A1nh_g%C3%A0_n%C6%B0%E1%BB%9Bng_v%C3%A0_ch%C3%A2n_g%C3%A0_n%C6%B0%E1%BB%9Bng_%E1%BB%9F_ch%E1%BB%A3_BL_ng7th10n2020_(1).jpg,CC BY-SA 4.0,Phương Huy,
+R400_1,Bò kho,R400_1.jpg,https://commons.wikimedia.org/wiki/File:Bo_Kho.jpg,CC BY 2.0,Jason Hutchens,Bánh mì bò kho
+R400_2,Bò kho,R400_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%B2_kho_Ph%C3%BA_Y%C3%AAn_3.jpg,Public domain,Phương Huy (thảo luận),Phở sốt vang|Hủ tiếu bò kho
+R401_1,Khô mực nướng,R401_1.jpg,https://commons.wikimedia.org/wiki/File:Muc_kho_size_vua.jpg,CC BY-SA 4.0,Blemo25,
+R406_1,Bánh tráng cuốn thịt heo,R406_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_tr%C3%A1ng_cu%E1%BB%91n_th%E1%BB%8Bt_heo.jpg,CC BY-SA 4.0,Lê Huỳnh Bộ,Bánh tráng cuốn bơ
+R406_2,Bánh tráng cuốn thịt heo,R406_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_tr%C3%A1ng_cu%E1%BB%91n_th%E1%BB%8Bt_heo_(18521).jpg,CC BY-SA 4.0,Lê Huỳnh Bộ,Bánh tráng cuốn bơ
+R410_1,Gỏi đu đủ,R410_1.jpg,https://commons.wikimedia.org/wiki/File:G%E1%BB%8Fi_%C4%91u_%C4%91%E1%BB%A7_kh%C3%B4_b%C3%B2.jpg,CC BY-SA 2.0,stu_spivack,Gỏi khô bò
+R411_1,Gỏi đu đủ,R411_1.jpg,https://commons.wikimedia.org/wiki/File:G%E1%BB%8Fi_%C4%91u_%C4%91%E1%BB%A7_kh%C3%B4_b%C3%B2.jpg,CC BY-SA 2.0,stu_spivack,
+R414_1,Chuối chiên,R414_1.jpg,https://commons.wikimedia.org/wiki/File:Chu%E1%BB%91i_chi%C3%AAn.JPG,CC BY-SA 3.0,Memberofc1,
+R415_1,Khoai mì hấp,R415_1.jpg,"https://commons.wikimedia.org/wiki/File:D%C4%A9a_khoai_m%C3%AC_h%E1%BA%A5p_%E1%BB%9F_Long_An,_ng15th7n2022_(%C4%91%E1%BA%B7c_s%E1%BA%A3n_khoai_m%C3%AC_v%C3%A0ng)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R415_2,Khoai mì hấp,R415_2.jpg,"https://commons.wikimedia.org/wiki/File:D%C4%A9a_khoai_m%C3%AC_h%E1%BA%A5p_%E1%BB%9F_Long_An,_ng15th7n2022_(%C4%91%E1%BA%B7c_s%E1%BA%A3n_khoai_m%C3%AC_v%C3%A0ng)_(3).jpg",CC BY-SA 4.0,Phương Huy,
+R416_1,Bánh chuối hấp,R416_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_chu%E1%BB%91i_h%E1%BA%A5p_n%C6%B0%E1%BB%9Bc_c%E1%BB%91t_d%E1%BB%ABa.jpg,CC BY-SA 3.0,Sylvia Yang50 (thảo luận),
+R416_2,Bánh chuối hấp,R416_2.jpg,https://commons.wikimedia.org/wiki/File:Banh_chuoi_hap.jpg,CC BY 3.0,Nguyen Thi Quynh Tram,
+R417_1,Bánh chuối nướng,R417_1.jpg,https://commons.wikimedia.org/wiki/File:Banana_cake_(b%C3%A1nh_tet_chu%E1%BB%91i).jpg,CC BY 3.0,Photo by ChildofMidnight.,Bánh chuối hấp|Bánh tét chuối
+R417_2,Bánh chuối nướng,R417_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_chu%E1%BB%91i_h%E1%BA%A5p_n%C6%B0%E1%BB%9Bc_c%E1%BB%91t_d%E1%BB%ABa.jpg,CC BY-SA 3.0,Sylvia Yang50 (thảo luận),Bánh chuối hấp
+R418_1,Bánh khoai mì nướng,R418_1.jpg,"https://commons.wikimedia.org/wiki/File:Khu_ngh%E1%BB%89_d%C6%B0%E1%BB%A1ng_%E1%BB%9F_C%C3%A1i_B%C3%A8_(%C4%90%E1%BB%93_%C4%83n,_ti%E1%BB%87c_%C4%91%E1%BB%A9ng,_b%C3%A1nh_khoai_m%C3%AC_n%C6%B0%E1%BB%9Bng).jpg",CC BY-SA 4.0,Phương Huy,
+R420_1,Bánh da lợn,R420_1.jpg,https://commons.wikimedia.org/wiki/File:Green_Leaf_Cake_b%C3%A1nh_da_l%E1%BB%A3n.jpg,CC BY 3.0,ChildofMidnight at English Wikipedia,
+R420_2,Bánh da lợn,R420_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_da_l%E1%BB%A3n_s%E1%BA%A7u_ri%C3%AAng.jpg,CC BY-SA 2.0,"Biskuit from Atlanta, GA",
+R421_1,Bánh cam,R421_1.jpg,https://commons.wikimedia.org/wiki/File:Banh_Cam_-_Vietnamese_fried_sesame_balls.jpg,CC BY 2.0,HungryHuy,
+R423_1,Bánh thuẫn,R423_1.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_c%C3%BAng_T%E1%BA%A5t_Ni%C3%AAn_nh%C3%A0_m%C3%ACnh,_T%E1%BA%BFt_Nh%C3%A2m_D%E1%BA%A7n_2022_(b%C3%A1nh_thu%E1%BA%ABn)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R423_2,Bánh thuẫn,R423_2.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_c%C3%BAng_T%E1%BA%A5t_Ni%C3%AAn_nh%C3%A0_m%C3%ACnh,_T%E1%BA%BFt_Nh%C3%A2m_D%E1%BA%A7n_2022_(b%C3%A1nh_thu%E1%BA%ABn)_(2).jpg",CC BY-SA 4.0,Phương Huy,
+R424_2,Bánh mì kẹp thịt pate,R424_2.jpg,"https://commons.wikimedia.org/wiki/File:B%C3%A1nh_M%C3%AC_with_Spicy_Miso_Aubergine,_Kimchi_-_Earl%27s_Sandwiches_2023-09-25.jpg",CC0,Andy Li,
+R425_1,Bánh đậu xanh,R425_1.jpg,https://commons.wikimedia.org/wiki/File:Banh-Dau-Xanh.jpg,CC BY-SA 4.0,MrMaThaMi,
+R425_2,Bánh đậu xanh,R425_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_%C4%91%E1%BA%ADu_xanh.jpg,CC BY-SA 4.0,Hoangkid,
+R426_1,Bánh cốm,R426_1.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_c%E1%BB%91m.jpg,CC BY-SA 3.0,Viethavvh (thảo luận),
+R426_2,Bánh cốm,R426_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_c%E1%BB%91m_Nguy%C3%AAn_Ninh_1.jpg,CC BY-SA 4.0,GDAE,
+R429_1,Chè trôi nước,R429_1.jpg,https://commons.wikimedia.org/wiki/File:Banhchay.JPG,Public domain,Conbo at vi.wikipedia,Bánh chay
+R429_2,Bánh bao nhân thịt,R429_2.jpg,https://commons.wikimedia.org/wiki/File:B%C3%A1nh_bao_chay_ng%E1%BB%8Dt_c%C3%BAng_t%E1%BA%A5t_ni%C3%AAn_M%E1%BA%ADu_Tu%E1%BA%A5t_2018_(2).jpg,Public domain,Phương Huy (thảo luận),Bánh bao chay|Bánh chay
+R432_1,Rau câu dừa,R432_1.jpg,https://commons.wikimedia.org/wiki/File:Rau_c%C3%A2u_d%E1%BB%ABa_t%C6%B0%C6%A1i_%E1%BB%9F_BiC_Ph%C3%BA_Th%E1%BA%A1nh_th%C3%A1ng_10_n%C4%83m_2018_(1).jpg,Public domain,Phương Huy (thảo luận),
+R432_2,Rau câu dừa,R432_2.jpg,https://commons.wikimedia.org/wiki/File:Rau_c%C3%A2u_d%E1%BB%ABa_t%C6%B0%C6%A1i_%E1%BB%9F_BiC_Ph%C3%BA_Th%E1%BA%A1nh_th%C3%A1ng_10_n%C4%83m_2018_(3).jpg,Public domain,Phương Huy (thảo luận),
+R434_1,Kem dừa,R434_1.jpg,https://commons.wikimedia.org/wiki/File:Kem_sua_dua_Trang_Tien.jpg,CC BY-SA 4.0,Northern Vietnam,
+R434_2,Kem dừa,R434_2.jpg,https://commons.wikimedia.org/wiki/File:Kem_d%E1%BB%ABa_%E1%BB%9F_qu%C3%A1n_c%C3%A0_ph%C3%AA_Hoa_sim_t%C3%ADm_%E1%BB%9F_B%C3%ACnh_T%C3%A2n_(1).jpg,Public domain,Phương Huy (thảo luận),
+R438_1,Chè bột lọc đậu phộng,R438_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_%C4%91%E1%BA%ADu_xanh_nha_%C4%91am.jpg,CC BY-SA 4.0,Baoothersks,Chè bột lọc
+R438_2,Chè sen long nhãn,R438_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_Th%E1%BA%A1ch_Tr%E1%BA%AFng_%C4%90%E1%BA%ADu_Xanh_Nh%C3%A3n_Nh%E1%BB%A5c.JPG,Public domain,vi:User:Tokeisan,
+R439_1,Chè đậu đen,R439_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_%C4%91%E1%BA%ADu_%C4%91en_nh%C3%A0_l%C3%A0m_(th%C3%A1ng_1_n%C4%83m_2018)_(1).jpg,Public domain,Phương Huy (thảo luận),
+R439_2,Chè đậu đen,R439_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_%C4%91%E1%BA%ADu_%C4%91en_nh%C3%A0_l%C3%A0m_(th%C3%A1ng_1_n%C4%83m_2018)_(5).jpg,Public domain,Phương Huy (thảo luận),
+R441_1,Chè bắp,R441_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_B%E1%BA%AFp.jpg,CC BY-SA 3.0,Zxcvasdfqwer888,
+R442_1,Chè chuối,R442_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_chu%E1%BB%91i_20201125.jpg,CC BY-SA 4.0,Phương Huy,
+R445_1,Chè sương sa hạt lựu,R445_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_kh%C3%BAc_b%E1%BA%A1ch_%E1%BB%9F_qu%C3%A1n_Th%E1%BA%A3o_Vy_2020_09_06.jpg,CC BY-SA 4.0,Phương Huy,Chè ba màu|Chè khúc bạch
+R445_2,Chè bắp,R445_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_B%E1%BA%AFp.jpg,CC BY-SA 3.0,Zxcvasdfqwer888,
+R447_1,Chè sương sa hạt lựu,R447_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_kh%C3%BAc_b%E1%BA%A1ch_%E1%BB%9F_qu%C3%A1n_Th%E1%BA%A3o_Vy_2020_09_06.jpg,CC BY-SA 4.0,Phương Huy,Chè khúc bạch|Chè ba màu
+R447_2,Chè khúc bạch,R447_2.jpg,"https://commons.wikimedia.org/wiki/File:M%C3%B3n_ti%E1%BB%87c_c%C6%B0%E1%BB%9Bi_%E1%BB%9F_T%C3%A2n_B%C3%ACnh_ng6th8n2023_(m%C3%B3n_tr%C3%A1ng_mi%E1%BB%87ng,_ch%C3%A8_kh%C3%BAc_b%E1%BA%A1ch_long_nh%C3%A3n)_(1).jpg",CC BY-SA 4.0,Phương Huy,
+R448_1,Chè dưỡng nhan,R448_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_d%C6%B0%E1%BB%A1ng_nhan_c%C3%B4_hoa.jpg,CC0,Nguyengc1712,
+R449_1,Chè hạt sen,R449_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_h%E1%BA%A1t_sen_%C4%90%C3%B4ng_H%C3%A0_nh%C3%A0_l%C3%A0m_v%C3%A0o_n%C4%83m_2016.jpg,CC BY-SA 4.0,Phương Huy,
+R449_2,Chè hạt sen,R449_2.jpg,https://commons.wikimedia.org/wiki/File:M%C3%B3n_%C4%83n_nh%C3%A0_m%C3%ACnh_T%E1%BA%BFt_2022_(ch%C3%A8_h%E1%BA%A1t_sen)_(2).jpg,CC BY-SA 4.0,Phương Huy,
+R451_1,Chè thập cẩm,R451_1.jpg,"https://commons.wikimedia.org/wiki/File:Making_che_at_home_in_Hanoi,_August_2003.jpg",CC0,Syced,Chè mè đen
+R452_1,Xôi đậu đen,R452_1.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_%C4%91%E1%BA%ADu_tr%E1%BA%AFng_1.jpg,CC BY-SA 3.0,Zxcvasdfqwer888,Chè đậu trắng
+R452_2,Chè sen long nhãn,R452_2.jpg,https://commons.wikimedia.org/wiki/File:Ch%C3%A8_Th%E1%BA%A1ch_Tr%E1%BA%AFng_%C4%90%E1%BA%ADu_Xanh_Nh%C3%A3n_Nh%E1%BB%A5c.JPG,Public domain,vi:User:Tokeisan,

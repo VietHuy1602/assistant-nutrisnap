@@ -171,7 +171,7 @@ export interface RecognizeFoodResponse {
   is_fallback?: boolean;
   message?: string;
   /** Lý do khi status='unrecognized' */
-  reason?: 'not_food' | 'unclear' | 'service_error' | null;
+  reason?: 'not_food' | 'blurry' | 'unclear' | 'service_error' | null;
   disclaimer?: string;
 }
 

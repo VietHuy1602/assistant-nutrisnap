@@ -176,7 +176,7 @@ describe('W3 Dashboard — BasicDashboard Component', () => {
     await waitFor(() => expect(dashboardApi.getDailyDashboard).toHaveBeenCalledTimes(2));
   });
 
-  it('8. Nút "Chụp bữa ăn" trên Dashboard điều hướng sang /capture', async () => {
+  it('8. Thẻ checklist cuối trang có nút chụp điều hướng sang /capture', async () => {
     vi.mocked(dashboardApi.getDailyDashboard).mockResolvedValueOnce(sampleDashboardData);
 
     render(
@@ -185,7 +185,7 @@ describe('W3 Dashboard — BasicDashboard Component', () => {
       </MemoryRouter>,
     );
 
-    const captureLink = await screen.findByRole('link', { name: /Chụp bữa ăn/ });
+    const captureLink = await screen.findByRole('link', { name: /Ghi bữa ăn mới/ });
     expect(captureLink).toHaveAttribute('href', '/capture');
   });
 });
