@@ -22,7 +22,8 @@ export const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) =>
   }
 
   if (status === 'authenticated') {
-    return <Navigate to={hasGoal ? '/' : '/goal-setup'} replace />;
+    // Tài khoản mới (chưa có mục tiêu) đi qua bộ câu hỏi trước; ai đã làm sẽ được chuyển tiếp sang /goal-setup
+    return <Navigate to={hasGoal ? '/' : '/onboarding'} replace />;
   }
 
   return children ? <>{children}</> : <Outlet />;

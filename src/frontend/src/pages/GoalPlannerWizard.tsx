@@ -14,6 +14,8 @@ import { goalApi } from '../api/goalApi';
 import { useAuth } from '../context/AuthContext';
 import { GoalData } from '../types/api';
 import { isApiError } from '../utils/apiError';
+import { goalDefaultsFromSurvey, preferenceApi } from '../api/preferenceApi';
+import { NeedsAnalysisCard } from '../components/goal/NeedsAnalysisCard';
 
 export const GoalPlannerWizard: React.FC = () => {
   const { hasGoal, setHasGoal } = useAuth();
@@ -22,6 +24,7 @@ export const GoalPlannerWizard: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [resultData, setResultData] = useState<GoalData | null>(null);
   const [, setExistingGoal] = useState<GoalData | null>(null);
+  const [prefilled, setPrefilled] = useState(false);
   const stepHeaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,6 +74,25 @@ export const GoalPlannerWizard: React.FC = () => {
       ignore = true;
     };
   }, [hasGoal]);
+
+  // Lần đầu thiết lập: điền sẵn từ khảo sát ban đầu, người dùng chỉ cần cụ thể hoá (chiều cao, cân nặng…)
+  useEffect(() => {
+    if (hasGoal) return;
+    let ignore = false;
+    preferenceApi.get().then((p) => {
+      if (ignore || !p) return;
+      const d = goalDefaultsFromSurvey(p);
+      setValue('age', d.age);
+      setValue('activity_level', d.activity_level);
+      setValue('goal_type', d.goal_type);
+      setValue('weekly_pace_kg', d.weekly_pace_kg);
+      if (d.daily_budget_vnd) setValue('daily_budget_vnd', d.daily_budget_vnd);
+      const cur = getValues('current_weight_kg');
+      setValue('target_weight_kg', d.goal_type === 'gain_muscle' ? cur + 3 : d.goal_type === 'maintain' ? cur : cur - 3);
+      setPrefilled(true);
+    }).catch(() => undefined);
+    return () => { ignore = true; };
+  }, [hasGoal, setValue, getValues]);
 
   const handleNext = async () => {
     setFormError(null);
@@ -144,6 +166,9 @@ export const GoalPlannerWizard: React.FC = () => {
             setCurrentStep(1);
           }}
         />
+        <div className="mt-5">
+          <NeedsAnalysisCard autoRun />
+        </div>
       </div>
     );
   }
@@ -194,6 +219,12 @@ export const GoalPlannerWizard: React.FC = () => {
           </div>
         )}
 
+        {prefilled && currentStep === 1 && (
+          <p className="mb-4 flex items-start gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            <Sparkles aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            Đã điền sẵn tuổi, mức vận động, mục tiêu và ngân sách từ khảo sát. Hãy nhập chiều cao, cân nặng và chỉnh lại cho đúng với bạn.
+          </p>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div
             key={currentStep}

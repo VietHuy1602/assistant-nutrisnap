@@ -18,12 +18,12 @@ describe('Mobile account navigation', () => {
     await user.click(trigger);
     const nav = screen.getByRole('navigation', { name: 'Tài khoản' });
     expect(within(nav).getByText('Nguyễn An')).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Mục tiêu' })).toHaveAttribute('href', '/goal-setup');
+    expect(within(nav).queryByRole('link', { name: 'Mục tiêu' })).not.toBeInTheDocument(); // Mục tiêu đã chuyển xuống thanh điều hướng dưới
     expect(within(nav).getByRole('link', { name: 'Báo cáo tháng' })).toHaveAttribute('href', '/monthly-report');
     await user.tab();
     expect(within(nav).getByRole('switch', { name: 'Chế độ tối' })).toHaveFocus();
     await user.tab();
-    expect(within(nav).getByRole('link', { name: 'Mục tiêu' })).toHaveFocus();
+    expect(within(nav).getByRole('link', { name: 'Báo cáo tháng' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('navigation', { name: 'Tài khoản' })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
@@ -32,7 +32,7 @@ describe('Mobile account navigation', () => {
   it('closes after navigation or an outside interaction without stealing outside focus', async () => {
     const { user, trigger } = setup();
     await user.click(trigger);
-    await user.click(screen.getByRole('link', { name: 'Mục tiêu' }));
+    await user.click(screen.getByRole('link', { name: 'Báo cáo tháng' }));
     expect(trigger).toHaveAttribute('aria-expanded', 'false');
     await user.click(trigger);
     await user.click(screen.getByRole('button', { name: 'Nội dung trang' }));
@@ -43,8 +43,7 @@ describe('Mobile account navigation', () => {
   it('dismisses on Tab out and delegates logout exactly once', async () => {
     const { user, trigger, logout } = setup();
     await user.click(trigger);
-    // Công tắc giao diện → Mục tiêu → Báo cáo tháng → Đăng xuất
-    await user.tab();
+    // Công tắc giao diện → Báo cáo tháng → Đăng xuất
     await user.tab();
     await user.tab();
     await user.tab();

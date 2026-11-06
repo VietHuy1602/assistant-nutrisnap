@@ -81,7 +81,7 @@ export const recognizeFoodResponseSchema = z.object({
   total_estimated_calories: z.number().default(0),
   is_fallback: z.boolean().default(false),
   message: z.string().default(''),
-  reason: z.enum(['not_food', 'unclear', 'service_error']).nullable().optional(),
+  reason: z.enum(['not_food', 'blurry', 'unclear', 'service_error']).nullable().optional(),
   disclaimer: z.string().default(''),
 });
 

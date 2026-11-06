@@ -34,7 +34,7 @@ describe('Step 7: Six-Section Navigation, Mobile BottomNav and Cross-Screen Sync
   });
 
   describe('Navbar desktop navigation', () => {
-    it('1. renders all 6 sections (Tổng quan, Chụp bữa ăn, Mục tiêu, Tiến độ, Thói quen, Báo cáo) and AI trigger', () => {
+    it('1. renders sections (Tổng quan, Chụp bữa ăn, Mục tiêu, Thói quen, Báo cáo) and AI trigger, without Tiến độ', () => {
       const openChat = vi.fn();
       render(
         <MemoryRouter initialEntries={['/']}>
@@ -45,7 +45,7 @@ describe('Step 7: Six-Section Navigation, Mobile BottomNav and Cross-Screen Sync
       expect(screen.getByRole('link', { name: /tổng quan/i })).toBeDefined();
       expect(screen.getByRole('link', { name: /chụp bữa ăn/i })).toBeDefined();
       expect(screen.getByRole('link', { name: /mục tiêu/i })).toBeDefined();
-      expect(screen.getByRole('link', { name: /tiến độ/i })).toBeDefined();
+      expect(screen.queryByRole('link', { name: /tiến độ/i })).toBeNull();
       expect(screen.getByRole('link', { name: /thói quen/i })).toBeDefined();
       expect(screen.getByRole('link', { name: /báo cáo/i })).toBeDefined();
       expect(screen.getByRole('button', { name: /trợ lý ai/i })).toBeDefined();
@@ -94,8 +94,9 @@ describe('Step 7: Six-Section Navigation, Mobile BottomNav and Cross-Screen Sync
       expect(screen.getByRole('link', { name: 'Tổng quan (di động)' })).toBeDefined();
       expect(screen.getByRole('link', { name: 'Thói quen' })).toBeDefined();
       expect(screen.getByRole('link', { name: 'Chụp ảnh' })).toBeDefined();
-      expect(screen.getByRole('link', { name: 'Tiến độ' })).toBeDefined();
-      expect(screen.getByRole('link', { name: 'Báo cáo' })).toBeDefined();
+      expect(screen.getByRole('link', { name: 'Mục tiêu' })).toHaveAttribute('href', '/goal-setup');
+      expect(screen.queryByRole('link', { name: 'Tiến độ' })).toBeNull();
+      expect(screen.getByRole('link', { name: 'Thực đơn' })).toHaveAttribute('href', '/meal-plan');
     });
   });
 

@@ -59,14 +59,14 @@ describe('WeightTrendChart', () => {
     expect(screen.queryByText('Xu hướng EMA (tham khảo)')).not.toBeInTheDocument();
   });
 
-  it('in Mode B (status: available), renders both actual weight and EMA trend legends', () => {
+  it('in Mode B (status: available), renders only the actual weight line (EMA line removed by design)', () => {
     const pointsWithEma: WeightPoint[] = [
       { date: '2026-10-18', weight_kg: 68.5, ema_weight: 68.5 },
       { date: '2026-10-19', weight_kg: 68.2, ema_weight: 68.35 },
     ];
     render(<WeightTrendChart points={pointsWithEma} status="available" />);
     expect(screen.getByText('Cân nặng ghi nhận')).toBeInTheDocument();
-    expect(screen.getByText('Xu hướng EMA (tham khảo)')).toBeInTheDocument();
+    expect(screen.queryByText('Xu hướng EMA (tham khảo)')).not.toBeInTheDocument();
   });
 
   it('handles privacy masking correctly', () => {

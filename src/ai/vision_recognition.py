@@ -18,6 +18,7 @@ Nhiệm vụ trọng tâm Tuần 2 (W2):
 from __future__ import annotations
 
 import hashlib
+import unicodedata
 import json
 import logging
 import os
@@ -59,6 +60,7 @@ class DishItem(BaseModel):
 
     # Tên tiếng Anh kiểu USDA FoodData Central (ví dụ "Pizza, cheese") để tra bảng usda_foods
     name_en: Optional[str] = Field(default=None)
+    catalog_name: Optional[str] = Field(default=None, description="Tên đúng trong danh mục món NutriSnap (nếu có)")
     # Dinh dưỡng ước tính trên 100g do AI cung cấp, chỉ dùng khi món chưa có trong CSDL tham chiếu
     calories_per_100g: Optional[float] = Field(default=None, ge=0.0, le=950.0)
     protein_per_100g: Optional[float] = Field(default=None, ge=0.0, le=100.0)
@@ -125,6 +127,10 @@ class VisionRecognitionResult(BaseModel):
     not_food_reason: Optional[str] = Field(
         default=None,
         description="Mô tả ngắn ảnh chứa gì khi is_food=False",
+    )
+    is_blurry: bool = Field(
+        default=False,
+        description="True khi ảnh mờ/nhòe đến mức không nhận ra được món ăn",
     )
     raw_response: Optional[str] = Field(
         default=None,
@@ -198,11 +204,17 @@ class FoodValidationError(VisionRecognitionError):
 VISION_SYSTEM_INSTRUCTION = (
     "Bạn là Chuyên gia Thị giác Máy tính & Dinh dưỡng Dành riêng cho Ẩm thực Việt Nam của dự án NutriSnap.\n"
     "Nhiệm vụ của bạn là phân tích hình ảnh 2D của đĩa thức ăn/bữa ăn và bóc tách cấu trúc từng thành phần món ăn.\n\n"
+    "BƯỚC QUAN SÁT: trước khi đặt tên, ghi vào \"visual_evidence\" những gì thật sự thấy: loại tinh bột (cơm, bún, phở, "
+    "bánh đa, bánh canh, miến, bánh mì...), thịt/hải sản (gà, heo, bò, tôm, mực, cua, sứa...), cách chế biến "
+    "(nướng, chiên, luộc, xào, kho), có nước dùng hay không, vật chứa (tô, đĩa, chảo gang, ly). Sau đó mới gọi tên món "
+    "khớp với các bằng chứng đó.\n\n"
     "BƯỚC 0 - KIỂM TRA ẢNH CÓ PHẢI MÓN ĂN KHÔNG (BẮT BUỘC):\n"
     "- Nếu ảnh KHÔNG có món ăn hoặc đồ uống thật sự có thể ăn/uống (ví dụ: người, thú cưng, đồ vật, bàn phím, "
     "màn hình, phong cảnh, giấy tờ, ảnh chụp màn hình, bao bì rỗng, ảnh đen/mờ không thấy gì), trả về "
     '"is_food": false, "dishes": [] và "not_food_reason" mô tả ngắn bằng tiếng Việt ảnh đang chứa gì.\n'
     "- Không được đoán món ăn khi không nhìn thấy món ăn. Không trả về món mẫu.\n"
+    "- Nếu ảnh có món ăn nhưng MỜ/NHÒE/RUNG đến mức không phân biệt được là món gì, trả về "
+    '"is_blurry": true, "dishes": []. Nếu vẫn nhận ra món dù hơi mờ thì đặt "is_blurry": false và nhận diện bình thường.\n'
     '- Nếu có món ăn/đồ uống, đặt "is_food": true rồi làm các bước dưới.\n\n'
     "QUY TẮC NHẬN DIỆN VÀ ĐẶC TẢ TÊN MÓN:\n"
     "1. Định danh chính xác từng món ăn, món mặn, món xào, món canh, cơm, rau củ, đồ uống, trái cây, bánh "
@@ -213,6 +225,19 @@ VISION_SYSTEM_INSTRUCTION = (
     "tại Việt Nam, kèm tên gốc trong ngoặc nếu khác (ví dụ: 'Sushi cá hồi', 'Pizza phô mai (Margherita)', "
     "'Mì Ý sốt bò bằm (Spaghetti Bolognese)', 'Gà rán', 'Bánh mì kẹp thịt (Hamburger)', 'Kimchi', 'Cà ri gà Ấn Độ'). "
     "Đồ uống, trái cây, bánh kẹo, đồ ăn đóng gói cũng là món ăn.\n"
+    "2b. NHẬN DIỆN CHÍNH XÁC – quan sát kỹ nguyên liệu đặc trưng trước khi đặt tên, chọn tên CỤ THỂ nhất mà người bán "
+    "thường gọi, ví dụ: mực (khoanh tròn, có râu) khác tôm (thân cong, vỏ cam); sứa (sợi trong suốt) → 'Bún sứa'; "
+    "bánh đa đỏ (sợi dẹt màu nâu đỏ) → 'Bánh đa cua', khác bánh canh (sợi tròn trắng dày); "
+    "bún chả (thịt nướng ngâm trong bát nước mắm) khác bún thịt nướng (thịt đặt trên bún); "
+    "phở cuốn (bánh phở cuộn thịt bò) khác gỏi cuốn (bánh tráng, tôm); bò né (chảo gang, trứng ốp, pate) khác bò lúc lắc; "
+    "bánh mì gọi theo nhân thấy được (thịt nướng, xá xíu, pate, trứng...). Món chính đứng đầu danh sách.\n"
+    "2d. LUÔN ghi rõ nhân/nguyên liệu chính khi nhìn thấy, KHÔNG dùng tên chung chung: thấy tôm trong cuốn → "
+    "'Gỏi cuốn tôm thịt' (không phải 'Gỏi cuốn'); thấy thịt băm trong bánh → 'Bánh cuốn nhân thịt'; "
+    "bún + thịt nướng + bát nước mắm có chả → 'Bún chả Hà Nội'. Chỉ gọi 'chay' khi chắc chắn không có thịt/tôm/trứng.\n"
+    "2e. Phân biệt thêm: khúc cá (có da, xương sống, thớ thịt trắng) khác thịt viên (tròn, mịn); cải thìa/cải ngọt "
+    "(cuống trắng to) khác rau ngót (lá nhỏ xanh đậm); bánh khọt (nhỏ, có tôm, giòn vàng) khác bánh căn (trắng, nướng khuôn đất); "
+    "bún riêu (gạch cua nổi, đậu hũ, cà chua) khác bún mắm (nước sẫm, cà tím) và bún kèn (nước cốt dừa, cá xay).\n"
+    "2c. KHÔNG tách nước chấm, rau sống ăn kèm, đồ chua, ớt, chanh thành món riêng; chỉ liệt kê khi đó là món chính của ảnh.\n"
     "3. ƯỚC TÍNH KHỐI LƯỢNG (estimated_weight_gram): Dựa vào tỷ lệ kích thước so với đĩa chuẩn (đường kính 20-25cm), "
     "bát tô, ly, tay cầm hoặc bao bì, ước lượng số gam thực tế (> 0) của từng món. Người dùng sẽ tự chỉnh lại sau.\n"
     "3b. TÊN TIẾNG ANH (name_en): tên món theo phong cách USDA FoodData Central, danh từ chính đứng trước, "
@@ -225,7 +250,9 @@ VISION_SYSTEM_INSTRUCTION = (
     "ĐỊNH DẠNG ĐẦU RA BẮT BUỘC:\n"
     "Chỉ trả về DUY NHẤT một chuỗi JSON hợp lệ theo đúng cấu trúc sau (không kèm lời giải thích):\n"
     "{\n"
+    '  "visual_evidence": "Mô tả ngắn nguyên liệu nhìn thấy (loại sợi, thịt/hải sản, nước dùng, vật chứa)",\n'
     '  "is_food": true,\n'
+    '  "is_blurry": false,\n'
     '  "not_food_reason": "",\n'
     '  "dishes": [\n'
     "    {\n"
@@ -388,6 +415,9 @@ def parse_and_validate_vision_json(raw_text: str) -> VisionRecognitionResult:
             f"Phản hồi JSON phải là một đối tượng (object/dict), nhận được: {type(parsed_data)}"
         )
 
+    if parsed_data.get("is_blurry") is True and not parsed_data.get("dishes"):
+        return VisionRecognitionResult(dishes=[], is_mock=False, is_food=True, is_blurry=True, raw_response=raw_text)
+
     if parsed_data.get("is_food") is False:
         return VisionRecognitionResult(
             dishes=[],
@@ -443,9 +473,10 @@ _PLACEHOLDER_KEYS = (
 DEFAULT_VISION_MODEL = "gemini-flash-lite-latest"
 VISION_FALLBACK_MODELS = [
     "gemini-flash-lite-latest",
+    "gemini-3.5-flash-lite",
     "gemini-flash-latest",
-    "gemini-2.5-flash-lite",
-    "gemini-2.0-flash",
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
 ]
 _RETRYABLE_VISION_CODES = {404, 429, 500, 503, 504}
 _VISION_CACHE_SIZE = 64
@@ -455,7 +486,9 @@ _VISION_CACHE: "OrderedDict[str, VisionRecognitionResult]" = OrderedDict()
 VISION_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "OBJECT",
     "properties": {
+        "visual_evidence": {"type": "STRING"},
         "is_food": {"type": "BOOLEAN"},
+        "is_blurry": {"type": "BOOLEAN"},
         "not_food_reason": {"type": "STRING"},
         "dishes": {
             "type": "ARRAY",
@@ -464,6 +497,7 @@ VISION_RESPONSE_SCHEMA: dict[str, Any] = {
                 "properties": {
                     "dish_name": {"type": "STRING"},
                     "name_en": {"type": "STRING"},
+                    "catalog_name": {"type": "STRING"},
                     "estimated_weight_gram": {"type": "NUMBER"},
                     "confidence_score": {"type": "NUMBER"},
                     "calories_per_100g": {"type": "NUMBER"},
@@ -484,8 +518,14 @@ VISION_RESPONSE_SCHEMA: dict[str, Any] = {
             },
         },
     },
-    "required": ["is_food", "dishes"],
+    "required": ["visual_evidence", "is_food", "dishes"],
+    # Mô tả nguyên liệu nhìn thấy TRƯỚC rồi mới gọi tên món: giảm nhầm món na ná nhau
+    "propertyOrdering": ["visual_evidence", "is_food", "is_blurry", "not_food_reason", "dishes"],
 }
+
+# Khi model nhanh chưa chắc chắn (độ tự tin món chính thấp), hỏi lại model mạnh hơn
+VISION_ESCALATION_MODEL = "gemini-3.5-flash"
+VISION_ESCALATE_BELOW = 0.8
 
 
 def _resolve_api_key(api_key: Optional[str]) -> str:
@@ -559,7 +599,7 @@ class GeminiVisionModel:
             system_instruction=VISION_SYSTEM_INSTRUCTION,
             response_mime_type="application/json",
             response_schema=VISION_RESPONSE_SCHEMA,
-            temperature=0.2,
+            temperature=0.0,
         )
         last_exc: Exception | None = None
         for model in self.candidate_models:
@@ -641,7 +681,10 @@ def recognize_dishes_from_image(
         user_prompt = (
             "Trước tiên xác định ảnh có chứa món ăn/đồ uống hay không. Nếu có, nhận diện từng món "
             "thực sự nhìn thấy, ước lượng khối lượng theo gram và độ tự tin. Trả về JSON chuẩn."
-        )
+        ) + catalog_prompt()
+        second_future = _VISION_POOL.submit(
+            _ask_model, effective_key, VISION_SECOND_MODEL, user_prompt, mime_type, image_bytes
+        ) if _cross_check_enabled() and (model_name or DEFAULT_VISION_MODEL) != VISION_SECOND_MODEL else None
         response = model.generate_content([user_prompt, {"mime_type": mime_type, "data": image_bytes}])
 
         text = getattr(response, "text", None) if response else None
@@ -650,6 +693,16 @@ def recognize_dishes_from_image(
 
         # 5. Parse và kiểm thực dữ liệu JSON
         result = parse_and_validate_vision_json(text)
+
+        # 5b. Kiểm tra chéo: một model thứ hai nhận diện song song; nếu món chính khác nhau
+        #     hoặc độ tự tin thấp, model mạnh hơn phân xử. Giảm nhầm món na ná (mực/tôm, bún chả/bún thịt nướng...).
+        result = _cross_check(result, effective_key, user_prompt, mime_type, image_bytes, second_future)
+
+        # 5c. Ảnh có món ăn nhưng chưa gọi được tên: bắt buộc model mạnh đưa ra món gần nhất
+        if result.is_food and not result.dishes and not result.is_blurry:
+            forced = _ask_model(effective_key, VISION_ESCALATION_MODEL, user_prompt + FORCE_NAME_PROMPT, mime_type, image_bytes)
+            if forced is not None and forced.dishes:
+                result = forced
         _VISION_CACHE[cache_key] = result.model_copy(deep=True)
         if len(_VISION_CACHE) > _VISION_CACHE_SIZE:
             _VISION_CACHE.popitem(last=False)
@@ -659,3 +712,103 @@ def recognize_dishes_from_image(
     except Exception as e:
         logger.error("Lỗi không mong muốn khi gọi Vision API: %s", e)
         raise APIConnectionError(f"Lỗi thực thi Vision API: {e}") from e
+
+
+# ---- Kiểm tra chéo nhiều model -------------------------------------------------
+from concurrent.futures import ThreadPoolExecutor
+
+VISION_SECOND_MODEL = "gemini-3.5-flash-lite"
+FORCE_NAME_PROMPT = (
+    "\n\nẢnh này CÓ món ăn. BẮT BUỘC liệt kê ít nhất một món: chọn món trong danh mục giống nhất, "
+    "hoặc tự đặt tên món cụ thể nhất có thể; ghi confidence_score thấp nếu chưa chắc. Không được để dishes rỗng."
+)
+
+
+def _cross_check_enabled() -> bool:
+    # Tắt được bằng biến môi trường (bộ test tắt để không gọi model thứ hai)
+    return os.getenv("NUTRISNAP_VISION_CROSS_CHECK", "1").lower() not in ("0", "false", "no")
+_VISION_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="vision")
+
+
+def _dish_key(name: str) -> str:
+    text = unicodedata.normalize("NFD", (name or "").lower()).replace("đ", "d")
+    return " ".join("".join(c for c in text if unicodedata.category(c) != "Mn").split()[:2])
+
+
+def _ask_model(api_key: str, model_name: str, prompt: str, mime_type: str, image_bytes: bytes) -> "VisionRecognitionResult | None":
+    try:
+        m = get_gemini_vision_model(api_key=api_key, model_name=model_name)
+        m.candidate_models = [model_name]
+        text = getattr(m.generate_content([prompt, {"mime_type": mime_type, "data": image_bytes}]), "text", None)
+        return parse_and_validate_vision_json(text) if text else None
+    except Exception as exc:  # model bận / hết hạn mức: bỏ qua phiếu này
+        logger.info("Model %s không trả lời khi kiểm tra chéo: %s", model_name, exc)
+        return None
+
+
+def _top(result: "VisionRecognitionResult") -> tuple[str, float]:
+    if not result.dishes:
+        return "", 0.0
+    d = result.dishes[0]
+    return _dish_key(d.dish_name), d.confidence_score
+
+
+def _cross_check(first, api_key, prompt, mime_type, image_bytes, second_future):
+    second = None
+    if second_future is not None:
+        try:
+            second = second_future.result(timeout=25)
+        except Exception:
+            second = None
+    if second is not None and second.is_food and second.dishes and (not first.is_food or not first.dishes):
+        # Model đầu bảo không phải món ăn / không thấy món, model hai thấy món rõ: tin model thấy món
+        if first.is_food or max(d.confidence_score for d in second.dishes) >= 0.7:
+            return second
+    if second is None or not first.is_food or not first.dishes:
+        return first
+    k1, c1 = _top(first)
+    k2, c2 = _top(second)
+    if k1 == k2 and min(c1, c2) >= VISION_ESCALATE_BELOW:
+        return first if c1 >= c2 else second
+    judge = _ask_model(api_key, VISION_ESCALATION_MODEL, prompt, mime_type, image_bytes)
+    if judge is not None and judge.dishes:
+        kj, _ = _top(judge)
+        # Ưu tiên kết quả trùng với trọng tài (giữ khối lượng/dinh dưỡng của bản đó); nếu không trùng ai, dùng trọng tài
+        for cand in (first, second):
+            if _top(cand)[0] == kj:
+                return cand
+        return judge
+    return first if c1 >= c2 else second
+
+
+# ---- Danh mục món của NutriSnap: AI chọn đúng tên trong danh mục khi món trong ảnh có trong đó ----
+_CATALOG_CACHE: list[str] | None = None
+
+
+def catalog_names() -> list[str]:
+    global _CATALOG_CACHE
+    if _CATALOG_CACHE is None:
+        names: list[str] = []
+        try:
+            import csv
+
+            path = Path(__file__).resolve().parents[2] / "data" / "vn_foods.csv"
+            with open(path, encoding="utf-8-sig") as fh:
+                names = [r["food_name"].strip() for r in csv.DictReader(fh) if r.get("food_name")]
+        except Exception as exc:
+            logger.warning("Không đọc được danh mục món: %s", exc)
+        _CATALOG_CACHE = names
+    return _CATALOG_CACHE
+
+
+def catalog_prompt() -> str:
+    names = catalog_names()
+    if not names:
+        return ""
+    return (
+        "\n\nDANH MỤC MÓN CỦA NUTRISNAP (" + str(len(names)) + " món). Với mỗi món nhìn thấy: nếu món đó CHÍNH LÀ một "
+        "món trong danh mục, đặt \"catalog_name\" bằng ĐÚNG nguyên văn tên trong danh mục và \"dish_name\" bằng cùng tên đó. "
+        "Chọn tên khớp nhất về nguyên liệu và cách chế biến (ví dụ thấy tôm thì không chọn món chay). "
+        "Nếu không có món nào trong danh mục đúng là món trong ảnh, để \"catalog_name\" rỗng và tự đặt dish_name cụ thể.\n"
+        + " | ".join(names)
+    )

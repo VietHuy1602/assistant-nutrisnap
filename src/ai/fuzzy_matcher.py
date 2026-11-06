@@ -100,6 +100,22 @@ def strip_vietnamese_accents(text: str) -> str:
     return " ".join(cleaned.split())
 
 
+# Từ chỉ biến thể làm đổi bản chất món (đạm, chay/mặn, trứng...). Thịt heo/tôm thịt là biến thể mặc định nên không tính.
+VARIANT_WORDS = {"chay", "ca", "trung", "ga", "bo", "vit", "de", "oc", "ech", "luon", "muc", "cua", "ghe", "so", "hen",
+                 "nghe", "ngan", "sua", "xiu", "pate", "chao", "raungot", "caingot", "caithia", "caibe", "thitvien"}
+
+# Cụm từ ghép thành một token để "cá chua" (cà chua) không bị tính là "cá"
+_PHRASES = {"ca chua": "cachua", "ca tim": "catim", "ca rot": "carot", "ca phe": "caphe", "rau ngot": "raungot",
+            "cai ngot": "caingot", "cai thia": "caithia", "cai be": "caibe", "thit vien": "thitvien"}
+
+
+def _tokens(text: str) -> list[str]:
+    t = f" {text} "
+    for k, v in _PHRASES.items():
+        t = t.replace(f" {k} ", f" {v} ")
+    return [w for w in t.split() if w]
+
+
 def calculate_string_similarity(query: str, candidate: str) -> float:
     """
     Thuật toán tính điểm tương đồng chuyên biệt cho món ăn Việt Nam:
@@ -122,8 +138,8 @@ def calculate_string_similarity(query: str, candidate: str) -> float:
     if q_unacc == c_unacc:
         return 0.98
 
-    q_words = [w for w in q_unacc.split() if w]
-    c_words = [w for w in c_unacc.split() if w]
+    q_words = _tokens(q_unacc)
+    c_words = _tokens(c_unacc)
 
     if not q_words or not c_words:
         return 0.0
@@ -134,11 +150,19 @@ def calculate_string_similarity(query: str, candidate: str) -> float:
 
     # Trường hợp 1: Tất cả từ của query đều nằm trong candidate (ví dụ: 'pho bo' nằm trong 'pho bo tai')
     if word_coverage == 1.0:
+        # Candidate thêm từ làm đổi hẳn món (ví dụ "Bún chả" -> "Bún chả cá", "Gỏi cuốn" -> "Gỏi cuốn chay"):
+        # không coi là cùng món, để chọn biến thể mặc định (ví dụ "Bún chả Hà Nội") hoặc dùng ước tính riêng.
+        extra = set(c_words) - set(q_words)
+        if extra & VARIANT_WORDS:
+            return round(0.6 + 0.1 * (len(q_words) / len(c_words)), 4)
         length_ratio = len(q_words) / len(c_words)
         return round(max(0.85, 0.85 + 0.14 * length_ratio), 4)
 
     # Trường hợp 2: Có giao thoa một số từ quan trọng
     if word_coverage > 0:
+        # Thiếu nguyên liệu chính của món (ví dụ "Cá sốt cà chua" so với "Thịt viên sốt cà chua"): không cùng món
+        if (set(q_words) - set(c_words)) & VARIANT_WORDS or (set(c_words) - set(q_words)) & VARIANT_WORDS:
+            return round(min(0.6, 0.4 * word_coverage + 0.2 * seq_ratio), 4)
         combined = 0.6 * word_coverage + 0.4 * seq_ratio
         return round(max(seq_ratio * 0.8, combined), 4)
 

@@ -29,10 +29,10 @@ describe('Dashboard visual refinement preserves data and destinations', () => {
       expect(bar).toHaveAttribute('aria-valuetext', expect.stringContaining('(20%)'));
     }
   });
-  it.each(['/', '/habits', '/capture', '/progress', '/reports'])('keeps the active destination and consistent treatment at %s', path => {
+  it.each(['/', '/habits', '/capture', '/goal-setup', '/meal-plan'])('keeps the active destination and consistent treatment at %s', path => {
     render(<MemoryRouter initialEntries={[path]}><BottomNav /></MemoryRouter>);
     const links = screen.getAllByRole('link');
-    expect(links.map(link => link.getAttribute('href'))).toEqual(['/', '/habits', '/capture', '/progress', '/reports']);
+    expect(links.map(link => link.getAttribute('href'))).toEqual(['/', '/habits', '/capture', '/goal-setup', '/meal-plan']);
     const active = links.filter(link => link.getAttribute('aria-current') === 'page');
     expect(active).toHaveLength(1);
     expect(active[0]).toHaveAttribute('href', path);

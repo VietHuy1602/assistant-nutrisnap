@@ -147,6 +147,36 @@ DB_MATCH_THRESHOLD = 0.75
 DB_REVERSE_MATCH_THRESHOLD = 0.6
 # Độ tự tin tối thiểu để coi là AI thực sự nhìn thấy một món ăn trong ảnh
 MIN_DISH_CONFIDENCE = 0.5
+BLURRY_MESSAGE = "Ảnh này bị mờ, xin vui lòng chụp lại!"
+# Ngưỡng độ nét (phương sai Laplacian trên ảnh xám cạnh dài 640px). Ảnh món ăn rõ nét thường > 400,
+# ảnh nhòe nặng < 10. Đặt 25 để chỉ chặn ảnh thật sự mờ, tránh chặn nhầm món mịn như cháo, súp.
+BLUR_THRESHOLD = 25.0
+
+
+def image_sharpness(image_bytes: bytes) -> float | None:
+    """Độ nét của ảnh (phương sai bộ lọc Laplacian). Trả None nếu không đọc được ảnh."""
+    try:
+        from io import BytesIO
+
+        import numpy as np
+        from PIL import Image, ImageOps
+
+        with Image.open(BytesIO(image_bytes)) as img:
+            gray = ImageOps.exif_transpose(img).convert("L")
+            gray.thumbnail((640, 640))
+            a = np.asarray(gray, dtype=np.float32)
+        if a.shape[0] < 3 or a.shape[1] < 3:
+            return None
+        lap = 4 * a[1:-1, 1:-1] - a[:-2, 1:-1] - a[2:, 1:-1] - a[1:-1, :-2] - a[1:-1, 2:]
+        return float(lap.var())
+    except Exception as exc:  # ảnh lạ/hỏng: để Gemini tự đánh giá
+        logger.debug("Không đo được độ nét ảnh: %s", exc)
+        return None
+
+
+def is_blurry_image(image_bytes: bytes) -> bool:
+    sharpness = image_sharpness(image_bytes)
+    return sharpness is not None and sharpness < BLUR_THRESHOLD
 
 
 def save_new_food_reference(
@@ -228,6 +258,12 @@ def _map_dish_to_item(dish: DishItem) -> RecognizedFoodItem:
     3. Dinh dưỡng/100g do AI ước tính.
     Món ở bước 2-3 được thêm vào food_references với tên tiếng Việt để lưu bữa ăn được.
     """
+    # AI đã chọn đúng một món trong danh mục: dùng nguyên tên đó (khớp tuyệt đối), không đoán lại
+    catalog = (getattr(dish, "catalog_name", None) or "").strip()
+    if catalog:
+        exact = fuzzy_food_matcher.match_dish(catalog, threshold=0.98)
+        if exact.is_matched:
+            dish = dish.model_copy(update={"dish_name": exact.matched_food_name})
     calc = fuzzy_food_matcher.calculate_nutrition(
         dish_name=dish.dish_name,
         estimated_weight_gram=dish.estimated_weight_gram,
@@ -337,6 +373,10 @@ def recognize_food_pipeline(
             return build_unrecognized_response(meal_type, "unclear", UNCLEAR_MESSAGE)
         raise
 
+    # Ảnh mờ: báo người dùng chụp lại ngay, không gọi AI để tránh đoán sai món
+    if is_blurry_image(image_bytes):
+        return build_unrecognized_response(meal_type, "blurry", BLURRY_MESSAGE)
+
     try:
         vision_result: VisionRecognitionResult = recognize_dishes_from_image(
             image_input=image_bytes,
@@ -350,12 +390,15 @@ def recognize_food_pipeline(
             return build_unrecognized_response(meal_type, "service_error", SERVICE_ERROR_MESSAGE, is_fallback=True)
         raise
 
-    # Không phải món ăn, hoặc AI không thấy món nào đủ tin cậy (>= 50%): yêu cầu chụp lại.
-    # Kiểm tra trước khi ánh xạ để không thêm món đoán bừa vào CSDL.
-    if not vision_result.is_food or not any(
-        d.confidence_score >= MIN_DISH_CONFIDENCE for d in vision_result.dishes
-    ):
+    if getattr(vision_result, "is_blurry", False):
+        return build_unrecognized_response(meal_type, "blurry", BLURRY_MESSAGE)
+
+    # Chỉ từ chối khi AI kết luận ảnh KHÔNG phải món ăn. Ảnh có món ăn thì luôn trả tên món (kể cả khi AI
+    # chưa thật chắc) để người dùng xác nhận/sửa ở màn kiểm tra, thay vì bắt chụp lại.
+    if not vision_result.is_food:
         return build_unrecognized_response(meal_type, "not_food", NOT_FOOD_MESSAGE)
+    if not vision_result.dishes:
+        return build_unrecognized_response(meal_type, "unclear", UNCLEAR_MESSAGE)
 
     # Ánh xạ Fuzzy Matching và tính toán dinh dưỡng
     items: list[RecognizedFoodItem] = []

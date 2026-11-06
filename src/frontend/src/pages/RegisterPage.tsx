@@ -48,11 +48,8 @@ export const RegisterPage: React.FC = () => {
         password: values.password,
       });
 
-      // Tự động đăng nhập thành công -> chuyển sang thiết lập mục tiêu
-      navigate('/goal-setup', {
-        replace: true,
-        state: { message: 'Tạo tài khoản thành công. Hãy thiết lập mục tiêu của bạn.' },
-      });
+      // Tự động đăng nhập thành công -> bộ câu hỏi khảo sát, sau đó thiết lập mục tiêu
+      navigate('/onboarding', { replace: true });
     } catch (err: unknown) {
       if (isApiError(err)) {
         if (err.fieldErrors && Object.keys(err.fieldErrors).length > 0) {

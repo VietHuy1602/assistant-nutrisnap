@@ -90,14 +90,14 @@ describe('Route Guards', () => {
       expect(screen.queryByText('Trang Đăng Nhập')).not.toBeInTheDocument();
     });
 
-    it('5. Đã đăng nhập và hasGoal=false: điều hướng sang /goal-setup', () => {
+    it('5. Đã đăng nhập và hasGoal=false: điều hướng sang /onboarding (khảo sát, rồi /goal-setup)', () => {
       mockAuthStatus = 'authenticated';
       mockHasGoal = false;
 
       render(
         <MemoryRouter initialEntries={['/login']}>
           <Routes>
-            <Route path="/goal-setup" element={<div>Trang Thiết Lập Mục Tiêu</div>} />
+            <Route path="/onboarding" element={<div>Trang Thiết Lập Mục Tiêu</div>} />
             <Route element={<PublicOnlyRoute />}>
               <Route path="/login" element={<div>Trang Đăng Nhập</div>} />
             </Route>

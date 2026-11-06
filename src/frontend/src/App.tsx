@@ -20,62 +20,12 @@ const MealCaptureFlow = React.lazy(() =>
 const GoalPlannerWizard = React.lazy(() =>
   import('./pages/GoalPlannerWizard').then((m) => ({ default: m.GoalPlannerWizard })),
 );
-const MonthlyReportView = React.lazy(() => import('./pages/MonthlyReportView'));
-const ProgressAnalyticsPage = React.lazy(() => import('./pages/ProgressAnalyticsPage'));
 const HabitPage = React.lazy(() => import('./pages/HabitPage'));
 const MonthlyReportPage = React.lazy(() => import('./pages/MonthlyReportPage'));
+const MealPlanPage = React.lazy(() => import('./pages/MealPlanPage'));
+const OnboardingSurvey = React.lazy(() => import('./pages/OnboardingSurvey'));
 const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
-import { apiClient } from './api/client';
-
-// Route adapter: Kết nối trực tiếp với Backend API /api/v1/reports/monthly
-const MonthlyReportRoute: React.FC = () => {
-  const parts = new Intl.DateTimeFormat('en', {
-    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date());
-  const part = (type: string) => parts.find(value => value.type === type)?.value ?? '';
-  const today = `${part('year')}-${part('month')}-${part('day')}`;
-  const [month, setMonth] = React.useState(() => today.slice(0, 7));
-  const [loadState, setLoadState] = React.useState<'loading' | 'ready' | 'error' | 'empty'>('loading');
-  const [reportData, setReportData] = React.useState<any>(null);
-  const [errorMessage, setErrorMessage] = React.useState<string | undefined>(undefined);
-
-  const fetchReport = React.useCallback(async (m: string) => {
-    setLoadState('loading');
-    setErrorMessage(undefined);
-    try {
-      const [y, mNum] = m.split('-').map(Number);
-      const res = await apiClient.get(`/reports/monthly?year=${y}&month=${mNum}`);
-      setReportData(res.data);
-      if (res.data.days && res.data.days.length > 0) {
-        setLoadState('ready');
-      } else {
-        setLoadState('empty');
-      }
-    } catch (err: any) {
-      setLoadState('error');
-      setErrorMessage(err.response?.data?.detail || 'Không tải được báo cáo tháng');
-    }
-  }, []);
-
-  React.useEffect(() => {
-    fetchReport(month);
-  }, [month, fetchReport]);
-
-  return (
-    <div className="space-y-6">
-      <MonthlyReportView
-        month={month}
-        today={today}
-        loadState={loadState}
-        data={reportData}
-        errorMessage={errorMessage}
-        onMonthChange={setMonth}
-        onRetry={() => fetchReport(month)}
-      />
-    </div>
-  );
-};
 
 // Chỉ import ApiStatusBadge trong môi trường phát triển (DEV)
 const DevApiStatusBadge = import.meta.env.DEV
@@ -103,14 +53,17 @@ export const App: React.FC = () => {
 
           {/* Tuyến đường được bảo vệ (Protected Routes) nằm trong AppShell */}
           <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<OnboardingSurvey />} />
             <Route element={<AppShell />}>
               <Route path="/" element={<BasicDashboard />} />
               <Route path="/capture" element={<MealCaptureFlow />} />
-              <Route path="/progress" element={<ProgressAnalyticsPage />} />
+              <Route path="/progress" element={<Navigate to="/" replace />} />
               <Route path="/goal-setup" element={<GoalPlannerWizard />} />
               <Route path="/habits" element={<HabitPage />} />
-              <Route path="/reports" element={<MonthlyReportPage />} />
-              <Route path="/monthly-report" element={<MonthlyReportRoute />} />
+              {/* Báo cáo tháng dùng chung một màn hình; đường dẫn cũ /reports chuyển về đây */}
+              <Route path="/monthly-report" element={<MonthlyReportPage />} />
+              <Route path="/reports" element={<Navigate to="/monthly-report" replace />} />
+              <Route path="/meal-plan" element={<MealPlanPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
           </Route>

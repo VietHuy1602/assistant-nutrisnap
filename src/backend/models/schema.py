@@ -213,3 +213,65 @@ class PendingAction(SQLModel, table=True):
     expires_at: datetime = Field(nullable=False)
     resolved_at: datetime | None = Field(default=None, nullable=True)
 
+
+
+# 10. Thực đơn gợi ý (Generate Meal Plan) – lưu bản người dùng đã đồng ý
+class MealPlan(SQLModel, table=True):
+    __tablename__ = "meal_plans"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True, nullable=False)
+    start_date: str = Field(nullable=False)  # YYYY-MM-DD
+    days: int = Field(default=1, nullable=False)
+    plan_json: str = Field(nullable=False)
+    status: str = Field(default="accepted", nullable=False)
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+
+# 11. Món người dùng không thích – thực đơn sau sẽ không đề xuất lại
+class FoodDislike(SQLModel, table=True):
+    __tablename__ = "food_dislikes"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", index=True, nullable=False)
+    food_id: int = Field(foreign_key="food_references.id", ondelete="CASCADE", index=True, nullable=False)
+    reason: str | None = Field(default=None, max_length=40)  # lý do người dùng chọn khi đổi món
+    note: str | None = Field(default=None, max_length=200)
+    avoid_group: str | None = Field(default=None, max_length=20)  # nguồn đạm cần tránh (dị ứng / không thích nguyên liệu)
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+
+# 12. Công thức nấu (nguyên liệu + cách nấu) – tạo một lần bằng AI rồi lưu lại dùng chung
+class FoodRecipe(SQLModel, table=True):
+    __tablename__ = "food_recipes"
+
+    id: int | None = Field(default=None, primary_key=True)
+    food_id: int = Field(foreign_key="food_references.id", ondelete="CASCADE", unique=True, index=True, nullable=False)
+    recipe_json: str = Field(nullable=False)
+    created_at: datetime = Field(default_factory=utc_now, nullable=False)
+
+
+class UserPreference(SQLModel, table=True):
+    """Câu trả lời khảo sát khi tạo tài khoản + hồ sơ ăn uống do AI tổng hợp."""
+
+    __tablename__ = "user_preferences"
+
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", ondelete="CASCADE", unique=True, index=True, nullable=False)
+    age_group: str | None = Field(default=None, max_length=1)
+    activity: str | None = Field(default=None, max_length=1)
+    goal: str | None = Field(default=None, max_length=1)
+    pace: str | None = Field(default=None, max_length=1)
+    diet: str | None = Field(default=None, max_length=1)
+    taste: str | None = Field(default=None, max_length=1)
+    protein: str | None = Field(default=None, max_length=1)
+    allergies: str | None = Field(default=None, max_length=300)
+    cooking: str | None = Field(default=None, max_length=1)
+    meals: str | None = Field(default=None, max_length=1)
+    daily_budget_vnd: int | None = Field(default=None)
+    summary: str | None = Field(default=None)
+    summary_source: str | None = Field(default=None, max_length=10)
+    avoid_keywords: str | None = Field(default="[]")
+    avoid_groups: str | None = Field(default="[]")
+    analysis_json: str | None = Field(default=None)  # Phân tích nhu cầu (khảo sát + mục tiêu) do AI tạo
+    updated_at: datetime = Field(default_factory=utc_now, nullable=False)

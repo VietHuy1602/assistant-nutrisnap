@@ -108,7 +108,7 @@ describe('RegisterPage', () => {
     expect(callArgs).not.toHaveProperty('confirmPassword');
   });
 
-  it('4. Luồng thành công: gọi register rồi điều hướng sang /goal-setup', async () => {
+  it('4. Luồng thành công: gọi register rồi điều hướng sang /onboarding (khảo sát)', async () => {
     mockRegister.mockResolvedValueOnce(undefined);
     const user = userEvent.setup();
 
@@ -132,7 +132,7 @@ describe('RegisterPage', () => {
 
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith(
-        '/goal-setup',
+        '/onboarding',
         expect.objectContaining({ replace: true }),
       );
     });

@@ -6,7 +6,7 @@ interface UnrecognizedPanelProps {
   onRetake: () => void;
   onManualEntry: () => void;
   /** Lý do từ API: ảnh không phải món ăn, ảnh chưa rõ, hoặc dịch vụ AI lỗi */
-  reason?: 'not_food' | 'unclear' | 'service_error' | null;
+  reason?: 'not_food' | 'blurry' | 'unclear' | 'service_error' | null;
   /** Thông báo chi tiết từ API (nếu có) */
   message?: string;
   className?: string;
@@ -16,6 +16,10 @@ const COPY = {
   not_food: {
     title: 'Đây không phải là món ăn',
     body: 'Ảnh vừa chụp không có món ăn hoặc đồ uống. Xin vui lòng chụp lại ảnh món ăn của bạn.',
+  },
+  blurry: {
+    title: 'Ảnh này bị mờ',
+    body: 'Ảnh này bị mờ, xin vui lòng chụp lại! Giữ máy yên, đủ sáng và lấy nét vào đĩa ăn.',
   },
   service_error: {
     title: 'Chưa kết nối được AI nhận diện',

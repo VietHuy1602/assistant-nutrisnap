@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Target, LayoutDashboard, LogOut, Camera, FileText, TrendingUp, Flame } from 'lucide-react';
+import { Sparkles, Target, LayoutDashboard, LogOut, Camera, FileText, Flame } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { draftStore } from '../storage/draftStore';
 import { MobileAccountMenu } from './MobileAccountMenu';
@@ -27,10 +27,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
 
   const prefetchCapture = () => {
     import('../pages/MealCaptureFlow');
-  };
-
-  const prefetchProgress = () => {
-    import('../pages/ProgressAnalyticsPage');
   };
 
   const prefetchHabits = () => {
@@ -128,26 +124,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenChat }) => {
             <span className="hidden sm:inline">Mục tiêu</span>
           </NavLink>
 
-          <NavLink
-            to="/progress"
-            aria-label="Tiến độ"
-            onMouseEnter={prefetchProgress}
-            onFocus={prefetchProgress}
-            className={({ isActive }) =>
-              `flex min-h-11 min-w-11 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutri-focus ${
-                isActive
-                  ? 'bg-emerald-50 text-nutri-primary font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <TrendingUp className="w-4 h-4" aria-hidden="true" />
-                <span className="hidden sm:inline" aria-current={isActive ? 'page' : undefined}>Tiến độ</span>
-              </>
-            )}
-          </NavLink>
 
           <NavLink
             to="/habits"

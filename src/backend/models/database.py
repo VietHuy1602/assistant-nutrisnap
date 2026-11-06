@@ -96,6 +96,14 @@ def init_db(target_engine: Engine | None = None) -> None:
             ("default_serving_g", "FLOAT DEFAULT 100.0 NOT NULL"),
             ("serving_label", "VARCHAR(50) DEFAULT '100g' NOT NULL"),
         ],
+        "user_preferences": [
+            ("analysis_json", "TEXT"),
+        ],
+        "food_dislikes": [
+            ("reason", "VARCHAR(40)"),
+            ("note", "VARCHAR(200)"),
+            ("avoid_group", "VARCHAR(20)"),
+        ],
     }
     try:
         inspector = inspect(eng)
